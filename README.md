@@ -40,6 +40,11 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.3.1
+
+- Publicación automática corregida: cada versión sube a *Releases* el instalador y el archivo `latest.yml` que usan
+  las apps instaladas para actualizarse solas.
+
 ## Novedades v1.3.0 — avisos de Yape y Plin, y actualización automática
 
 - **Avisos de Yape y Plin (BBVA)**: cuando el iPhone recibe un pago, Enlace Móvil de Windows muestra la notificación

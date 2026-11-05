@@ -1,7 +1,6 @@
 # Arma el instalador de Windows y lo publica en Releases de este repositorio (jhuniorgalvesll/multichat).
 # Las apps instaladas revisan ese repositorio y se actualizan solas.
-# Se ejecuta al subir cambios a la rama `main`. Solo publica cuando la versión de package.json es nueva:
-# si ya existe la versión en Releases, electron-builder no la vuelve a subir.
+# Se ejecuta al subir cambios a la rama `main`. Solo publica cuando la versión de package.json es nueva.
 name: Publicar actualización
 
 permissions:
@@ -19,14 +18,46 @@ concurrency:
 jobs:
   windows:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: ¿Es una versión nueva?
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          if gh release view "v$VERSION" --json isDraft -q .isDraft 2>/dev/null | grep -q false; then
+            echo "La versión v$VERSION ya está publicada: no hay nada nuevo que publicar."
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.version.outputs.new == 'true'
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - name: Armar y publicar el instalador
+
+      - if: steps.version.outputs.new == 'true'
+        run: npm ci
+
+      # El borrador se crea antes, así electron-builder sube todos los archivos al mismo (sin carreras).
+      - name: Crear el borrador de la versión
+        if: steps.version.outputs.new == 'true'
+        run: |
+          TAG=${{ steps.version.outputs.tag }}
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --target "$GITHUB_SHA" --title "MultiChat Pro $TAG" --notes "Se instala sola desde MultiChat (⚙ → Buscar actualizaciones). Para instalar desde cero: descarga MultiChat-Setup-${TAG#v}.exe."
+
+      - name: Armar y subir el instalador
+        if: steps.version.outputs.new == 'true'
         run: npx electron-builder --win --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publicar la versión
+        if: steps.version.outputs.new == 'true'
+        run: gh release edit "${{ steps.version.outputs.tag }}" --draft=false --latest
