@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.8.3',
+    items: [
+      'Las pestañas se achican solas para que entren todas; con muchas, se ve solo el ícono con su contador.',
+      'Se quitó el botón de ofertas de la barra (sigue en ⚙ → Crear estado u oferta).',
+    ],
+  },
+  {
     version: '1.8.2',
     items: [
       'Corregido el error al verificar una captura copiada ("clipboard.readImage is not a function").',

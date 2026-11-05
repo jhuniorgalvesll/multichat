@@ -360,5 +360,4 @@ $('fly-close').addEventListener('click', closeFlyer);
 $('flyer-modal').addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeFlyer();
 });
-$('flyer-btn').addEventListener('click', () => (flyer.open ? closeFlyer() : openFlyer()));
 api.onFlyer(openFlyer);

@@ -97,6 +97,7 @@ html, body {
 
 .tabs {
   display: flex;
+  flex: 0 1 auto;
   align-items: center;
   gap: 6px;
   min-width: 0;
@@ -112,8 +113,8 @@ html, body {
   align-items: center;
   gap: 8px;
   height: 36px;
-  min-width: 120px;
-  max-width: 220px;
+  flex: 0 0 var(--tab-w, 190px); /* el ancho lo calcula ui.js según el espacio libre */
+  min-width: 0;
   padding: 0 6px 0 5px;
   border: 1px solid rgb(255 255 255 / 0.10);
   border-radius: 12px;
@@ -122,8 +123,24 @@ html, body {
   font: inherit;
   font-size: 13px;
   cursor: pointer;
-  flex-shrink: 0;
   transition: background 0.15s, border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+/* Con muchas pestañas abiertas se achican: primero sin el tiempo de espera, luego solo el ícono con su contador
+   (el nombre aparece al pasar el mouse). */
+.tabs-mid .tab .wait,
+.tabs-mid .tab .close { display: none; }
+.tabs-mini .tab { justify-content: center; padding: 0; }
+.tabs-mini .tab .label { display: none; }
+.tabs-mini .tab .badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  font-size: 10px;
+  line-height: 17px;
 }
 
 .tab:hover { background: rgb(255 255 255 / 0.12); color: #fff; transform: translateY(-1px); }
@@ -1316,3 +1333,7 @@ tbody tr:hover { background: var(--tab-hover); }
 .ai-config[open] { display: flex; flex-direction: column; gap: 8px; }
 .ai-config summary { cursor: pointer; font-size: 13px; font-weight: 600; }
 .ai-config-actions { display: flex; align-items: center; gap: 10px; }
+
+/* Ventana angosta con muchas pestañas: solo el logo, sin el texto de la marca */
+.bar-tight .brand > div { display: none; }
+.bar-tight .brand { padding-right: 8px; }

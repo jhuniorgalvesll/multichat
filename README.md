@@ -40,6 +40,13 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.8.3
+
+- **Pestañas que se adaptan**: el ancho se calcula según el espacio libre de la barra. Si entran, se ven completas; si
+  no, se achican (sin el tiempo de espera ni la ×) y, con muchas, solo el ícono con su contador (el nombre aparece al
+  pasar el mouse). En ventanas angostas el logo queda sin el texto "MultiChat PRO".
+- Se quitó el botón del creador de ofertas de la barra; sigue disponible en ⚙ → *Crear estado u oferta*.
+
 ## Novedades v1.8.2
 
 - Corregido: *Verificar pago* / *Verificar la captura copiada* daba el error "clipboard.readImage is not a function"

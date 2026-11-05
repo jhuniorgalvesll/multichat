@@ -227,8 +227,30 @@ function renderTileHeads() {
   }));
 }
 
+// Ancho de las pestañas según el espacio libre de la barra: normal (190 px) si entran todas; si no, más angostas,
+// y con muchas, solo el ícono con su contador (el nombre se ve al pasar el mouse).
+function fitTabs() {
+  const n = tabsEl.children.length;
+  const bar = document.querySelector('.bar');
+  const measure = () => {
+    const others = [...bar.children].filter((el) => el !== tabsEl && !el.classList.contains('spacer'))
+      .reduce((sum, el) => sum + el.offsetWidth + 6, 0);
+    return Math.floor((bar.clientWidth - others - 30 - 6 * (n - 1)) / Math.max(n, 1));
+  };
+  // En ventanas angostas el logo queda sin el texto "MultiChat PRO" para dar lugar a las pestañas.
+  bar.classList.remove('bar-tight');
+  if (!n) return;
+  if (measure() < 60) bar.classList.add('bar-tight');
+  const width = Math.max(40, Math.min(190, measure()));
+  tabsEl.style.setProperty('--tab-w', `${width}px`);
+  tabsEl.classList.toggle('tabs-mid', width < 130);
+  tabsEl.classList.toggle('tabs-mini', width < 92);
+}
+window.addEventListener('resize', fitTabs);
+
 function render() {
   tabsEl.replaceChildren(...state.accounts.map(renderTab));
+  fitTabs();
   emptyEl.hidden = state.accounts.length > 0;
   tabsEl.querySelector('.tab.active')?.scrollIntoView({ inline: 'nearest' });
   renderTileHeads();
