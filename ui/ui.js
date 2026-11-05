@@ -1501,6 +1501,7 @@ function closeCoffee() {
   closeDrawer(); // las otras ventanas llaman a closeCoffee() antes de abrirse: también cierran los paneles laterales
   if (typeof closeVerify === 'function' && verifyOpen) closeVerify();
   if (typeof closeFlyer === 'function' && flyer.open) closeFlyer();
+  if (typeof closeAssistantPanel === 'function' && aiOpen) closeAssistantPanel();
   if (!coffeeOpen) return;
   coffeeOpen = false;
   $('coffee-modal').hidden = true;

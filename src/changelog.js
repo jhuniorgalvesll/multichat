@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.8.0',
+    items: [
+      'Asistente con IA: selecciona el mensaje del cliente y te sugiere 3 respuestas para pegar en el chat.',
+      'Usa los datos de tu negocio (precios, envíos, pagos) y no inventa: tú revisas y envías.',
+    ],
+  },
+  {
     version: '1.7.0',
     items: [
       'Verificador de pagos: clic derecho en la captura del cliente → te dice si el pago llegó o si puede ser falsa.',

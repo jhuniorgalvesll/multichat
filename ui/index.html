@@ -31,6 +31,9 @@
     <button class="icon-btn" id="quick" title="Respuestas rápidas (Ctrl+Shift+R)">
       <svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
     </button>
+    <button class="icon-btn" id="ai-btn" title="Sugerir respuesta con IA para el mensaje seleccionado">
+      <svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8zM5 2l.6 1.4L7 4l-1.4.6L5 6l-.6-1.4L3 4l1.4-.6z"/></svg>
+    </button>
     <button class="icon-btn" id="flyer-btn" title="Crear estado u oferta (imagen con foto, precio y logo)">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/><path d="M15 5.5h4M17 3.5v4"/></svg>
     </button>
@@ -507,6 +510,36 @@
     </div>
   </section>
 
+  <!-- Asistente con IA: respuestas sugeridas (se pegan en el chat, nunca se envían solas) -->
+  <section class="backdrop" id="ai-modal" hidden>
+    <div class="card modal ai-card">
+      <h2>✨ Asistente con IA</h2>
+      <div class="note" id="ai-account"></div>
+      <label>Mensaje del cliente
+        <textarea id="ai-message" rows="3" maxlength="4000" placeholder="Selecciona el mensaje del cliente en el chat antes de abrir el asistente, o pégalo aquí"></textarea>
+      </label>
+      <button type="button" class="primary" id="ai-suggest">✨ Sugerir 3 respuestas</button>
+      <p class="note ai-status" id="ai-status"></p>
+      <div class="ai-results" id="ai-results"></div>
+      <details class="ai-config" id="ai-config">
+        <summary>⚙ Configurar: clave y datos de tu negocio</summary>
+        <label>Clave de API de Anthropic
+          <input id="ai-key" type="password" autocomplete="off" spellcheck="false">
+        </label>
+        <p class="note">Se crea en console.anthropic.com → API Keys. Se guarda cifrada en esta PC. Cada sugerencia cuesta aprox. S/ 0.05 a S/ 0.10, cobrados en tu cuenta de Anthropic.</p>
+        <label>Datos de tu negocio (la IA solo usa esto, no inventa precios)
+          <textarea id="ai-context" rows="6" maxlength="6000" placeholder="Ej.:&#10;Fertisem — productos agrícolas y veterinarios. Mala, Lima.&#10;Fipronil 250 ml: S/ 45. Abono foliar 1 L: S/ 38.&#10;Envíos a todo el Perú por Shalom (S/ 10) y Olva (S/ 15), salen al día siguiente.&#10;Pagos: Yape y Plin al 950 233 689, BCP 123-456789.&#10;Horario: lunes a sábado de 7 a. m. a 7 p. m."></textarea>
+        </label>
+        <div class="ai-config-actions">
+          <button type="button" id="ai-save">Guardar</button>
+          <span class="note" id="ai-config-status"></span>
+        </div>
+        <p class="note">Solo se envía a la IA el mensaje que tú seleccionas y estos datos, cuando pulsas el botón. Nada se responde ni se envía solo.</p>
+      </details>
+      <div class="actions"><button type="button" id="ai-close">Cerrar</button></div>
+    </div>
+  </section>
+
   <!-- Creador de estados y ofertas -->
   <section class="backdrop" id="flyer-modal" hidden>
     <div class="card flyer-card">
@@ -587,5 +620,6 @@
   <script src="ticket.js"></script>
   <script src="ui.js"></script>
   <script src="flyer.js"></script>
+  <script src="assistant.js"></script>
 </body>
 </html>

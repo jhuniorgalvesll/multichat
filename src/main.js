@@ -14,6 +14,7 @@ const sales = require('./sales');
 const payments = require('./payments');
 const paylog = require('./paylog');
 const verify = require('./verify');
+const assistant = require('./assistant');
 const bubble = require('./bubble');
 const updater = require('./updater');
 const CHANGELOG = require('./changelog');
@@ -525,6 +526,44 @@ async function insertTemplate(template) {
     await sleep(900); // tiempo para que se abra la vista previa de la foto
   }
   await pasteText(wc, text);
+}
+
+// ---------- Asistente con IA: sugiere respuestas al mensaje seleccionado (no envía nada) ----------
+
+function openAssistant(id, selection) {
+  if (locked) return;
+  const acc = findAccount(id || activeId);
+  win.webContents.send('ui:ai', { text: String(selection || '').trim().slice(0, 4000), accountName: acc ? acc.name : '' });
+}
+
+async function openAssistantFromSelection() {
+  const view = views.get(activeId);
+  let selection = '';
+  if (view) {
+    try {
+      selection = String(await view.webContents.executeJavaScript('String(window.getSelection())', true));
+    } catch {
+      selection = '';
+    }
+  }
+  openAssistant(activeId, selection);
+}
+
+function assistantConfig() {
+  const { settings } = store.get();
+  return { hasKey: Boolean(assistant.decryptKey(settings.aiKey)), context: settings.aiContext || '' };
+}
+
+function saveAssistantConfig({ key, context } = {}) {
+  const { settings } = store.get();
+  if (typeof key === 'string' && key.trim()) {
+    if (!/^sk-ant-[\w-]{20,}$/.test(key.trim())) return { ok: false, error: 'La clave debe empezar con "sk-ant-".' };
+    settings.aiKey = assistant.encryptKey(key);
+  }
+  if (key === null) settings.aiKey = '';
+  if (typeof context === 'string') settings.aiContext = context.slice(0, 6000);
+  store.save();
+  return { ok: true, ...assistantConfig() };
 }
 
 // ---------- Creador de estados y ofertas ----------
@@ -1441,6 +1480,10 @@ function showEditMenu(wc, params) {
   const selection = params.selectionText.trim();
   template.push(
     {
+      label: selection ? '✨ Sugerir respuesta con IA para lo seleccionado' : '✨ Sugerir respuesta con IA…',
+      click: () => openAssistant(idForWebContents(wc), selection),
+    },
+    {
       label: selection ? '🖨 Imprimir ticket de envío con lo seleccionado' : '🖨 Imprimir ticket de envío…',
       click: () => openTicketFor(idForWebContents(wc), selection),
     },
@@ -1927,6 +1970,22 @@ function registerIpc() {
   ipcMain.handle('payments:state', (_e, day) => paymentsState(typeof day === 'string' ? day : undefined));
   ipcMain.handle('payments:export', (_e, day) => exportPaymentsCsv(day));
   ipcMain.handle('flyer:pick-image', () => (locked ? null : pickFlyerImage()));
+  ipcMain.on('ai:open', () => { if (!locked) openAssistantFromSelection(); });
+  ipcMain.handle('ai:config', () => (locked ? { hasKey: false, context: '' } : assistantConfig()));
+  ipcMain.handle('ai:save-config', (_e, config) => (locked ? { ok: false } : saveAssistantConfig(config)));
+  ipcMain.handle('ai:suggest', async (_e, text, accountName) => {
+    if (locked) return { ok: false, error: 'La app está bloqueada.' };
+    const { settings } = store.get();
+    return assistant.suggest({ storedKey: settings.aiKey, businessContext: settings.aiContext, customerMessage: text, accountName });
+  });
+  // La respuesta elegida se pega en el chat abierto; el usuario la revisa y presiona Enter.
+  ipcMain.handle('ai:paste', async (_e, text) => {
+    const view = views.get(activeId);
+    if (locked || !view || typeof text !== 'string') return { ok: false };
+    view.webContents.focus();
+    await pasteText(view.webContents, text.slice(0, 4000));
+    return { ok: true };
+  });
   ipcMain.handle('flyer:save', (_e, dataUrl) => (locked ? { ok: false } : saveFlyer(dataUrl)));
   ipcMain.handle('flyer:paste', (_e, dataUrl) => pasteFlyer(dataUrl));
   // Verificar: captura copiada (Ctrl+C / recorte) o un monto escrito a mano.

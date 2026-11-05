@@ -40,6 +40,16 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.8.0 — asistente con IA
+
+- **✨ Asistente con IA** (botón de estrellas en la barra, o clic derecho → *Sugerir respuesta con IA*): selecciona el
+  mensaje del cliente en el chat y la IA (Claude, de Anthropic) propone **3 respuestas distintas** usando los
+  **datos de tu negocio** que escribes una vez (productos, precios, envíos, pagos, horario). *Pegar en el chat* deja
+  el texto escrito: tú lo revisas y presionas Enter. Nunca responde ni envía solo.
+- Necesita una **clave de API de Anthropic** (console.anthropic.com → API Keys), que se guarda cifrada en la PC.
+  Cada sugerencia cuesta aprox. S/ 0.05–0.10 en la cuenta de Anthropic del usuario. Solo se envía el mensaje
+  seleccionado y los datos del negocio, al pulsar el botón.
+
 ## Novedades v1.7.0
 
 - **🛡️ Verificador de pagos**: clic derecho sobre la captura de Yape/Plin que manda un cliente →
