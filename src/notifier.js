@@ -36,7 +36,7 @@ function close(toast) {
 function schedule(toast) {
   clearTimeout(toast.timer);
   // Los pagos se quedan más tiempo en pantalla para no perderlos.
-  if (!toast.hold) toast.timer = setTimeout(() => close(toast), toast.data.kind === 'payment' ? 20000 : LIFETIME);
+  if (!toast.hold) toast.timer = setTimeout(() => close(toast), { payment: 20000, update: 60000 }[toast.data.kind] || LIFETIME);
 }
 
 function find(event) {

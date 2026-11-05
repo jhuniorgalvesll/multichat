@@ -40,6 +40,12 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.3.3 — aviso de actualización dentro de la app
+
+- Cuando hay una versión nueva, MultiChat la **descarga sola** y muestra una notificación propia:
+  *"Nueva versión vX lista"* con el botón **Actualizar ahora** (se reinicia en segundos). Si no lo pulsas, se instala
+  al cerrar la app. Revisa GitHub al abrir y cada hora.
+
 ## Novedades v1.3.2 — los pagos se anuncian en voz alta
 
 - Cuando llega un Yape o Plin, MultiChat lo dice en voz alta con la voz en español de Windows (sin internet):

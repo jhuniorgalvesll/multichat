@@ -609,6 +609,7 @@ function showServiceNotification(id, payload) {
 function openFromNotification(data) {
   showWindow();
   if (data.kind === 'payment') return showTodayPayments();
+  if (data.kind === 'update') return updater.install();
   if (!data.accountId || !findAccount(data.accountId)) return;
   setActive(data.accountId);
   if (data.notifId) views.get(data.accountId)?.webContents.send('notify-open', data.notifId);
@@ -1933,7 +1934,16 @@ function init() {
   app.setLoginItemSettings({ openAtLogin: Boolean(data.settings.openAtLogin), args: ['--hidden'] });
 
   syncPaymentWatcher();
-  updater.start({ getWindow: () => win });
+  updater.start({
+    getWindow: () => win,
+    notify: (version) => notifier.show({
+      kind: 'update',
+      accountName: 'Actualización de MultiChat Pro',
+      title: `Nueva versión v${version} lista`,
+      body: 'Pulsa "Actualizar ahora": se reinicia en segundos y tus cuentas no se tocan. Si no, se instala al cerrar la app.',
+      canReply: false,
+    }),
+  });
   setInterval(hibernateIdle, 60_000);
   setInterval(checkAutoLock, 30_000);
   setInterval(checkDndSchedule, 30_000);

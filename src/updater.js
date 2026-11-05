@@ -1,17 +1,19 @@
 'use strict';
 
-// Actualizaciones automáticas desde GitHub (Releases del repositorio público de instaladores).
-// La app revisa al abrir y cada 4 horas; si hay versión nueva la descarga en segundo plano y pregunta
-// si reiniciar ahora. Las cuentas y ajustes no se tocan (están en la carpeta de datos, no en la de la app).
+// Actualizaciones automáticas desde GitHub (Releases de jhuniorgalvesll/multichat).
+// La app revisa al abrir y cada hora; si hay versión nueva la descarga sola en segundo plano y avisa con una
+// notificación de MultiChat "Actualizar ahora". Si no se pulsa, se instala sola al cerrar la app.
+// Las cuentas y ajustes no se tocan (están en la carpeta de datos, no en la de la app).
 const { app, dialog } = require('electron');
 
-const CHECK_EVERY = 4 * 60 * 60 * 1000;
+const CHECK_EVERY = 60 * 60 * 1000; // cada hora
 
 let updater = null;
 let state = { status: 'idle', version: '' }; // idle | checking | downloading | ready | latest | error
 let askedFor = '';
 let getWindow = () => null;
 let onChange = () => {};
+let notify = () => {}; // muestra la notificación "Actualizar ahora" dentro de MultiChat
 
 function set(next) {
   state = { ...state, ...next };
@@ -27,21 +29,11 @@ function load() {
   updater.on('update-available', (info) => set({ status: 'downloading', version: info.version }));
   updater.on('update-not-available', () => set({ status: 'latest' }));
   updater.on('error', () => set({ status: 'error' }));
-  updater.on('update-downloaded', async (info) => {
+  updater.on('update-downloaded', (info) => {
     set({ status: 'ready', version: info.version });
     if (askedFor === info.version) return;
     askedFor = info.version;
-    const win = getWindow();
-    const { response } = await dialog.showMessageBox(win && !win.isDestroyed() ? win : undefined, {
-      type: 'info',
-      title: 'Actualización lista',
-      message: `Hay una nueva versión de MultiChat Pro (v${info.version}).`,
-      detail: 'Ya se descargó. Al reiniciar se instala en unos segundos; tus cuentas y ajustes no se tocan.',
-      buttons: ['Reiniciar ahora', 'Después (al cerrar la app)'],
-      defaultId: 0,
-      cancelId: 1,
-    });
-    if (response === 0) setImmediate(() => updater.quitAndInstall(true, true));
+    notify(info.version);
   });
   return updater;
 }
@@ -50,6 +42,7 @@ function load() {
 function start(options = {}) {
   getWindow = options.getWindow || getWindow;
   onChange = options.onChange || onChange;
+  notify = options.notify || notify;
   if (!app.isPackaged || process.platform !== 'win32') return;
   const check = () => load().checkForUpdates().catch(() => set({ status: 'error' }));
   setTimeout(check, 15_000);
@@ -61,10 +54,7 @@ async function checkNow() {
   const win = getWindow();
   const show = (message, detail = '') => dialog.showMessageBox(win, { type: 'info', title: 'Actualizaciones', message, detail });
   if (!app.isPackaged) return show('Las actualizaciones funcionan solo en la app instalada.');
-  if (state.status === 'ready') {
-    askedFor = '';
-    return load().emit('update-downloaded', { version: state.version });
-  }
+  if (state.status === 'ready') return notify(state.version);
   try {
     const result = await load().checkForUpdates();
     const latest = result && result.updateInfo ? result.updateInfo.version : '';
@@ -75,4 +65,9 @@ async function checkNow() {
   }
 }
 
-module.exports = { start, checkNow, get state() { return state; } };
+// "Actualizar ahora": cierra MultiChat, instala en segundo plano y la vuelve a abrir.
+function install() {
+  if (state.status === 'ready') setImmediate(() => load().quitAndInstall(true, true));
+}
+
+module.exports = { start, checkNow, install, get state() { return state; } };

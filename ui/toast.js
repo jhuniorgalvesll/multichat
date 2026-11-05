@@ -21,7 +21,8 @@ api.onData((data) => {
     $('open-btn').hidden = true;
     $('actions').hidden = true;
   }
-  $('open-btn').textContent = data.kind === 'reminder' ? 'Abrir cuenta' : 'Abrir chat';
+  $('open-btn').textContent = { reminder: 'Abrir cuenta', update: 'Actualizar ahora' }[data.kind] || 'Abrir chat';
+  if (data.kind === 'update') document.body.classList.add('update');
   reportSize();
 });
 

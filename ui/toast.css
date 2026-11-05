@@ -128,3 +128,7 @@ html, body {
 .payment .account { color: #742284; }
 .payment.plin .account { color: #0098a8; }
 .payment .title { font-size: 15px; font-weight: 700; white-space: normal; }
+
+/* Actualización lista */
+.update .toast { border-left: 6px solid var(--accent); }
+.update #open-btn { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
