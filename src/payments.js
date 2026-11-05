@@ -31,12 +31,16 @@ const cap = (s) => s.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (_, sep, ch) =>
 
 // Saca { app: 'Yape' | 'Plin', name, amount } del texto. Acepta varias formas, por ejemplo:
 // "Junior Galvez te envió un pago por S/ 25", "¡Te yapearon S/ 25! Junior Galvez…",
-// "Recibiste un Plin de MELISSA GALVEZ por S/ 50.00", "MELISSA GALVEZ te plineó S/ 50".
+// "Recibiste un Plin de MELISSA GALVEZ por S/ 50.00", "MELISSA GALVEZ te plineó S/ 50",
+// BBVA Empresas: "Cobro con QR" · "HUGO PAUL DIAZ BLACIDO  te hizo un pago de S/ 11.0".
+const PAYMENT_PHRASE = /te\s+(?:envi[oó]|ha enviado|hizo|yape[oó]|pline[oó]|transfiri[oó]|pag[oó])|yapearon|recibiste|cobro con qr|abono/i;
+
 function parsePayment(texts) {
   const all = texts.join('\n');
   const isYape = /yape/i.test(all);
-  const isPlin = /plin/i.test(all) || (/bbva/i.test(all) && /recib|abon|transfer|envi[oó]/i.test(all));
-  if (!isYape && !isPlin) return null;
+  const isBank = /plin|bbva/i.test(all);
+  if (!isYape && !isBank && !/cobro con qr/i.test(all)) return null;
+  if (!PAYMENT_PHRASE.test(all)) return null;
   const money = all.match(/S\/\.?\s*([\d.,]+)/i);
   if (!money) return null;
   let raw = money[1].replace(/[.,]$/, '');
@@ -45,24 +49,30 @@ function parsePayment(texts) {
   const amount = Number(raw);
   if (!Number.isFinite(amount) || amount <= 0) return null;
 
-  const body = texts.filter((t) => !/^(yape|plin|bbva|bbva per[uú]|enlace m[oó]vil)$/i.test(t)).join(' ');
+  // El nombre se busca en cada línea por separado (título, cuerpo...), así no se mezcla con el nombre de la app.
+  const lines = texts.map((t) => t.replace(/\s+/g, ' ').trim())
+    .filter((t) => !/^(yape|plin|bbva|bbva ?empresas|bbva per[uú]|enlace m[oó]vil|cobro con qr)$/i.test(t));
   const NAME = "([\\p{L}][\\p{L} .'-]{1,60}?)";
   const patterns = [
-    new RegExp(`${NAME}\\s+te\\s+(?:envi[oó]|ha enviado|yape[oó]|pline[oó]|transfiri[oó]|pag[oó])`, 'iu'),
+    new RegExp(`^(?:¡?te yapearon!?\\s*|¡?yape!?\\s*)?${NAME}\\s+te\\s+(?:envi[oó]|ha enviado|hizo|yape[oó]|pline[oó]|transfiri[oó]|pag[oó])`, 'iu'),
     new RegExp(`(?:de|desde)\\s+${NAME}\\s+(?:por|de|con|a\\s+tu|S\\/)`, 'iu'),
     new RegExp(`S\\/\\.?\\s*[\\d.,]+\\s+(?:de|desde)\\s+${NAME}(?:[.,!]|\\s+(?:por|con|a\\s+tu)|$)`, 'iu'),
   ];
   let name = '';
-  for (const re of patterns) {
-    const m = body.match(re);
-    if (m && !/^(un|una|tu|te|pago|yape|plin|bbva|s)$/i.test(m[1].trim())) {
-      name = m[1].replace(/^(?:¡?te yapearon!?|¡?yape!?|recibiste un (?:pago|plin)|plin)\s*/i, '').trim();
-      if (name) break;
+  search: for (const re of patterns) {
+    for (const line of lines) {
+      const m = line.match(re);
+      if (m && !/^(un|una|tu|te|pago|yape|plin|bbva|s)$/i.test(m[1].trim())) {
+        name = m[1].replace(/^(?:¡?te yapearon!?|¡?yape!?|recibiste un (?:pago|plin)|plin)\s*/i, '').trim();
+        if (name) break search;
+      }
     }
   }
   // Sin nombre del que paga no se toma como pago (p. ej. un cliente que escribe "ya te yapeé S/ 25").
   if (!name) return null;
-  return { app: isYape ? 'Yape' : 'Plin', name: cap(name), amount, text: texts.join(' · ').slice(0, 300) };
+  // 'BBVA': cobros con QR de BBVA Empresas (el cliente puede pagar desde Yape, Plin u otro banco).
+  const app = isYape ? 'Yape' : /plin/i.test(all) ? 'Plin' : 'BBVA';
+  return { app, name: cap(name), amount, text: texts.join(' · ').slice(0, 300) };
 }
 
 // Vigila la base de notificaciones de Windows. onPayment(payment) por cada pago nuevo.

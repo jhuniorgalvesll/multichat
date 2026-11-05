@@ -40,6 +40,13 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.4.1
+
+- Se reconocen los cobros de **BBVA Empresas** ("Cobro con QR · HUGO PAUL DIAZ BLACIDO te hizo un pago de S/ 11.0"):
+  aviso *"Hugo Paul Diaz Blacido te pagó S/ 11.00"* y voz *"… te pagó 11 soles"*.
+- Botones de la barra con un estilo más profesional: íconos blancos uniformes dentro de una franja translúcida,
+  que se iluminan al pasar el mouse o cuando están activos.
+
 ## Novedades v1.4.0 — nuevo diseño y voz de mujer
 
 - **Diseño nuevo**: barra superior oscura con degradado violeta-azul y línea de colores, pestañas tipo cápsula con

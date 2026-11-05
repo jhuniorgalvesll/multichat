@@ -17,7 +17,7 @@ api.onData((data) => {
   }
   $('reply-btn').hidden = !data.canReply;
   if (data.kind === 'payment') {
-    document.body.classList.add('payment', data.payApp === 'Yape' ? 'yape' : 'plin');
+    document.body.classList.add('payment', { Yape: 'yape', Plin: 'plin', BBVA: 'bbva' }[data.payApp] || 'plin');
     $('open-btn').hidden = true;
     $('actions').hidden = true;
   }

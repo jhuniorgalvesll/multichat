@@ -1,7 +1,7 @@
 {
   "name": "multichat",
   "productName": "MultiChat",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "MultiChat Pro — varias cuentas de WhatsApp, Telegram y más en una sola app. Creado por lliuya.pe.",
   "main": "src/main.js",
   "author": "lliuya.pe",

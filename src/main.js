@@ -1831,6 +1831,9 @@ function registerIpc() {
 let paymentWatcher = null;
 const todayPayments = []; // solo en memoria: pagos avisados desde que se abrió la app hoy
 
+const PAY_VERB = { Yape: 'te yapeó', Plin: 'te plineó', BBVA: 'te pagó' };
+const PAY_LABEL = { Yape: 'Yape', Plin: 'Plin · BBVA', BBVA: 'BBVA Empresas · Cobro con QR' };
+
 const money = (n) => `S/ ${n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 // Monto para decirlo en voz alta: "50 soles", "25 soles con 50 céntimos", "1 sol".
@@ -1846,7 +1849,7 @@ function announcePayment(payment) {
   if (!store.get().settings.paymentVoice || !win || win.isDestroyed()) return;
   const text = locked
     ? `Recibiste un ${payment.app}`
-    : `${payment.name} te ${payment.app === 'Yape' ? 'yapeó' : 'plineó'} ${spokenMoney(payment.amount)}`;
+    : `${payment.name} ${PAY_VERB[payment.app]} ${spokenMoney(payment.amount)}`;
   win.webContents.send('ui:speak', text);
 }
 
@@ -1854,12 +1857,12 @@ function onPayment(payment) {
   const today = new Date().toDateString();
   while (todayPayments.length && new Date(todayPayments[0].at).toDateString() !== today) todayPayments.shift();
   if (!payment.test) todayPayments.push(payment);
-  const verb = payment.app === 'Yape' ? 'te yapeó' : 'te plineó';
+  const verb = PAY_VERB[payment.app];
   // Los pagos se avisan siempre, también en "no molestar": son ventas.
   notifier.show({
     kind: 'payment',
     payApp: payment.app,
-    accountName: payment.app === 'Yape' ? 'Yape' : 'Plin · BBVA',
+    accountName: PAY_LABEL[payment.app],
     title: locked ? `Pago recibido por ${payment.app}` : `${payment.name} ${verb} ${money(payment.amount)}`,
     body: locked ? 'Desbloquea MultiChat Pro para ver el detalle' : payment.test ? 'Prueba: así llegarán los pagos de Yape y Plin' : `Hoy: ${todayPayments.length} pago${todayPayments.length === 1 ? '' : 's'} · ${money(todayPayments.reduce((t, p) => t + p.amount, 0))}`,
     canReply: false,

@@ -132,3 +132,5 @@ html, body {
 /* Actualización lista */
 .update .toast { border-left: 6px solid var(--accent); }
 .update #open-btn { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.payment.bbva .toast { border-left-color: #1464f6; }
+.payment.bbva .account { color: #1464f6; }
