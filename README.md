@@ -40,6 +40,16 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.5.0 — paneles de MultiChat Pro y de pagos
+
+- **Clic en el logo**: panel con la versión, el estado de las **actualizaciones** (*Buscar actualizaciones* /
+  *Actualizar ahora*), las novedades de cada versión y el **creador: © lliuya.pe, todos los derechos reservados**
+  (con el cafecito).
+- **Botón de pagos** (billetera, reemplaza a "No molestar" y al cafecito de la barra): total cobrado hoy, lista de
+  pagos de Yape, Plin y BBVA, estado de **Enlace Móvil** (conectado / cerrado, con botón *Abrir*), interruptores de
+  avisos y voz, y las **últimas notificaciones del celular**. Opción para **leer en voz alta todas las
+  notificaciones del celular** (respeta el horario de atención). *No molestar* sigue en ⚙ → *Horario de atención*.
+
 ## Novedades v1.4.1
 
 - Se reconocen los cobros de **BBVA Empresas** ("Cobro con QR · HUGO PAUL DIAZ BLACIDO te hizo un pago de S/ 11.0"):

@@ -13,6 +13,7 @@ const SERVICES = require('./services');
 const sales = require('./sales');
 const payments = require('./payments');
 const updater = require('./updater');
+const CHANGELOG = require('./changelog');
 const notifier = require('./notifier');
 const { templateImages: media, receipts, ticketImages } = require('./media');
 const tickets = require('./tickets');
@@ -1537,7 +1538,7 @@ function showSettingsMenu() {
           label: 'Avisar cuando llegue un Yape o Plin',
           type: 'checkbox',
           checked: settings.paymentAlerts,
-          click: () => { settings.paymentAlerts = !settings.paymentAlerts; store.save(); syncPaymentWatcher(); },
+          click: () => { settings.paymentAlerts = !settings.paymentAlerts; store.save(); pushPayments(); },
         },
         {
           label: 'Decir los pagos en voz alta',
@@ -1815,6 +1816,21 @@ function registerIpc() {
   });
   ipcMain.on('ticket:from-selection', openTicketFromSelection);
   ipcMain.on('coffee:copy', () => copyText(CREATOR_YAPE));
+  ipcMain.handle('app:about', () => ({
+    name: APP_NAME,
+    version: app.getVersion(),
+    creator: CREATOR,
+    year: new Date().getFullYear(),
+    installedAt: path.dirname(app.getPath('exe')),
+    update: updater.state,
+    changelog: CHANGELOG,
+  }));
+  ipcMain.handle('update:check', () => updater.check());
+  ipcMain.on('update:install', () => updater.install());
+  ipcMain.handle('payments:state', () => paymentsState());
+  ipcMain.on('payments:set', (_e, key, value) => { if (!locked) setPaymentOption(key, value); });
+  ipcMain.on('payments:test', () => { if (!locked) onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }); });
+  ipcMain.on('payments:open-phone-link', () => shell.openExternal('ms-phone:').catch(() => {}));
   ipcMain.on('theme:toggle', () => setTheme(nativeTheme.shouldUseDarkColors ? 'light' : 'dark'));
   ipcMain.on('reminders:menu', showRemindersMenu);
   ipcMain.handle('reminders:save', (_e, reminder) => (locked ? { ok: false, error: 'La app está bloqueada.' } : saveReminder(reminder || {})));
@@ -1857,6 +1873,8 @@ function onPayment(payment) {
   const today = new Date().toDateString();
   while (todayPayments.length && new Date(todayPayments[0].at).toDateString() !== today) todayPayments.shift();
   if (!payment.test) todayPayments.push(payment);
+  pushPayments();
+  if (!payment.test && !store.get().settings.paymentAlerts) return;
   const verb = PAY_VERB[payment.app];
   // Los pagos se avisan siempre, también en "no molestar": son ventas.
   notifier.show({
@@ -1870,11 +1888,57 @@ function onPayment(payment) {
   announcePayment(payment);
 }
 
+// Últimas notificaciones del celular que llegaron por Enlace Móvil (solo en memoria, no se guardan).
+const phoneNotifications = [];
+let lastPhoneAt = 0;
+
+function onPhoneNotification(item) {
+  lastPhoneAt = item.at;
+  phoneNotifications.unshift(item);
+  phoneNotifications.length = Math.min(phoneNotifications.length, 40);
+  // "Leer todas las notificaciones del celular": los pagos ya se dicen aparte; se respeta el horario de atención.
+  const { settings } = store.get();
+  if (settings.readAllPhone && !item.payment && !locked && !dndActive() && win && !win.isDestroyed()) {
+    const [app, ...rest] = item.texts;
+    win.webContents.send('ui:speak', `${rest.length ? `${app}. ${rest.join('. ')}` : app}`.slice(0, 220));
+  }
+  pushPayments();
+}
+
+// El panel de pagos (botón de la barra) se actualiza en vivo.
+function pushPayments() {
+  if (win && !win.isDestroyed()) win.webContents.send('payments:update');
+}
+
+async function paymentsState() {
+  const { settings } = store.get();
+  const today = new Date().toDateString();
+  const list = locked ? [] : todayPayments.filter((p) => new Date(p.at).toDateString() === today);
+  const dbFound = process.platform === 'win32' && fs.existsSync(payments.databasePath());
+  return {
+    alerts: settings.paymentAlerts,
+    voice: settings.paymentVoice,
+    readAll: settings.readAllPhone,
+    windows: process.platform === 'win32',
+    phoneLink: { running: await payments.phoneLinkRunning(), dbFound, lastAt: lastPhoneAt, watching: Boolean(paymentWatcher && paymentWatcher.running) },
+    today: list.map(({ app: payApp, name, amount, at }) => ({ app: payApp, label: PAY_LABEL[payApp], name, amount, at })),
+    total: list.reduce((t, p) => t + p.amount, 0),
+    recent: locked ? [] : phoneNotifications.slice(0, 25),
+  };
+}
+
+function setPaymentOption(key, value) {
+  const map = { alerts: 'paymentAlerts', voice: 'paymentVoice', readAll: 'readAllPhone' };
+  if (!map[key]) return;
+  store.get().settings[map[key]] = Boolean(value);
+  store.save();
+}
+
 function syncPaymentWatcher() {
   if (process.platform !== 'win32') return;
-  paymentWatcher = paymentWatcher || payments.createWatcher({ onPayment });
-  if (store.get().settings.paymentAlerts) paymentWatcher.start();
-  else paymentWatcher.stop();
+  // Siempre vigila (los avisos se activan o no con "paymentAlerts"), así el panel muestra lo que llega del celular.
+  paymentWatcher = paymentWatcher || payments.createWatcher({ onPayment, onPhoneNotification });
+  paymentWatcher.start();
 }
 
 function showTodayPayments() {
@@ -1940,6 +2004,7 @@ function init() {
   syncPaymentWatcher();
   updater.start({
     getWindow: () => win,
+    onChange: (state) => { if (win && !win.isDestroyed()) win.webContents.send('update:state', state); },
     notify: (version) => notifier.show({
       kind: 'update',
       accountName: 'Actualización de MultiChat Pro',

@@ -64,4 +64,13 @@ contextBridge.exposeInMainWorld('multichat', {
   onTicketProfiles: (fn) => ipcRenderer.on('ui:ticket-profiles', () => fn()),
   onFormsDialog: (fn) => ipcRenderer.on('ui:forms', () => fn()),
   onSpeak: (fn) => ipcRenderer.on('ui:speak', (_e, text) => fn(text)),
+  about: () => ipcRenderer.invoke('app:about'),
+  checkUpdate: () => ipcRenderer.invoke('update:check'),
+  installUpdate: () => ipcRenderer.send('update:install'),
+  onUpdateState: (fn) => ipcRenderer.on('update:state', (_e, state) => fn(state)),
+  paymentsState: () => ipcRenderer.invoke('payments:state'),
+  setPaymentOption: (key, value) => ipcRenderer.send('payments:set', key, value),
+  testPayment: () => ipcRenderer.send('payments:test'),
+  openPhoneLink: () => ipcRenderer.send('payments:open-phone-link'),
+  onPaymentsUpdate: (fn) => ipcRenderer.on('payments:update', () => fn()),
 });

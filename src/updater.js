@@ -49,6 +49,23 @@ function start(options = {}) {
   setInterval(check, CHECK_EVERY);
 }
 
+// Desde el panel de MultiChat Pro: revisa sin ventanas; el resultado llega por onChange (state).
+async function check() {
+  if (!app.isPackaged || process.platform !== 'win32') {
+    set({ status: 'dev' });
+    return state;
+  }
+  if (state.status === 'ready' || state.status === 'downloading') return state;
+  try {
+    const result = await load().checkForUpdates();
+    const latest = result && result.updateInfo ? result.updateInfo.version : '';
+    if (!latest || latest === app.getVersion()) set({ status: 'latest' });
+  } catch {
+    set({ status: 'error' });
+  }
+  return state;
+}
+
 // Desde el menú: revisa ahora y avisa el resultado.
 async function checkNow() {
   const win = getWindow();
@@ -70,4 +87,4 @@ function install() {
   if (state.status === 'ready') setImmediate(() => load().quitAndInstall(true, true));
 }
 
-module.exports = { start, checkNow, install, get state() { return state; } };
+module.exports = { start, check, checkNow, install, get state() { return state; } };

@@ -205,13 +205,11 @@ function render() {
   $('layout-single').hidden = !grid;
   $('layout').title = grid ? 'Ver una cuenta a la vez (Ctrl+G)' : 'Ver varias cuentas a la vez (Ctrl+G)';
   $('lock-btn').hidden = !state.hasPassword;
-  $('dnd').classList.toggle('on', state.dnd);
   $('theme-moon').hidden = state.dark;
   $('theme-sun').hidden = !state.dark;
   $('theme').title = state.dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
   $('reminder-count').hidden = !state.reminderCount;
   $('reminder-count').textContent = state.reminderCount;
-  $('dnd').title = state.dnd ? 'No molestar: ACTIVADO (clic para desactivar)' : 'No molestar (silenciar notificaciones)';
 
   for (const el of document.querySelectorAll('.js-version')) el.textContent = `v${state.version}`;
   for (const el of document.querySelectorAll('.js-creator')) el.textContent = state.creator;
@@ -1467,14 +1465,202 @@ function openCoffee() {
 }
 
 function closeCoffee() {
+  closeDrawer(); // las otras ventanas llaman a closeCoffee() antes de abrirse: también cierran los paneles laterales
   if (!coffeeOpen) return;
   coffeeOpen = false;
   $('coffee-modal').hidden = true;
   api.setOverlay(false);
 }
 
-$('coffee').addEventListener('click', () => (coffeeOpen ? closeCoffee() : openCoffee()));
-$('brand').addEventListener('click', openCoffee);
+// ---------- Paneles laterales: MultiChat Pro (logo) y Pagos y celular ----------
+
+let drawerOpen = ''; // '' | 'about' | 'pay'
+
+function openDrawer(name) {
+  if (state.locked || passwordMode) return;
+  closeCoffee();
+  closeSalesList();
+  closeShipments();
+  closeTemplatesDialog();
+  closeReminderDialog();
+  if (drawerOpen && drawerOpen !== name) closeDrawer();
+  $(`${name}-modal`).hidden = false;
+  if (!drawerOpen) api.setOverlay(true);
+  drawerOpen = name;
+  if (name === 'about') loadAbout();
+  else loadPayments();
+}
+
+function closeDrawer() {
+  if (!drawerOpen) return;
+  $(`${drawerOpen}-modal`).hidden = true;
+  drawerOpen = '';
+  api.setOverlay(false);
+}
+
+for (const name of ['about', 'pay']) {
+  $(`${name}-close`).addEventListener('click', closeDrawer);
+  $(`${name}-modal`).addEventListener('click', (e) => {
+    if (e.target === $(`${name}-modal`)) closeDrawer();
+  });
+  $(`${name}-modal`).addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDrawer();
+  });
+}
+
+$('brand').addEventListener('click', () => (drawerOpen === 'about' ? closeDrawer() : openDrawer('about')));
+$('pay-btn').addEventListener('click', () => (drawerOpen === 'pay' ? closeDrawer() : openDrawer('pay')));
+$('about-coffee').addEventListener('click', () => {
+  closeDrawer();
+  openCoffee();
+});
+
+// -- Panel de MultiChat Pro --
+
+const UPDATE_TEXT = {
+  idle: ['Actualizaciones automáticas', 'MultiChat revisa GitHub al abrir y cada hora.', 'Buscar actualizaciones'],
+  checking: ['Buscando actualizaciones…', 'Un momento.', ''],
+  downloading: ['Descargando la versión {v}…', 'Te avisaremos cuando esté lista.', ''],
+  ready: ['Versión {v} lista para instalar', 'Se reinicia en segundos; tus cuentas no se tocan.', 'Actualizar ahora'],
+  latest: ['Tienes la última versión', 'MultiChat revisa GitHub al abrir y cada hora.', 'Buscar de nuevo'],
+  error: ['No se pudo revisar', 'Revisa tu conexión a internet.', 'Intentar de nuevo'],
+  dev: ['Actualizaciones automáticas', 'Funcionan en la app instalada.', ''],
+};
+
+function showUpdateState(update) {
+  const status = UPDATE_TEXT[update.status] ? update.status : 'idle';
+  const [title, sub, action] = UPDATE_TEXT[status].map((t) => t.replace('{v}', update.version ? `v${update.version}` : ''));
+  $('update-card').dataset.status = status;
+  $('update-title').textContent = title;
+  $('update-sub').textContent = sub;
+  $('update-action').textContent = action;
+  $('update-action').hidden = !action;
+}
+
+async function loadAbout() {
+  const info = await api.about();
+  $('about-version').textContent = `Versión ${info.version}`;
+  $('creator-rights').textContent = `© ${info.year} ${info.creator}. Todos los derechos reservados.`;
+  showUpdateState(info.update);
+  $('changelog').replaceChildren(...info.changelog.slice(0, 5).map((entry, i) => {
+    const box = document.createElement('div');
+    box.className = 'change';
+    const head = document.createElement('div');
+    head.className = 'change-version';
+    head.textContent = `v${entry.version}${i === 0 && entry.version === info.version ? ' · instalada' : ''}`;
+    const list = document.createElement('ul');
+    for (const item of entry.items) {
+      const li = document.createElement('li');
+      li.textContent = item;
+      list.append(li);
+    }
+    box.append(head, list);
+    return box;
+  }));
+}
+
+$('update-action').addEventListener('click', async () => {
+  if ($('update-card').dataset.status === 'ready') return api.installUpdate();
+  showUpdateState({ status: 'checking' });
+  showUpdateState(await api.checkUpdate());
+});
+api.onUpdateState((update) => {
+  if (drawerOpen === 'about') showUpdateState(update);
+});
+
+// -- Panel de pagos y celular --
+
+const PAY_ICON = { Yape: 'yape', Plin: 'plin', BBVA: 'bbva' };
+const soles = (n) => `S/ ${Number(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const hhmm = (at) => new Date(at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+
+function agoText(at) {
+  if (!at) return '';
+  const min = Math.round((Date.now() - at) / 60000);
+  if (min < 1) return 'hace un momento';
+  if (min < 60) return `hace ${min} min`;
+  return `a las ${hhmm(at)}`;
+}
+
+async function loadPayments() {
+  const data = await api.paymentsState();
+  // Enlace Móvil: abierto / cerrado / no disponible
+  const link = data.phoneLink;
+  let status = 'off';
+  let sub = 'Ábrelo y conecta tu iPhone para recibir los avisos.';
+  if (!data.windows) sub = 'Disponible solo en Windows.';
+  else if (link.running) {
+    status = 'on';
+    sub = link.lastAt ? `Conectado · última notificación ${agoText(link.lastAt)}` : 'Abierto · esperando notificaciones del celular';
+  } else if (link.running === null && link.dbFound) {
+    status = 'unknown';
+    sub = 'Recibiendo notificaciones de Windows';
+  }
+  $('link-card').dataset.status = status;
+  $('link-title').textContent = status === 'on' ? 'Enlace Móvil conectado' : status === 'unknown' ? 'Enlace Móvil' : 'Enlace Móvil cerrado';
+  $('link-sub').textContent = sub;
+  $('link-open').hidden = !data.windows || status === 'on';
+
+  $('pay-total').textContent = soles(data.total);
+  $('pay-total-count').textContent = `${data.today.length} pago${data.today.length === 1 ? '' : 's'}`;
+  $('pay-list').replaceChildren(...(data.today.length ? data.today.slice().reverse().map((p) => {
+    const row = document.createElement('div');
+    row.className = `pay-row ${PAY_ICON[p.app] || 'plin'}`;
+    const badge = document.createElement('span');
+    badge.className = 'pay-app';
+    badge.textContent = p.app;
+    const who = document.createElement('div');
+    who.className = 'pay-who';
+    who.textContent = p.name;
+    const when = document.createElement('small');
+    when.textContent = `${p.label} · ${hhmm(p.at)}`;
+    who.append(when);
+    const amount = document.createElement('div');
+    amount.className = 'pay-amount';
+    amount.textContent = soles(p.amount);
+    row.append(badge, who, amount);
+    return row;
+  }) : [Object.assign(document.createElement('p'), { className: 'drawer-empty', textContent: 'Todavía no llegaron pagos hoy.' })]));
+
+  $('opt-alerts').checked = data.alerts;
+  $('opt-voice').checked = data.voice;
+  $('opt-readall').checked = data.readAll;
+
+  $('phone-list').replaceChildren(...(data.recent.length ? data.recent.map((n) => {
+    const row = document.createElement('div');
+    row.className = 'phone-row';
+    row.classList.toggle('is-payment', n.payment);
+    const [app, ...rest] = n.texts;
+    const head = document.createElement('div');
+    head.className = 'phone-app';
+    head.textContent = app;
+    const time = document.createElement('span');
+    time.textContent = hhmm(n.at);
+    head.append(time);
+    const body = document.createElement('div');
+    body.className = 'phone-text';
+    body.textContent = rest.join(' · ');
+    row.append(head, body);
+    return row;
+  }) : [Object.assign(document.createElement('p'), { className: 'drawer-empty', textContent: 'Aquí aparecen las notificaciones que llegan del celular mientras MultiChat está abierto.' })]));
+
+  $('pay-count').hidden = !data.today.length;
+  $('pay-count').textContent = data.today.length;
+}
+
+for (const [id, key] of [['opt-alerts', 'alerts'], ['opt-voice', 'voice'], ['opt-readall', 'readAll']]) {
+  $(id).addEventListener('change', () => api.setPaymentOption(key, $(id).checked));
+}
+$('pay-test').addEventListener('click', () => api.testPayment());
+$('link-open').addEventListener('click', () => api.openPhoneLink());
+api.onPaymentsUpdate(() => {
+  if (drawerOpen === 'pay') loadPayments();
+  else api.paymentsState().then((data) => {
+    $('pay-count').hidden = !data.today.length;
+    $('pay-count').textContent = data.today.length;
+  });
+});
+setInterval(() => { if (drawerOpen === 'pay') loadPayments(); }, 15000);
 $('coffee-close').addEventListener('click', closeCoffee);
 $('coffee-modal').addEventListener('click', (e) => {
   if (e.target === $('coffee-modal')) closeCoffee();
@@ -1578,7 +1764,6 @@ $('quick').addEventListener('click', () => api.quickMenu());
 $('theme').addEventListener('click', () => api.toggleTheme());
 $('reminders').addEventListener('click', () => api.remindersMenu());
 $('print-ticket').addEventListener('click', () => (ticketPanelOpen ? closeTicketPanel() : api.ticketFromSelection()));
-$('dnd').addEventListener('click', () => api.toggleDnd());
 tabsEl.addEventListener('wheel', (e) => { tabsEl.scrollLeft += e.deltaY; }, { passive: true });
 
 api.onState((next) => {

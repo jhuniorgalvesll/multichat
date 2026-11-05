@@ -76,7 +76,7 @@ function parsePayment(texts) {
 }
 
 // Vigila la base de notificaciones de Windows. onPayment(payment) por cada pago nuevo.
-function createWatcher({ onPayment, onStatus = () => {} }) {
+function createWatcher({ onPayment, onPhoneNotification = () => {}, onStatus = () => {} }) {
   let timer = null;
   let lastId = null; // al arrancar se toma el último Id: los avisos viejos no se repiten
   let copyDir = null;
@@ -138,8 +138,10 @@ function createWatcher({ onPayment, onStatus = () => {} }) {
     for (const row of read()) {
       if (!PHONE_LINK.test(String(row.app || ''))) continue;
       const texts = toastTexts(row.payload);
-      if (/whatsapp|telegram|messenger|instagram/i.test(texts.join(' '))) continue; // chats, no pagos
-      const payment = parsePayment(texts);
+      if (!texts.length) continue;
+      const isChat = /whatsapp|telegram|messenger|instagram/i.test(texts.join(' ')); // chats, no pagos
+      const payment = isChat ? null : parsePayment(texts);
+      onPhoneNotification({ texts, payment: Boolean(payment), at: Date.now() });
       if (payment) onPayment({ ...payment, id: row.id, at: Date.now() });
     }
   }
@@ -182,4 +184,15 @@ function createWatcher({ onPayment, onStatus = () => {} }) {
   };
 }
 
-module.exports = { createWatcher, parsePayment, toastTexts, databasePath };
+// ¿Está abierto Enlace Móvil? (su proceso es PhoneExperienceHost.exe). Responde true / false / null (no se sabe).
+function phoneLinkRunning() {
+  if (process.platform !== 'win32') return Promise.resolve(null);
+  const { execFile } = require('child_process');
+  return new Promise((resolve) => {
+    execFile('tasklist', ['/FI', 'IMAGENAME eq PhoneExperienceHost.exe', '/NH'], { windowsHide: true, timeout: 5000 }, (err, out) => {
+      resolve(err ? null : /PhoneExperienceHost/i.test(String(out)));
+    });
+  });
+}
+
+module.exports = { createWatcher, phoneLinkRunning, parsePayment, toastTexts, databasePath };

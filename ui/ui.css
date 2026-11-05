@@ -1042,3 +1042,193 @@ tbody tr:hover { background: var(--tab-hover); }
 .prof-preview .ticket { margin: 0 auto; box-shadow: 0 2px 10px rgb(0 0 0 / 0.2); }
 .prof-probe { position: fixed; left: -10000px; top: 0; visibility: hidden; }
 .ticket-fit { margin-bottom: 6px; font-size: 11.5px; font-weight: 600; color: var(--danger); }
+
+/* ---- Paneles laterales: MultiChat Pro (izquierda) y Pagos y celular (derecha) ---- */
+
+.drawer-backdrop { display: block; padding: 0; }
+
+.drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 380px;
+  max-width: 92vw;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 20px;
+  overflow-y: auto;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 0 40px rgb(16 8 40 / 0.35);
+  user-select: text;
+  animation: drawer-in 0.22s ease-out;
+}
+
+.drawer-left { left: 0; border-radius: 0 18px 18px 0; --from: -30px; }
+.drawer-right { right: 0; border-radius: 18px 0 0 18px; --from: 30px; }
+
+@keyframes drawer-in { from { opacity: 0; transform: translateX(var(--from)); } }
+
+.drawer-x { position: absolute; top: 12px; right: 12px; }
+
+.drawer-title { margin: 0 0 4px; font-size: 20px; font-weight: 800; }
+
+.drawer-section {
+  margin-top: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.drawer-card {
+  padding: 14px;
+  border: 1px solid var(--bar-border);
+  border-radius: 14px;
+  background: var(--page);
+}
+
+.drawer-btn {
+  padding: 9px 14px;
+  border: 1px solid var(--bar-border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.drawer-btn:hover { border-color: #8b5cf6; }
+
+.drawer-btn.primary {
+  border-color: transparent;
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  color: #fff;
+  box-shadow: 0 6px 18px rgb(124 58 237 / 0.3);
+}
+
+.drawer-btn.small { padding: 6px 12px; font-size: 12.5px; }
+
+.drawer-empty { margin: 4px 0; font-size: 12.5px; color: var(--muted); }
+
+/* MultiChat Pro */
+.about-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: -22px -20px 4px;
+  padding: 26px 20px 22px;
+  border-radius: 0 18px 0 0;
+  background:
+    radial-gradient(120% 200% at 0% 0%, rgb(124 58 237 / 0.6), transparent 60%),
+    linear-gradient(120deg, #140b2e, #1d1147 50%, #0f1d4a);
+  color: #fff;
+}
+
+.about-hero img { width: 58px; height: 58px; border-radius: 16px; filter: drop-shadow(0 0 12px rgb(168 85 247 / 0.6)); }
+.about-name { font-size: 22px; font-weight: 800; }
+.about-version { margin-top: 2px; font-size: 13px; color: rgb(255 255 255 / 0.7); }
+.drawer-left .drawer-x { color: rgb(255 255 255 / 0.8); }
+.drawer-left .drawer-x:hover { background: rgb(255 255 255 / 0.15); color: #fff; }
+
+.update-card { display: flex; flex-direction: column; gap: 12px; }
+.update-row { display: flex; align-items: center; gap: 12px; }
+.update-dot { width: 12px; height: 12px; border-radius: 50%; background: #94a3b8; flex-shrink: 0; }
+.update-card[data-status="latest"] .update-dot { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
+.update-card[data-status="ready"] .update-dot { background: #a855f7; box-shadow: 0 0 10px #a855f7; }
+.update-card[data-status="checking"] .update-dot,
+.update-card[data-status="downloading"] .update-dot { background: #f59e0b; animation: blink 1s infinite; }
+.update-card[data-status="error"] .update-dot { background: var(--danger); }
+@keyframes blink { 50% { opacity: 0.3; } }
+.update-title { font-weight: 700; }
+.update-sub { font-size: 12.5px; color: var(--muted); }
+
+.changelog { display: flex; flex-direction: column; gap: 8px; }
+.change-version { font-size: 13px; font-weight: 700; color: #7c3aed; }
+.change ul { margin: 2px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--muted); }
+
+.creator-card { margin-top: auto; text-align: center; background: linear-gradient(160deg, rgb(124 58 237 / 0.08), rgb(236 72 153 / 0.06)); }
+.creator-label { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.creator-name {
+  margin: 2px 0;
+  font-size: 22px;
+  font-weight: 800;
+  background: linear-gradient(90deg, #7c3aed, #db2777);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.creator-rights { font-size: 12px; color: var(--muted); }
+.coffee-link { width: 100%; margin-top: 12px; }
+
+/* Pagos y celular */
+.link-card { display: flex; align-items: center; gap: 12px; }
+.link-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: #94a3b8; color: #fff; flex-shrink: 0; }
+.link-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.link-card[data-status="on"] .link-icon { background: linear-gradient(135deg, #22c55e, #059669); box-shadow: 0 0 14px rgb(34 197 94 / 0.5); }
+.link-card[data-status="unknown"] .link-icon { background: linear-gradient(135deg, #3b82f6, #6366f1); }
+.link-text { flex: 1; min-width: 0; }
+.link-title { font-weight: 700; }
+.link-sub { font-size: 12px; color: var(--muted); }
+
+.pay-total {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #742284, #a21caf 50%, #db2777);
+  color: #fff;
+  box-shadow: 0 10px 24px rgb(162 28 175 / 0.3);
+}
+.pay-total-label { font-size: 12px; opacity: 0.85; }
+.pay-total-amount { font-size: 28px; font-weight: 800; line-height: 1.1; }
+.pay-total-count { font-size: 13px; font-weight: 600; opacity: 0.9; }
+
+.pay-list { display: flex; flex-direction: column; gap: 6px; }
+.pay-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px; background: var(--page); }
+.pay-app { width: 44px; padding: 3px 0; border-radius: 8px; font-size: 10.5px; font-weight: 800; text-align: center; color: #fff; background: #00b5c8; flex-shrink: 0; }
+.pay-row.yape .pay-app { background: #742284; }
+.pay-row.bbva .pay-app { background: #1464f6; }
+.pay-who { flex: 1; min-width: 0; font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
+.pay-who small { display: block; font-weight: 400; font-size: 11.5px; color: var(--muted); }
+.pay-amount { font-weight: 800; white-space: nowrap; }
+
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; cursor: pointer; }
+.switch-row input {
+  appearance: none;
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--bar-border);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.switch-row input::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  transition: left 0.15s;
+}
+.switch-row input:checked { background: linear-gradient(135deg, #7c3aed, #db2777); }
+.switch-row input:checked::after { left: 19px; }
+
+.phone-list { display: flex; flex-direction: column; gap: 6px; }
+.phone-row { padding: 8px 10px; border-radius: 10px; background: var(--page); border-left: 3px solid #94a3b8; }
+.phone-row.is-payment { border-left-color: #22c55e; }
+.phone-app { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; }
+.phone-app span { font-weight: 400; color: var(--muted); }
+.phone-text { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+
+.bar .pay-count { background: linear-gradient(135deg, #22c55e, #059669); box-shadow: 0 0 8px rgb(34 197 94 / 0.6); }
