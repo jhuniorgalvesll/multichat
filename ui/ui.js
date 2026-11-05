@@ -17,6 +17,17 @@ const SERVICES = [
   ['slack', 'Slack', '#4A154B'],
 ];
 
+// Íconos simples (blancos) de cada app, para las pestañas y la pantalla de inicio.
+const SERVICE_GLYPHS = {
+  whatsapp: '<svg viewBox="0 0 24 24"><path d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.3 21.7l5-1.3A9.7 9.7 0 1 0 12 2.2zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8 1c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 4.9 4.9 0 0 0 1 2.6 11.2 11.2 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6a2.6 2.6 0 0 0 1.7-1.2 2.1 2.1 0 0 0 .2-1.2c-.1-.2-.2-.2-.5-.4z"/></svg>',
+  telegram: '<svg viewBox="0 0 24 24"><path d="M21.4 4.1 2.9 11.2c-1.3.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.8.8s.6-.2 1-.5l2.3-2.2 4.8 3.5c.9.5 1.5.2 1.7-.8l3.1-14.7c.3-1.3-.5-1.9-1.5-1.3zM9.8 14.6l-.4 3.9-1.6-5 9.9-6.2-7.9 7.3z"/></svg>',
+  messenger: '<svg viewBox="0 0 24 24"><path d="M12 2.2C6.5 2.2 2.2 6.2 2.2 11.6c0 2.8 1.2 5.3 3.1 7v3.2l3-1.7c1.1.3 2.3.5 3.7.5 5.5 0 9.8-4 9.8-9S17.5 2.2 12 2.2zm1 12.2-2.5-2.7-4.9 2.7 5.4-5.7 2.6 2.7 4.8-2.7z"/></svg>',
+  instagram: '<svg viewBox="0 0 24 24"><path d="M12 7.3a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zm0 7.7a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm4.9-8.9a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM20 4a5.4 5.4 0 0 0-3.9-1.8C14.9 2 9.1 2 7.9 2.2A5.4 5.4 0 0 0 4 4a5.4 5.4 0 0 0-1.8 3.9C2 9.1 2 14.9 2.2 16.1A5.4 5.4 0 0 0 4 20a5.4 5.4 0 0 0 3.9 1.8c1.2.1 7 .1 8.2 0A5.4 5.4 0 0 0 20 20a5.4 5.4 0 0 0 1.8-3.9c.1-1.2.1-7 0-8.2A5.4 5.4 0 0 0 20 4zm-1.8 13.9a3.2 3.2 0 0 1-1.8 1.8c-1.3.5-4.3.4-4.4.4s-3.1.1-4.4-.4a3.2 3.2 0 0 1-1.8-1.8C5.3 16.6 5.4 13.6 5.4 12s-.1-4.6.4-5.9a3.2 3.2 0 0 1 1.8-1.8C8.9 3.8 11.9 3.9 12 3.9s3.1-.1 4.4.4a3.2 3.2 0 0 1 1.8 1.8c.5 1.3.4 4.3.4 5.9s.1 4.6-.4 5.9z"/></svg>',
+  metabusiness: '<svg viewBox="0 0 24 24"><path d="M17.3 6.3c-2 0-3.5 1.6-5.3 4.2-1.8-2.6-3.3-4.2-5.3-4.2C3.9 6.3 2 9.3 2 12.6 2 15.4 3.4 17.7 6 17.7c2 0 3.3-1.4 6-5.6 2.7 4.2 4 5.6 6 5.6 2.6 0 4-2.3 4-5.1 0-3.3-1.9-6.3-4.7-6.3zM6.1 15.8c-1.4 0-2.1-1.3-2.1-3.2 0-2.4 1.2-4.4 2.6-4.4 1.2 0 2.2 1.2 4.3 4.3-1.9 2.8-3.4 3.3-4.8 3.3zm11.8 0c-1.4 0-2.9-.5-4.8-3.3 2.1-3.1 3.1-4.3 4.3-4.3 1.4 0 2.6 2 2.6 4.4 0 1.9-.7 3.2-2.1 3.2z"/></svg>',
+  discord: '<svg viewBox="0 0 24 24"><path d="M19.3 5.3A16.4 16.4 0 0 0 15.2 4l-.5 1a15.2 15.2 0 0 0-5.4 0l-.5-1a16.4 16.4 0 0 0-4.1 1.3A17 17 0 0 0 2 16.8a16.6 16.6 0 0 0 5 2.5l1.1-1.7a10.6 10.6 0 0 1-1.7-.8l.4-.3a11.8 11.8 0 0 0 10.4 0l.4.3a10.6 10.6 0 0 1-1.7.8l1.1 1.7a16.6 16.6 0 0 0 5-2.5 17 17 0 0 0-2.7-11.5zM8.9 14.5c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2zm6.2 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2z"/></svg>',
+  slack: '<svg viewBox="0 0 24 24"><path d="M6.2 14.4a2 2 0 1 1-2-2h2zm1 0a2 2 0 0 1 4 0v5a2 2 0 1 1-4 0zm2-8.2a2 2 0 1 1 2-2v2zm0 1a2 2 0 0 1 0 4h-5a2 2 0 1 1 0-4zm8.2 2a2 2 0 1 1 2 2h-2zm-1 0a2 2 0 0 1-4 0v-5a2 2 0 1 1 4 0zm-2 8.2a2 2 0 1 1-2 2v-2zm0-1a2 2 0 0 1 0-4h5a2 2 0 1 1 0 4z"/></svg>',
+};
+
 let state = { accounts: [], activeId: null, total: 0, tiles: [], locked: false };
 let renamingId = null;
 let renameDraft = null;
@@ -27,22 +38,17 @@ let wasLocked = null;
 // ---------- Pestañas ----------
 
 function dotFor(acc) {
-  if (acc.favicon) {
-    const img = document.createElement('img');
-    img.className = 'dot';
-    img.src = acc.favicon;
-    img.alt = '';
-    img.onerror = () => img.replaceWith(letterDot(acc.serviceName[0], acc.color));
-    return img;
-  }
-  return letterDot(acc.serviceName[0], acc.color);
+  return serviceDot(acc.service, acc.serviceName, acc.color);
 }
 
-function letterDot(letter, color) {
+// Cuadradito de color con el ícono de la app (o su inicial si no hay ícono).
+function serviceDot(service, name, color) {
   const dot = document.createElement('span');
   dot.className = 'dot';
-  dot.style.background = color;
-  dot.textContent = letter;
+  dot.style.setProperty('--svc', color);
+  if (service === 'instagram') dot.style.background = 'linear-gradient(45deg, #f9a825, #e1306c 50%, #833ab4)';
+  if (SERVICE_GLYPHS[service]) dot.innerHTML = SERVICE_GLYPHS[service];
+  else dot.textContent = (name || '?')[0];
   return dot;
 }
 
@@ -82,6 +88,7 @@ function renameInput(acc) {
 function renderTab(acc) {
   const tab = document.createElement('button');
   tab.className = 'tab';
+  tab.style.setProperty('--svc', acc.color);
   tab.classList.toggle('active', acc.id === state.activeId);
   tab.classList.toggle('suspended', !acc.loaded);
   tab.title = `${acc.name} · ${acc.serviceName}${acc.loaded ? '' : ' (suspendida)'}`;
@@ -164,6 +171,7 @@ function renderTileHeads() {
     const acc = byId.get(tile.id);
     const head = document.createElement('div');
     head.className = 'tile-head';
+    if (acc) head.style.setProperty('--svc', acc.color);
     head.classList.toggle('active', tile.id === state.activeId);
     if (acc && acc.tag) {
       head.classList.add('tagged');
@@ -1554,7 +1562,10 @@ $('rem-form').addEventListener('submit', (e) => {
 for (const [key, name, color] of SERVICES) {
   const btn = document.createElement('button');
   btn.className = 'service';
-  btn.append(letterDot(name[0], color), name);
+  btn.style.setProperty('--svc', color);
+  const hint = document.createElement('small');
+  hint.textContent = '+ Agregar cuenta';
+  btn.append(serviceDot(key, name, color), name, hint);
   btn.addEventListener('click', () => api.addService(key));
   servicesEl.append(btn);
 }
@@ -1589,11 +1600,38 @@ api.onTicketProfiles(openProfiles);
 api.onFormsDialog(openForms);
 
 // ---------- Voz: anuncia los pagos de Yape y Plin ----------
-// Usa las voces en español que trae Windows (funcionan sin internet).
+// Usa las voces en español que trae Windows (funcionan sin internet). Se prefiere una voz de mujer
+// y, si está instalada, una voz "natural" (más humana).
+const FEMALE_VOICES = /sabina|helena|laura|dalia|paloma|elvira|elena|lupe|lucia|lucía|camila|valentina|ximena|renata|female|mujer/i;
+const MALE_VOICES = /ra[uú]l|pablo|jorge|alvaro|álvaro|gerardo|alonso|male|hombre/i;
+
 function spanishVoice() {
   const voices = speechSynthesis.getVoices().filter((v) => /^es\b|^es-/i.test(v.lang));
-  const rank = (v) => ['es-PE', 'es-MX', 'es-US', 'es-ES'].indexOf(v.lang) + 1 || 9;
-  return voices.sort((a, b) => rank(a) - rank(b) || Number(b.localService) - Number(a.localService))[0] || null;
+  const score = (v) => (FEMALE_VOICES.test(v.name) ? 0 : MALE_VOICES.test(v.name) ? 20 : 10)
+    + (/natural|neural|online/i.test(v.name) ? 0 : 5)
+    + (['es-PE', 'es-MX', 'es-US', 'es-419', 'es-ES'].indexOf(v.lang) + 1 || 6);
+  return voices.sort((a, b) => score(a) - score(b))[0] || null;
+}
+
+// "Ding" corto antes de hablar, para que el aviso se note aunque haya ruido.
+function chime() {
+  try {
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    for (const [freq, at] of [[880, 0], [1318.5, 0.14]]) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + at);
+      gain.gain.linearRampToValueAtTime(0.9, now + at + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + at + 0.45);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + at);
+      osc.stop(now + at + 0.5);
+    }
+    setTimeout(() => ctx.close(), 1200);
+  } catch { /* sin sonido */ }
 }
 
 function speak(text) {
@@ -1603,8 +1641,11 @@ function speak(text) {
     const voice = spanishVoice();
     if (voice) utterance.voice = voice;
     utterance.lang = voice ? voice.lang : 'es-PE';
-    utterance.rate = 0.95;
-    speechSynthesis.speak(utterance); // si llegan varios pagos seguidos, se dicen uno tras otro
+    utterance.volume = 1; // al máximo (el resto lo da el volumen de Windows)
+    utterance.rate = 1;
+    utterance.pitch = 1.05;
+    chime();
+    setTimeout(() => speechSynthesis.speak(utterance), 550); // si llegan varios pagos, se dicen uno tras otro
   };
   if (speechSynthesis.getVoices().length) return say();
   // Las voces de Windows cargan unos instantes después de abrir la app.

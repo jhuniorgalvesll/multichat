@@ -20,7 +20,7 @@ const tickets = require('./tickets');
 const APP_NAME = 'MultiChat Pro';
 const CREATOR = 'lliuya.pe';
 const CREATOR_YAPE = '925459643'; // "Invítale un cafecito al creador" (voluntario)
-const BAR_HEIGHT = 44;   // igual que .bar en ui.css
+const BAR_HEIGHT = 52;   // igual que --bar-h en ui.css
 const TILE_HEADER = 26;  // igual que .tile-head en ui.css
 const TILE_GAP = 2;
 const MIN_PASSWORD = 4;
@@ -1160,11 +1160,12 @@ function createWindow() {
     icon: ICON,
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: '#f0f2f5',
+    backgroundColor: '#140b2e',
     webPreferences: {
       preload: path.join(__dirname, 'preload-ui.js'),
       contextIsolation: true,
       sandbox: true,
+      autoplayPolicy: 'no-user-gesture-required', // el "ding" de los pagos suena aunque no se haya hecho clic
     },
   });
   win.setMenuBarVisibility(false);

@@ -40,6 +40,15 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.4.0 — nuevo diseño y voz de mujer
+
+- **Diseño nuevo**: barra superior oscura con degradado violeta-azul y línea de colores, pestañas tipo cápsula con
+  el **ícono de cada app** (WhatsApp, Telegram, Messenger, Instagram, Meta, Discord, Slack) y brillo de su color,
+  contadores en degradado, botones de colores (cada herramienta con el suyo), botón **+ Cuenta**, pantalla de inicio
+  con tarjetas grandes y ventanas con franja de colores.
+- **Voz de los pagos**: elige una **voz de mujer** en español (Sabina, Helena, Laura… o una voz *natural* si está
+  instalada), volumen al máximo y un **"ding"** antes de hablar.
+
 ## Novedades v1.3.3 — aviso de actualización dentro de la app
 
 - Cuando hay una versión nueva, MultiChat la **descarga sola** y muestra una notificación propia:
