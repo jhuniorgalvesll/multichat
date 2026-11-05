@@ -52,10 +52,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 
 El código está en la rama `app` de `jhuniorgalvesll/multichat` (la rama `main` tiene otros archivos).
 
-1. Subir los cambios a la rama `app` con la versión nueva en `package.json`.
-2. Crear la etiqueta: `git tag v1.3.1 && git push origin v1.3.1`.
-3. GitHub Actions arma el instalador en Windows y lo publica en *Releases* del mismo repositorio.
-4. Las apps instaladas lo descargan solas.
+1. Subir la versión nueva (`version` en `package.json`) a la rama `app`.
+2. GitHub Actions arma el instalador en Windows y lo publica en *Releases* con su etiqueta (`v1.3.1`…).
+   Si la versión no cambió, no se publica nada nuevo.
+3. Las apps instaladas lo descargan solas.
 
 ## Novedades v1.2.7 — avisos para que el ticket no se descuadre
 
