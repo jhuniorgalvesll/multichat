@@ -3,6 +3,16 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.6.0',
+    items: [
+      'Sigue diciendo los pagos con la pantalla apagada (la laptop no se suspende).',
+      'Registro diario de pagos y notificaciones del celular, con días anteriores y exportar a Excel.',
+      'Registra también los pagos que llegaron con MultiChat cerrado.',
+      'Semáforo de respuesta: cada pestaña muestra cuánto espera el cliente (verde, amarillo, rojo).',
+      'Burbuja flotante encima de otros programas con los mensajes sin leer y los pagos.',
+    ],
+  },
+  {
     version: '1.5.3',
     items: [
       'Los cobros de BBVA Empresas se anuncian como Plin: "Melissa Galvez te plineó 50 soles".',

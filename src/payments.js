@@ -75,10 +75,25 @@ function parsePayment(texts) {
   return { app, name: cap(name), amount, text: texts.join(' · ').slice(0, 300) };
 }
 
+// ArrivalTime de Windows (FILETIME: décimas de microsegundo desde 1601) → milisegundos desde 1970.
+function fileTimeToMs(value) {
+  try {
+    const n = typeof value === 'bigint' ? value : BigInt(value);
+    if (n <= 0n) return 0;
+    const ms = Number(n / 10000n) - 11644473600000;
+    return ms > 1.5e12 && ms < Date.now() + 86400000 ? ms : 0;
+  } catch {
+    return 0;
+  }
+}
+
 // Vigila la base de notificaciones de Windows. onPayment(payment) por cada pago nuevo.
-function createWatcher({ onPayment, onPhoneNotification = () => {}, onStatus = () => {} }) {
+// initialId: última notificación leída la vez anterior (lo que llegó después, con MultiChat cerrado, se entrega con
+// catchUp: true para registrarlo sin avisar). onProgress(id) guarda hasta dónde se leyó.
+function createWatcher({ onPayment, onPhoneNotification = () => {}, onStatus = () => {}, initialId = null, onProgress = () => {} }) {
   let timer = null;
-  let lastId = null; // al arrancar se toma el último Id: los avisos viejos no se repiten
+  let lastId = null; // al arrancar: initialId (si sigue en la base) o el último Id; los avisos viejos no se repiten
+  let catchUp = false;
   let copyDir = null;
   let status = '';
 
@@ -115,16 +130,24 @@ function createWatcher({ onPayment, onPhoneNotification = () => {}, onStatus = (
     try {
       db = open(file);
       if (lastId === null) {
-        lastId = Number(db.prepare('SELECT MAX(Id) AS id FROM Notification').get().id) || 0;
-        setStatus('ok');
-        return [];
+        const max = Number(db.prepare('SELECT MAX(Id) AS id FROM Notification').get().id) || 0;
+        if (initialId && initialId <= max && max - initialId < 2000) {
+          lastId = initialId;
+          catchUp = true;
+        } else {
+          lastId = max;
+          onProgress(lastId);
+          setStatus('ok');
+          return [];
+        }
       }
       const rows = db.prepare(`
-        SELECT n.Id AS id, n.Payload AS payload, h.PrimaryId AS app
+        SELECT n.Id AS id, n.Payload AS payload, CAST(n.ArrivalTime AS TEXT) AS arrival, h.PrimaryId AS app
         FROM Notification n JOIN NotificationHandler h ON h.RecordId = n.HandlerId
         WHERE n.Id > ? ORDER BY n.Id`).all(lastId);
       setStatus('ok');
       for (const row of rows) lastId = Math.max(lastId, Number(row.id));
+      if (rows.length) onProgress(lastId);
       return rows;
     } catch {
       setStatus('error');
@@ -135,14 +158,19 @@ function createWatcher({ onPayment, onPhoneNotification = () => {}, onStatus = (
   }
 
   function poll() {
-    for (const row of read()) {
+    const rows = read();
+    const old = catchUp;
+    catchUp = false;
+    for (const row of rows) {
       if (!PHONE_LINK.test(String(row.app || ''))) continue;
       const texts = toastTexts(row.payload);
       if (!texts.length) continue;
       const isChat = /whatsapp|telegram|messenger|instagram/i.test(texts.join(' ')); // chats, no pagos
       const payment = isChat ? null : parsePayment(texts);
-      onPhoneNotification({ texts, payment: Boolean(payment), at: Date.now() });
-      if (payment) onPayment({ ...payment, id: row.id, at: Date.now() });
+      // Hora real de llegada (ArrivalTime de Windows) para lo atrasado; si no, la de ahora.
+      const at = (old && fileTimeToMs(row.arrival)) || Date.now();
+      onPhoneNotification({ texts, payment: Boolean(payment), at, catchUp: old });
+      if (payment) onPayment({ ...payment, id: row.id, at, catchUp: old });
     }
   }
 

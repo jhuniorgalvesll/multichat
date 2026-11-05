@@ -442,6 +442,13 @@
         <button type="button" class="drawer-btn small" id="link-open">Abrir</button>
       </div>
 
+      <div class="day-nav">
+        <button type="button" class="drawer-btn small" id="day-prev" title="Día anterior">‹</button>
+        <span id="day-label">Hoy</span>
+        <button type="button" class="drawer-btn small" id="day-next" title="Día siguiente">›</button>
+        <button type="button" class="drawer-btn small" id="day-export" title="Exportar los pagos de este día a Excel">⬇ Excel</button>
+      </div>
+
       <div class="pay-total">
         <div>
           <div class="pay-total-label">Cobrado hoy</div>
@@ -455,9 +462,10 @@
       <label class="switch-row"><span>Avisar los pagos de Yape, Plin y BBVA</span><input type="checkbox" id="opt-alerts"></label>
       <label class="switch-row"><span>Decir los pagos en voz alta</span><input type="checkbox" id="opt-voice"></label>
       <label class="switch-row"><span>Leer en voz alta todas las notificaciones del celular</span><input type="checkbox" id="opt-readall"></label>
+      <label class="switch-row"><span>Seguir avisando con la pantalla apagada (la laptop no se suspende)</span><input type="checkbox" id="opt-awake"></label>
       <button type="button" class="drawer-btn" id="pay-test">🔊 Probar aviso y voz</button>
 
-      <div class="drawer-section">Últimas notificaciones del celular</div>
+      <div class="drawer-section" id="phone-title">Notificaciones del celular de hoy</div>
       <div class="phone-list" id="phone-list"></div>
     </aside>
   </section>

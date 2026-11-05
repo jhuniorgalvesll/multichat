@@ -2,7 +2,7 @@
 
 const {
   app, BrowserWindow, WebContentsView, Menu, Tray, ipcMain,
-  session, shell, dialog, nativeImage, clipboard, ClipboardItem, powerMonitor, nativeTheme,
+  session, shell, dialog, nativeImage, clipboard, ClipboardItem, powerMonitor, nativeTheme, powerSaveBlocker,
 } = require('electron');
 const fs = require('fs');
 const path = require('path');
@@ -12,6 +12,8 @@ const { hashSecret, verifySecret, normalizeAnswer } = require('./security');
 const SERVICES = require('./services');
 const sales = require('./sales');
 const payments = require('./payments');
+const paylog = require('./paylog');
+const bubble = require('./bubble');
 const updater = require('./updater');
 const CHANGELOG = require('./changelog');
 const notifier = require('./notifier');
@@ -67,6 +69,7 @@ let tiles = [];          // cuentas visibles ahora y su posición
 const views = new Map();     // id -> WebContentsView (solo cuentas cargadas en memoria)
 const unread = new Map();    // id -> número de mensajes sin leer
 const favicons = new Map();  // id -> url del favicon
+const waitingSince = new Map(); // id -> desde cuándo tiene mensajes sin leer (semáforo de respuesta)
 const lastUsed = new Map();  // id -> timestamp de la última vez que estuvo visible
 const configuredSessions = new WeakSet();
 const blurKeys = new Map();  // id -> promesa con la clave del CSS de difuminado
@@ -136,7 +139,11 @@ function createView(acc) {
 
   wc.on('page-title-updated', (_e, title) => {
     const match = title.match(/\((\d+)\)/);
-    unread.set(acc.id, match ? Number(match[1]) : 0);
+    const count = match ? Number(match[1]) : 0;
+    // Semáforo de respuesta: desde cuándo esta cuenta tiene mensajes sin leer.
+    if (count && !waitingSince.has(acc.id)) waitingSince.set(acc.id, Date.now());
+    if (!count) waitingSince.delete(acc.id);
+    unread.set(acc.id, count);
     pushState();
   });
   wc.on('page-favicon-updated', (_e, urls) => {
@@ -267,6 +274,7 @@ function neighborOf(id) {
 
 function afterTabGone(id, nextId) {
   unread.delete(id);
+  waitingSince.delete(id);
   favicons.delete(id);
   lastUsed.delete(id);
   if (activeId === id) {
@@ -1191,12 +1199,16 @@ function createWindow() {
       contextIsolation: true,
       sandbox: true,
       autoplayPolicy: 'no-user-gesture-required', // el "ding" de los pagos suena aunque no se haya hecho clic
+      backgroundThrottling: false, // la voz de los pagos funciona igual con la ventana oculta o la pantalla apagada
     },
   });
   win.setMenuBarVisibility(false);
   win.setAlwaysOnTop(store.get().settings.alwaysOnTop);
   win.on('focus', applyPrivacyBlur);
   win.on('blur', applyPrivacyBlur);
+  // Burbuja flotante: aparece cuando MultiChat no está al frente.
+  win.on('focus', () => bubble.setVisible(false));
+  for (const event of ['blur', 'hide', 'minimize']) win.on(event, () => bubble.setVisible(!locked));
   win.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
   win.once('ready-to-show', () => {
     if (!startHidden) win.show();
@@ -1233,6 +1245,7 @@ function pushState() {
     serviceName: SERVICES[a.service].name,
     color: SERVICES[a.service].color,
     unread: unread.get(a.id) || 0,
+    waitingSince: waitingSince.get(a.id) || 0,
     favicon: favicons.get(a.id) || null,
     loaded: views.has(a.id),
   }));
@@ -1257,7 +1270,10 @@ function pushState() {
     version: app.getVersion(),
     creator: CREATOR,
     creatorYape: CREATOR_YAPE,
+    bubble: data.settings.bubble !== false,
+    replyAlertMinutes: data.settings.replyAlertMinutes || 10,
   });
+  bubble.update();
 }
 
 function createTray() {
@@ -1579,6 +1595,12 @@ function showSettingsMenu() {
         { label: 'Revisar notificaciones de Enlace Móvil…', click: showPhoneLinkCheck },
       ],
     },
+    {
+      label: 'Burbuja flotante (encima de otros programas)',
+      type: 'checkbox',
+      checked: settings.bubble !== false,
+      click: () => setBubbleEnabled(settings.bubble === false),
+    },
     { label: 'Respuestas rápidas…', click: openTemplatesDialog },
     {
       label: 'Páginas de rastreo',
@@ -1850,7 +1872,8 @@ function registerIpc() {
     changelog: CHANGELOG,
   }));
   ipcMain.handle('update:check', () => updater.check());
-  ipcMain.handle('payments:state', () => paymentsState());
+  ipcMain.handle('payments:state', (_e, day) => paymentsState(typeof day === 'string' ? day : undefined));
+  ipcMain.handle('payments:export', (_e, day) => exportPaymentsCsv(day));
   ipcMain.on('payments:set', (_e, key, value) => { if (!locked) setPaymentOption(key, value); });
   ipcMain.on('payments:test', () => { if (!locked) onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }); });
   ipcMain.on('payments:open-phone-link', () => shell.openExternal('ms-phone:').catch(() => {}));
@@ -1868,7 +1891,6 @@ function registerIpc() {
 // ---------- Avisos de Yape y Plin (por Enlace Móvil de Windows) ----------
 
 let paymentWatcher = null;
-const todayPayments = []; // solo en memoria: pagos avisados desde que se abrió la app hoy
 
 // Yape → "te yapeó"; Plin y cobros de BBVA Empresas → "te plineó".
 const PAY_VERB = { Yape: 'te yapeó', Plin: 'te plineó', BBVA: 'te plineó' };
@@ -1893,12 +1915,14 @@ function announcePayment(payment) {
   win.webContents.send('ui:speak', text);
 }
 
+const todayPayments = () => paylog.read().payments;
+
+// payment.catchUp: llegó mientras MultiChat estaba cerrado; solo se registra, sin aviso ni voz.
 function onPayment(payment) {
-  const today = new Date().toDateString();
-  while (todayPayments.length && new Date(todayPayments[0].at).toDateString() !== today) todayPayments.shift();
-  if (!payment.test) todayPayments.push(payment);
+  if (!payment.test) paylog.addPayment(payment);
   pushPayments();
-  if (!payment.test && !store.get().settings.paymentAlerts) return;
+  if (payment.catchUp || (!payment.test && !store.get().settings.paymentAlerts)) return;
+  const list = todayPayments();
   const verb = PAY_VERB[payment.app];
   // Los pagos se avisan siempre, también en "no molestar": son ventas.
   notifier.show({
@@ -1906,23 +1930,21 @@ function onPayment(payment) {
     payApp: payment.app,
     accountName: PAY_LABEL[payment.app],
     title: locked ? `Pago recibido por ${payment.app}` : `${payment.name} ${verb} ${money(payment.amount)}`,
-    body: locked ? 'Desbloquea MultiChat Pro para ver el detalle' : payment.test ? 'Prueba: así llegarán los pagos de Yape y Plin' : `Hoy: ${todayPayments.length} pago${todayPayments.length === 1 ? '' : 's'} · ${money(todayPayments.reduce((t, p) => t + p.amount, 0))}`,
+    body: locked ? 'Desbloquea MultiChat Pro para ver el detalle' : payment.test ? 'Prueba: así llegarán los pagos de Yape y Plin' : `Hoy: ${list.length} pago${list.length === 1 ? '' : 's'} · ${money(list.reduce((t, p) => t + p.amount, 0))}`,
     canReply: false,
   });
   announcePayment(payment);
+  if (!locked) bubble.showPayment(`${payment.app === 'Yape' ? '💜' : '💚'} + ${money(payment.amount)} · ${payment.name.split(' ')[0]}`);
 }
 
-// Últimas notificaciones del celular que llegaron por Enlace Móvil (solo en memoria, no se guardan).
-const phoneNotifications = [];
 let lastPhoneAt = 0;
 
 function onPhoneNotification(item) {
-  lastPhoneAt = item.at;
-  phoneNotifications.unshift(item);
-  phoneNotifications.length = Math.min(phoneNotifications.length, 40);
+  lastPhoneAt = Math.max(lastPhoneAt, item.at);
+  paylog.addNotification(item);
   // "Leer todas las notificaciones del celular": los pagos ya se dicen aparte; se respeta el horario de atención.
   const { settings } = store.get();
-  if (settings.readAllPhone && !item.payment && !locked && !dndActive() && win && !win.isDestroyed()) {
+  if (!item.catchUp && settings.readAllPhone && !item.payment && !locked && !dndActive() && win && !win.isDestroyed()) {
     const [app, ...rest] = item.texts;
     win.webContents.send('ui:speak', `${rest.length ? `${app}. ${rest.join('. ')}` : app}`.slice(0, 220));
   }
@@ -1934,48 +1956,84 @@ function pushPayments() {
   if (win && !win.isDestroyed()) win.webContents.send('payments:update');
 }
 
-async function paymentsState() {
+async function paymentsState(day = paylog.dayKey()) {
   const { settings } = store.get();
-  const today = new Date().toDateString();
-  const list = locked ? [] : todayPayments.filter((p) => new Date(p.at).toDateString() === today);
+  const log = locked ? { payments: [], notifications: [] } : paylog.read(day);
   const dbFound = process.platform === 'win32' && fs.existsSync(payments.databasePath());
   return {
+    day,
+    isToday: day === paylog.dayKey(),
+    days: locked ? [] : paylog.days(),
     alerts: settings.paymentAlerts,
     voice: settings.paymentVoice,
     readAll: settings.readAllPhone,
+    keepAwake: settings.keepAwake,
     windows: process.platform === 'win32',
     phoneLink: { running: await payments.phoneLinkRunning(), dbFound, lastAt: lastPhoneAt, watching: Boolean(paymentWatcher && paymentWatcher.running) },
-    today: list.map(({ app: payApp, name, amount, at }) => ({ app: payApp, label: PAY_LABEL[payApp], name, amount, at })),
-    total: list.reduce((t, p) => t + p.amount, 0),
-    recent: locked ? [] : phoneNotifications.slice(0, 25),
+    today: log.payments.map(({ app: payApp, name, amount, at }) => ({ app: payApp, label: PAY_LABEL[payApp], name, amount, at })),
+    total: log.payments.reduce((t, p) => t + p.amount, 0),
+    recent: log.notifications.slice(0, 60),
   };
 }
 
 function setPaymentOption(key, value) {
-  const map = { alerts: 'paymentAlerts', voice: 'paymentVoice', readAll: 'readAllPhone' };
+  const map = { alerts: 'paymentAlerts', voice: 'paymentVoice', readAll: 'readAllPhone', keepAwake: 'keepAwake' };
   if (!map[key]) return;
   store.get().settings[map[key]] = Boolean(value);
   store.save();
+  if (key === 'keepAwake') syncKeepAwake();
+}
+
+function setBubbleEnabled(enabled) {
+  store.get().settings.bubble = enabled;
+  store.save();
+  bubble.setVisible(enabled && !(win && win.isFocused()));
+  pushState();
+}
+
+// "Mantener la laptop despierta": la pantalla se puede apagar, pero Windows no suspende la PC, así
+// MultiChat sigue escuchando y diciendo los pagos con la tapa abierta y la pantalla apagada.
+let awakeBlocker = null;
+function syncKeepAwake() {
+  const want = Boolean(store.get().settings.keepAwake);
+  if (want && awakeBlocker === null) awakeBlocker = powerSaveBlocker.start('prevent-app-suspension');
+  if (!want && awakeBlocker !== null) {
+    powerSaveBlocker.stop(awakeBlocker);
+    awakeBlocker = null;
+  }
+}
+
+async function exportPaymentsCsv(day) {
+  if (locked || !/^\d{4}-\d{2}-\d{2}$/.test(String(day))) return { ok: false };
+  const { canceled, filePath } = await dialog.showSaveDialog(win, {
+    title: 'Exportar pagos del día',
+    defaultPath: `pagos-${day}.csv`,
+    filters: [{ name: 'Excel (CSV)', extensions: ['csv'] }],
+  });
+  if (canceled || !filePath) return { ok: false, canceled: true };
+  fs.writeFileSync(filePath, paylog.csv(day));
+  return { ok: true };
 }
 
 function syncPaymentWatcher() {
   if (process.platform !== 'win32') return;
   // Siempre vigila (los avisos se activan o no con "paymentAlerts"), así el panel muestra lo que llega del celular.
-  paymentWatcher = paymentWatcher || payments.createWatcher({ onPayment, onPhoneNotification });
+  // Retoma desde la última notificación leída: lo que llegó con MultiChat cerrado se registra (sin avisar).
+  paymentWatcher = paymentWatcher || payments.createWatcher({
+    onPayment,
+    onPhoneNotification,
+    initialId: store.get().settings.phoneLastId || null,
+    onProgress: (id) => {
+      store.get().settings.phoneLastId = id;
+      store.save();
+    },
+  });
   paymentWatcher.start();
 }
 
 function showTodayPayments() {
   if (locked) return;
-  const total = todayPayments.reduce((t, p) => t + p.amount, 0);
-  const lines = todayPayments.map((p) => `${new Date(p.at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}  ${p.app}  ${p.name}  ${money(p.amount)}`);
-  dialog.showMessageBox(win, {
-    type: 'info',
-    title: 'Pagos de hoy',
-    message: todayPayments.length ? `Hoy: ${todayPayments.length} pagos · ${money(total)}` : 'Todavía no llegaron pagos de Yape o Plin hoy.',
-    detail: (lines.join('\n') || 'Los pagos aparecen aquí cuando llega su notificación por Enlace Móvil.')
-      + '\n\nSolo se cuentan los que llegaron con MultiChat abierto. No se guardan.',
-  });
+  win.webContents.send('ui:payments-panel');
 }
 
 // Muestra las últimas notificaciones de Enlace Móvil tal como llegan, para ajustar el formato si un pago no se reconoce.
@@ -2037,7 +2095,25 @@ function init() {
   // así Windows no sigue abriendo una copia vieja de la app.
   app.setLoginItemSettings({ openAtLogin: Boolean(data.settings.openAtLogin), args: ['--hidden'] });
 
+  bubble.init({
+    getState: () => {
+      const accounts = openAccounts().map((a) => ({ name: a.name, unread: a.muted ? 0 : unread.get(a.id) || 0 }));
+      return { unread: locked ? 0 : accounts.reduce((t, a) => t + a.unread, 0), accounts: locked ? [] : accounts };
+    },
+    settings: () => store.get().settings,
+    save: () => store.save(),
+    onOpen: () => {
+      showWindow();
+      const waiting = openAccounts().find((a) => !a.muted && unread.get(a.id));
+      if (waiting && !locked) setActive(waiting.id);
+    },
+    onMenu: (bubbleWindow) => Menu.buildFromTemplate([
+      { label: `Abrir ${APP_NAME}`, click: showWindow },
+      { label: 'Ocultar la burbuja', click: () => setBubbleEnabled(false) },
+    ]).popup({ window: bubbleWindow }),
+  });
   syncPaymentWatcher();
+  syncKeepAwake();
   setTimeout(announceUpdated, 4000);
   updater.start({
     getWindow: () => win,

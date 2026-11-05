@@ -1251,3 +1251,23 @@ tbody tr:hover { background: var(--tab-hover); }
 .update-pop h2 { margin: 6px 0 4px; font-size: 22px; }
 .update-pop-list { margin: 0 0 6px; padding-left: 20px; text-align: left; font-size: 13px; color: var(--muted); }
 .update-pop .hint { font-size: 13px; }
+
+/* Semáforo de respuesta en las pestañas */
+.wait {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 16px;
+  color: #fff;
+}
+.wait-green { background: #16a34a; }
+.wait-yellow { background: #d97706; }
+.wait-red { background: #dc2626; animation: wait-pulse 1.4s ease-in-out infinite; }
+@keyframes wait-pulse { 50% { box-shadow: 0 0 0 4px rgb(220 38 38 / 0.35); } }
+
+/* Navegación por días en el panel de pagos */
+.day-nav { display: flex; align-items: center; gap: 6px; }
+.day-nav span { flex: 1; text-align: center; font-weight: 700; text-transform: capitalize; }
+.day-nav button:disabled { opacity: 0.4; cursor: default; }

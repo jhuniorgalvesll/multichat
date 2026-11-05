@@ -52,6 +52,38 @@ function serviceDot(service, name, color) {
   return dot;
 }
 
+// Semáforo de respuesta: cuánto lleva esperando el cliente. Verde < 5 min, amarillo, rojo desde el límite.
+function waitLevel(since) {
+  const min = (Date.now() - since) / 60000;
+  const limit = state.replyAlertMinutes || 10;
+  return { min, level: min >= limit ? 'red' : min >= limit / 2 ? 'yellow' : 'green' };
+}
+
+function waitText(min) {
+  if (min < 1) return 'ahora';
+  if (min < 60) return `${Math.floor(min)} min`;
+  return `${Math.floor(min / 60)} h`;
+}
+
+function waitChip(since) {
+  const { min, level } = waitLevel(since);
+  const chip = document.createElement('span');
+  chip.className = `wait wait-${level}`;
+  chip.dataset.since = since;
+  chip.textContent = waitText(min);
+  chip.title = 'Tiempo que lleva esperando respuesta';
+  return chip;
+}
+
+// Actualiza los tiempos cada 20 segundos sin redibujar las pestañas.
+setInterval(() => {
+  for (const chip of document.querySelectorAll('.wait')) {
+    const { min, level } = waitLevel(Number(chip.dataset.since));
+    chip.textContent = waitText(min);
+    chip.className = `wait wait-${level}`;
+  }
+}, 20000);
+
 function badgeFor(acc) {
   const badge = document.createElement('span');
   badge.className = 'badge';
@@ -109,6 +141,7 @@ function renderTab(acc) {
     tab.append(label);
   }
   if (acc.unread) tab.append(badgeFor(acc));
+  if (acc.unread && acc.waitingSince && !acc.muted) tab.append(waitChip(acc.waitingSince));
 
   const close = document.createElement('span');
   close.className = 'close';
@@ -1509,7 +1542,12 @@ for (const name of ['about', 'pay']) {
 }
 
 $('brand').addEventListener('click', () => (drawerOpen === 'about' ? closeDrawer() : openDrawer('about')));
-$('pay-btn').addEventListener('click', () => (drawerOpen === 'pay' ? closeDrawer() : openDrawer('pay')));
+$('pay-btn').addEventListener('click', () => {
+  if (drawerOpen === 'pay') return closeDrawer();
+  payDay = '';
+  openDrawer('pay');
+});
+api.onPaymentsPanel(() => { payDay = ''; openDrawer('pay'); });
 $('about-coffee').addEventListener('click', () => {
   closeDrawer();
   openCoffee();
@@ -1606,8 +1644,21 @@ function agoText(at) {
   return `a las ${hhmm(at)}`;
 }
 
+let payDay = ''; // '' = hoy
+
 async function loadPayments() {
-  const data = await api.paymentsState();
+  const data = await api.paymentsState(payDay || undefined);
+  const days = data.days.includes(data.day) ? data.days : [data.day, ...data.days];
+  const index = days.indexOf(data.day);
+  $('day-label').textContent = data.isToday ? 'Hoy' : new Date(`${data.day}T12:00:00`).toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('day-prev').disabled = index >= days.length - 1;
+  $('day-next').disabled = data.isToday;
+  $('day-prev').onclick = () => { payDay = days[index + 1]; loadPayments(); };
+  $('day-next').onclick = () => { payDay = index - 1 <= 0 ? '' : days[index - 1]; loadPayments(); };
+  $('day-export').disabled = !data.today.length;
+  $('day-export').onclick = () => api.exportPayments(data.day);
+  document.querySelector('.pay-total-label').textContent = data.isToday ? 'Cobrado hoy' : 'Cobrado ese día';
+  $('phone-title').textContent = data.isToday ? 'Notificaciones del celular de hoy' : 'Notificaciones del celular de ese día';
   // Enlace Móvil: abierto / cerrado / no disponible
   const link = data.phoneLink;
   let status = 'off';
@@ -1649,6 +1700,7 @@ async function loadPayments() {
   $('opt-alerts').checked = data.alerts;
   $('opt-voice').checked = data.voice;
   $('opt-readall').checked = data.readAll;
+  $('opt-awake').checked = data.keepAwake;
 
   $('phone-list').replaceChildren(...(data.recent.length ? data.recent.map((n) => {
     const row = document.createElement('div');
@@ -1668,11 +1720,13 @@ async function loadPayments() {
     return row;
   }) : [Object.assign(document.createElement('p'), { className: 'drawer-empty', textContent: 'Aquí aparecen las notificaciones que llegan del celular mientras MultiChat está abierto.' })]));
 
-  $('pay-count').hidden = !data.today.length;
-  $('pay-count').textContent = data.today.length;
+  if (data.isToday) {
+    $('pay-count').hidden = !data.today.length;
+    $('pay-count').textContent = data.today.length;
+  }
 }
 
-for (const [id, key] of [['opt-alerts', 'alerts'], ['opt-voice', 'voice'], ['opt-readall', 'readAll']]) {
+for (const [id, key] of [['opt-alerts', 'alerts'], ['opt-voice', 'voice'], ['opt-readall', 'readAll'], ['opt-awake', 'keepAwake']]) {
   $(id).addEventListener('change', () => api.setPaymentOption(key, $(id).checked));
 }
 $('pay-test').addEventListener('click', () => api.testPayment());

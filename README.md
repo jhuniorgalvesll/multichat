@@ -40,6 +40,19 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.6.0
+
+- **Pantalla apagada**: con *Seguir avisando con la pantalla apagada* (panel de pagos, activado) la laptop no se
+  suspende y MultiChat sigue diciendo los pagos aunque la pantalla esté apagada. La ventana ya no se "duerme" oculta.
+- **Registro diario** de pagos y notificaciones del celular (carpeta `pagos/` de la app, un archivo por día): el panel
+  de pagos permite ver días anteriores (‹ ›) y **exportar a Excel**. Los pagos que llegaron con MultiChat cerrado se
+  registran al abrir (sin avisar), con su hora real.
+- **Semáforo de respuesta**: cada pestaña con mensajes sin leer muestra cuánto lleva esperando
+  (verde < 5 min, amarillo, rojo parpadeante desde 10 min).
+- **Burbuja flotante**: aparece cuando MultiChat no está al frente, encima de cualquier programa; muestra los sin
+  leer y un aviso verde "+ S/ 50 · Melissa" al llegar un pago. Clic: abre la cuenta con mensajes. Se arrastra a
+  cualquier lugar; clic derecho → *Ocultar la burbuja* (o ⚙ → *Burbuja flotante*).
+
 ## Novedades v1.5.3
 
 - Los cobros de **BBVA Empresas** se anuncian como Plin: aviso *"Plin · BBVA Empresas — Melissa Galvez te plineó
