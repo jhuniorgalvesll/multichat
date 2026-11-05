@@ -1,15 +1,20 @@
 'use strict';
 
-// Registro diario de pagos (Yape, Plin, BBVA) y de las notificaciones del celular que llegan por Enlace Móvil.
-// Un archivo por día en la carpeta de datos de la app (pagos/2026-11-05.json). Solo queda en esta PC.
+// Registro del día de trabajo: pagos (Yape, Plin, BBVA), notificaciones del celular que llegan por Enlace Móvil y
+// tickets impresos. El día de trabajo empieza a las 7:00 a. m. (lo de la madrugada cuenta para el día anterior).
+// Solo se guarda el día actual: al empezar el día siguiente se borra solo y todo vuelve a cero. No se exporta nada.
+// Archivo en la carpeta de datos de la app (pagos/2026-11-05.json). Solo queda en esta PC.
 const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
 
 const MAX_NOTIFICATIONS = 400; // por día
+const MAX_PRINTS = 300;
+const DAY_STARTS_AT = 7; // 7:00 a. m.
 
+// Día de trabajo de una fecha: antes de las 7:00 a. m. todavía es el día anterior.
 function dayKey(date = new Date()) {
-  const d = new Date(date);
+  const d = new Date(new Date(date).getTime() - DAY_STARTS_AT * 3600000);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
@@ -23,13 +28,14 @@ function fileFor(day) {
   return /^\d{4}-\d{2}-\d{2}$/.test(day) ? path.join(folder(), `${day}.json`) : null;
 }
 
+const list = (value) => (Array.isArray(value) ? value : []);
+
 function read(day = dayKey()) {
-  const file = fileFor(day);
   try {
-    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return { payments: Array.isArray(data.payments) ? data.payments : [], notifications: Array.isArray(data.notifications) ? data.notifications : [] };
+    const data = JSON.parse(fs.readFileSync(fileFor(day), 'utf8'));
+    return { payments: list(data.payments), notifications: list(data.notifications), prints: list(data.prints) };
   } catch {
-    return { payments: [], notifications: [] };
+    return { payments: [], notifications: [], prints: [] };
   }
 }
 
@@ -40,7 +46,23 @@ function write(day, data) {
   fs.renameSync(tmp, file);
 }
 
+// Borra los días anteriores (y los archivos que no son del día actual). Se llama al abrir y cada pocos minutos.
+function purgeOldDays() {
+  const today = dayKey();
+  try {
+    for (const name of fs.readdirSync(folder())) {
+      if (/^\d{4}-\d{2}-\d{2}\.json(\.tmp)?$/.test(name) && !name.startsWith(today)) fs.rmSync(path.join(folder(), name), { force: true });
+    }
+  } catch { /* nada que borrar */ }
+}
+
+// Solo se registra lo del día actual (un aviso atrasado de ayer no se mezcla con hoy).
+function isToday(at) {
+  return dayKey(at) === dayKey();
+}
+
 function addPayment({ app: payApp, name, amount, at, text, source }) {
+  if (!isToday(at)) return;
   const day = dayKey(at);
   const data = read(day);
   data.payments.push({ app: payApp, name, amount, at, text: String(text || '').slice(0, 300), ...(source ? { source } : {}) });
@@ -48,6 +70,7 @@ function addPayment({ app: payApp, name, amount, at, text, source }) {
 }
 
 function addNotification({ texts, payment, at }) {
+  if (!isToday(at)) return;
   const day = dayKey(at);
   const data = read(day);
   data.notifications.unshift({ texts: texts.slice(0, 6).map((t) => String(t).slice(0, 300)), payment: Boolean(payment), at });
@@ -55,14 +78,28 @@ function addNotification({ texts, payment, at }) {
   write(day, data);
 }
 
-// Vuelve a revisar las notificaciones guardadas de un día con la versión actual del lector de pagos: los pagos que
+// Ticket impreso (o guardado en PDF): se guarda el ticket completo para poder reimprimirlo durante el día.
+function addPrint(ticket, { pdf = false } = {}) {
+  const day = dayKey();
+  const data = read(day);
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  data.prints.unshift({ id, at: Date.now(), pdf: Boolean(pdf), ticket });
+  data.prints.length = Math.min(data.prints.length, MAX_PRINTS);
+  write(day, data);
+}
+
+function findPrint(id) {
+  return read().prints.find((p) => p.id === id) || null;
+}
+
+// Vuelve a revisar las notificaciones guardadas del día con la versión actual del lector de pagos: los pagos que
 // antes no se reconocían (por ejemplo, Yape con el nombre "Yodver Lim*") se agregan al día. Devuelve cuántos sumó.
-function recover(day, parse) {
+function recover(parse, day = dayKey()) {
   const data = read(day);
   let added = 0;
   for (const n of data.notifications) {
     if (n.payment) continue;
-    const texts = Array.isArray(n.texts) ? n.texts : [];
+    const texts = list(n.texts);
     if (/whatsapp|telegram|messenger|instagram/i.test(texts.join(' '))) continue;
     const p = parse(texts);
     if (!p) continue;
@@ -71,30 +108,11 @@ function recover(day, parse) {
     data.payments.push({ app: p.app, name: p.name, amount: p.amount, at: n.at, text: String(p.text || '').slice(0, 300) });
     added += 1;
   }
-  if (added || data.notifications.some((n) => n.payment)) {
+  if (added) {
     data.payments.sort((a, b) => a.at - b.at);
     write(day, data);
   }
   return added;
 }
 
-// Días que tienen registro, del más nuevo al más viejo.
-function days() {
-  try {
-    return fs.readdirSync(folder()).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f)).map((f) => f.slice(0, 10)).sort().reverse();
-  } catch {
-    return [];
-  }
-}
-
-// CSV de los pagos de un día (se abre en Excel).
-function csv(day) {
-  const rows = [['Fecha', 'Hora', 'App', 'Nombre', 'Monto (S/)']];
-  for (const p of read(day).payments) {
-    const d = new Date(p.at);
-    rows.push([day, d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }), (p.app === 'BBVA' ? 'Plin (BBVA Empresas)' : p.app) + (p.source === 'mail' ? ' (correo BCP)' : ''), p.name, p.amount.toFixed(2)]);
-  }
-  return `﻿${rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\r\n')}`;
-}
-
-module.exports = { dayKey, read, addPayment, addNotification, recover, days, csv };
+module.exports = { dayKey, read, addPayment, addNotification, addPrint, findPrint, recover, purgeOldDays };

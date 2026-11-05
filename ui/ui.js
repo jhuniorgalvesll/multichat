@@ -1563,6 +1563,7 @@ function openDrawer(name) {
   drawerOpen = name;
   if (name === 'about') loadAbout();
   else if (name === 'settings') loadSettings();
+  else if (name === 'prints') loadPrints();
   else loadPayments();
 }
 
@@ -1573,7 +1574,7 @@ function closeDrawer() {
   api.setOverlay(false);
 }
 
-for (const name of ['about', 'pay', 'settings']) {
+for (const name of ['about', 'pay', 'settings', 'prints']) {
   $(`${name}-close`).addEventListener('click', closeDrawer);
   $(`${name}-modal`).addEventListener('click', (e) => {
     if (e.target === $(`${name}-modal`)) closeDrawer();
@@ -1584,16 +1585,48 @@ for (const name of ['about', 'pay', 'settings']) {
 }
 
 $('brand').addEventListener('click', () => (drawerOpen === 'about' ? closeDrawer() : openDrawer('about')));
-$('pay-btn').addEventListener('click', () => {
-  if (drawerOpen === 'pay') return closeDrawer();
-  payDay = '';
-  openDrawer('pay');
-});
-api.onPaymentsPanel(() => { payDay = ''; openDrawer('pay'); });
+$('pay-btn').addEventListener('click', () => (drawerOpen === 'pay' ? closeDrawer() : openDrawer('pay')));
+api.onPaymentsPanel(() => openDrawer('pay'));
+api.onPrintsPanel(() => openDrawer('prints'));
+$('pay-prints').addEventListener('click', () => openDrawer('prints'));
 $('about-coffee').addEventListener('click', () => {
   closeDrawer();
   openCoffee();
 });
+
+// -- Impresiones de hoy: historial del día con Reimprimir (se borra solo al día siguiente) --
+
+async function loadPrints() {
+  const data = await api.printsState();
+  $('prints-total').textContent = data.total;
+  $('prints-split').replaceChildren(...[['Shalom', data.shalom], ['Olva', data.olva], ['Otras', data.others]]
+    .filter(([name, n]) => n || name !== 'Otras')
+    .map(([name, n]) => {
+      const chip = Object.assign(document.createElement('span'), { className: 'pay-chip' });
+      chip.append(Object.assign(document.createElement('b'), { textContent: String(n) }), ` ${name}`);
+      return chip;
+    }));
+  $('prints-list').replaceChildren(...(data.list.length ? data.list.map((p) => {
+    const row = document.createElement('div');
+    row.className = 'print-row';
+    const badge = Object.assign(document.createElement('span'), { className: `print-carrier ${String(p.carrier).toLowerCase()}`, textContent: p.carrier });
+    const info = Object.assign(document.createElement('div'), { className: 'pay-who', textContent: p.name });
+    info.append(Object.assign(document.createElement('small'), {
+      textContent: `${hhmm(p.at)}${p.pdf ? ' · PDF' : ''}${p.place ? ` · ${p.place}` : ''}${p.orderNumber ? ` · N° ${p.orderNumber}` : ''}`,
+    }));
+    const again = Object.assign(document.createElement('button'), { type: 'button', className: 'drawer-btn small', textContent: '🖨 Reimprimir' });
+    again.addEventListener('click', async () => {
+      again.disabled = true;
+      again.textContent = 'Imprimiendo…';
+      const result = await api.reprint(p.id);
+      again.textContent = result.ok ? '✓ Listo' : '⚠ No se pudo';
+      if (!result.ok && result.error) again.title = result.error;
+      setTimeout(() => { again.disabled = false; again.textContent = '🖨 Reimprimir'; }, 2500);
+    });
+    row.append(badge, info, again);
+    return row;
+  }) : [Object.assign(document.createElement('p'), { className: 'drawer-empty', textContent: 'Todavía no imprimiste tickets hoy.' })]));
+}
 
 // -- Configuración --
 
@@ -1760,8 +1793,8 @@ api.onWelcome((data) => {
   $('wel-title').textContent = data.name ? `${data.greeting}, ${data.name}` : `${data.greeting}`;
   $('wel-date').textContent = data.date;
   const money = (n) => `S/ ${Math.round(n).toLocaleString('es-PE')}`;
-  countUp($('wel-yesterday'), data.yesterday.total, money);
-  $('wel-yesterday-label').textContent = `Cobrado ayer · ${data.yesterday.count} pago${data.yesterday.count === 1 ? '' : 's'}`;
+  countUp($('wel-yesterday'), data.prints, (n) => String(Math.round(n)));
+  $('wel-yesterday-label').textContent = 'Tickets impresos hoy';
   countUp($('wel-today'), data.today.total, money);
   $('wel-today-label').textContent = `Cobrado hoy · ${data.today.count} pago${data.today.count === 1 ? '' : 's'}`;
   countUp($('wel-ship'), data.pendingShipments, (n) => String(Math.round(n)));
@@ -1881,21 +1914,9 @@ function agoText(at) {
   return `a las ${hhmm(at)}`;
 }
 
-let payDay = ''; // '' = hoy
-
 async function loadPayments() {
-  const data = await api.paymentsState(payDay || undefined);
-  const days = data.days.includes(data.day) ? data.days : [data.day, ...data.days];
-  const index = days.indexOf(data.day);
-  $('day-label').textContent = data.isToday ? 'Hoy' : new Date(`${data.day}T12:00:00`).toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
-  $('day-prev').disabled = index >= days.length - 1;
-  $('day-next').disabled = data.isToday;
-  $('day-prev').onclick = () => { payDay = days[index + 1]; loadPayments(); };
-  $('day-next').onclick = () => { payDay = index - 1 <= 0 ? '' : days[index - 1]; loadPayments(); };
-  $('day-export').disabled = !data.today.length;
-  $('day-export').onclick = () => api.exportPayments(data.day);
-  document.querySelector('.pay-total-label').textContent = data.isToday ? 'Cobrado hoy' : 'Cobrado ese día';
-  $('phone-title').textContent = data.isToday ? 'Notificaciones del celular de hoy' : 'Notificaciones del celular de ese día';
+  const data = await api.paymentsState();
+  $('pay-prints').textContent = `🖨 Impresiones de hoy (${data.prints})`;
   // Enlace Móvil: abierto / cerrado / no disponible
   const link = data.phoneLink;
   let status = 'off';
@@ -1981,10 +2002,8 @@ async function loadPayments() {
     return row;
   }) : [Object.assign(document.createElement('p'), { className: 'drawer-empty', textContent: 'Aquí aparecen las notificaciones que llegan del celular mientras MultiChat está abierto.' })]));
 
-  if (data.isToday) {
-    $('pay-count').hidden = !data.today.length;
-    $('pay-count').textContent = data.today.length;
-  }
+  $('pay-count').hidden = !data.today.length;
+  $('pay-count').textContent = data.today.length;
 }
 
 for (const [id, key] of [['opt-alerts', 'alerts'], ['opt-voice', 'voice'], ['opt-readall', 'readAll'], ['opt-awake', 'keepAwake']]) {
@@ -2063,6 +2082,7 @@ $('verify-amount').addEventListener('keydown', (e) => {
 $('verify-paste').addEventListener('click', () => api.verifyClipboard());
 $('link-open').addEventListener('click', () => api.openPhoneLink());
 api.onPaymentsUpdate(() => {
+  if (drawerOpen === 'prints') loadPrints();
   if (drawerOpen === 'pay') loadPayments();
   else api.paymentsState().then((data) => {
     $('pay-count').hidden = !data.today.length;

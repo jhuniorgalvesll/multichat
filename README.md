@@ -40,6 +40,16 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.9.3 — todo del día
+
+- El **día de trabajo empieza a las 7:00 a. m.** (lo de la madrugada cuenta para el día anterior).
+- **Pagos y notificaciones del celular: solo del día actual.** Al empezar el día siguiente se borran solos y el total
+  vuelve a S/ 0.00. Se quitaron la navegación por días anteriores y la exportación a Excel.
+- **🖨 Impresiones de hoy** (panel de pagos o ⚙ → Ventas y envíos): cada ticket impreso (o guardado en PDF) con hora,
+  empresa, nombre, destino y N° de orden; contador por Shalom y Olva; botón **Reimprimir** (con la ticketera elegida).
+  También se borra solo al día siguiente.
+- La bienvenida del día muestra los tickets impresos hoy en lugar de lo cobrado ayer.
+
 ## Novedades v1.9.2 — yapeos por correo del BCP
 
 - Cuando llega el correo **"Constancia de recepción de Yapeo a celular BCP"** (*"Recibiste un yapeo de S/ 1,157.00 de

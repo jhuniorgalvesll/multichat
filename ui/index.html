@@ -433,7 +433,7 @@
       <h1 id="wel-title"></h1>
       <div class="welcome-date" id="wel-date"></div>
       <div class="welcome-stats">
-        <div class="wstat"><div class="wstat-num" id="wel-yesterday">S/ 0</div><div class="wstat-label" id="wel-yesterday-label">Cobrado ayer</div></div>
+        <div class="wstat"><div class="wstat-num" id="wel-yesterday">S/ 0</div><div class="wstat-label" id="wel-yesterday-label">Tickets impresos hoy</div></div>
         <div class="wstat"><div class="wstat-num" id="wel-today">S/ 0</div><div class="wstat-label" id="wel-today-label">Cobrado hoy</div></div>
         <div class="wstat"><div class="wstat-num" id="wel-ship">0</div><div class="wstat-label">Envíos pendientes</div></div>
         <div class="wstat"><div class="wstat-num" id="wel-unread">0</div><div class="wstat-label">Mensajes sin leer</div></div>
@@ -441,6 +441,25 @@
       <div class="welcome-rem" id="wel-rem"></div>
       <button type="button" class="primary welcome-go" id="wel-go">¡A vender! 🚀</button>
     </div>
+  </section>
+
+  <!-- Impresiones de hoy: historial del día con Reimprimir -->
+  <section class="backdrop drawer-backdrop" id="prints-modal" hidden>
+    <aside class="drawer drawer-right">
+      <button type="button" class="icon-btn drawer-x" id="prints-close" title="Cerrar">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <h2 class="drawer-title">Impresiones de hoy</h2>
+      <div class="pay-total prints-total">
+        <div>
+          <div class="pay-total-label">Tickets impresos hoy</div>
+          <div class="pay-total-amount" id="prints-total">0</div>
+        </div>
+        <div class="pay-split" id="prints-split"></div>
+      </div>
+      <div class="pay-list" id="prints-list"></div>
+      <p class="drawer-empty">El historial es solo del día (desde las 7:00 a. m.) y se borra solo al día siguiente.</p>
+    </aside>
   </section>
 
   <!-- Configuración: panel que se desliza desde la derecha (botón ⚙) -->
@@ -476,13 +495,6 @@
         <button type="button" class="drawer-btn small" id="link-open">Abrir</button>
       </div>
 
-      <div class="day-nav">
-        <button type="button" class="drawer-btn small" id="day-prev" title="Día anterior">‹</button>
-        <span id="day-label">Hoy</span>
-        <button type="button" class="drawer-btn small" id="day-next" title="Día siguiente">›</button>
-        <button type="button" class="drawer-btn small" id="day-export" title="Exportar los pagos de este día a Excel">⬇ Excel</button>
-      </div>
-
       <div class="pay-total">
         <div>
           <div class="pay-total-label">Cobrado hoy</div>
@@ -498,10 +510,12 @@
       <label class="switch-row"><span>Decir los pagos en voz alta</span><input type="checkbox" id="opt-voice"></label>
       <label class="switch-row"><span>Leer en voz alta todas las notificaciones del celular</span><input type="checkbox" id="opt-readall"></label>
       <label class="switch-row"><span>Seguir avisando con la pantalla apagada (la laptop no se suspende)</span><input type="checkbox" id="opt-awake"></label>
+      <button type="button" class="drawer-btn" id="pay-prints">🖨 Impresiones de hoy</button>
       <button type="button" class="drawer-btn" id="pay-test">🔊 Probar aviso y voz</button>
       <button type="button" class="drawer-btn primary" id="pay-verify">🛡️ Verificar la captura de un cliente</button>
 
       <div class="drawer-section" id="phone-title">Notificaciones del celular de hoy</div>
+      <p class="drawer-empty">Se ve solo el día de hoy (desde las 7:00 a. m.); al día siguiente empieza de cero.</p>
       <div class="phone-list" id="phone-list"></div>
     </aside>
   </section>

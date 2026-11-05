@@ -995,7 +995,7 @@ async function renderTicketWindow(ticket) {
 // Imprime (con el diálogo de Windows para elegir la ticketera) o guarda el ticket en PDF.
 // `printer`: nombre de la ticketera para imprimir directo (sin diálogo); vacío = mostrar el diálogo de Windows.
 // No se guarda ningún dato del destinatario: solo se imprime.
-async function printTicket(input, { pdf = false, printer = '' } = {}) {
+async function printTicket(input, { pdf = false, printer = '', reprint = false } = {}) {
   const ticket = tickets.sanitizeTicket(input || {});
   if (!ticket.name) return { ok: false, error: 'Escribe el nombre del destinatario.' };
   const { page, heightMm } = await renderTicketWindow(ticket);
@@ -1037,7 +1037,39 @@ async function printTicket(input, { pdf = false, printer = '' } = {}) {
   store.get().settings.lastTicketProfile = ticket.profileId;
   if (!pdf && result.ok) store.get().settings.ticketPrinter = printer;
   store.save();
+  // Historial de impresiones del día (se borra solo al día siguiente); una reimpresión no se anota de nuevo.
+  if (result.ok && !reprint) {
+    paylog.addPrint(ticket, { pdf });
+    pushPayments();
+  }
   return result;
+}
+
+// Lista del día para el panel "Impresiones de hoy" (lo justo para mostrar; el ticket completo queda para reimprimir).
+function printsState() {
+  const prints = locked ? [] : paylog.read().prints;
+  const count = (test) => prints.filter(test).length;
+  return {
+    total: prints.length,
+    shalom: count((p) => p.ticket.carrier === 'Shalom'),
+    olva: count((p) => p.ticket.carrier === 'Olva'),
+    others: count((p) => p.ticket.carrier !== 'Shalom' && p.ticket.carrier !== 'Olva'),
+    list: prints.map(({ id, at, pdf, ticket }) => ({
+      id,
+      at,
+      pdf,
+      carrier: ticket.carrier,
+      name: ticket.name,
+      place: [ticket.destination, ticket.agent, ticket.district].filter(Boolean).join(' · ') || ticket.address || '',
+      orderNumber: ticket.orderNumber,
+    })),
+  };
+}
+
+async function reprintTicket(id) {
+  const saved = paylog.findPrint(String(id));
+  if (!saved) return { ok: false, error: 'Ese ticket ya no está en el historial de hoy.' };
+  return printTicket(saved.ticket, { printer: store.get().settings.ticketPrinter || '', reprint: true });
 }
 
 // Abre imágenes que nativeImage no lee (WebP, GIF, BMP) con Chromium y las pasa a PNG.
@@ -1617,7 +1649,6 @@ function maybeWelcome() {
   const greeting = hour >= 5 && hour < 12 ? 'Buenos días' : hour >= 12 && hour < 19 ? 'Buenas tardes' : 'Buenas noches';
   const icon = hour >= 5 && hour < 12 ? '☀️' : hour >= 12 && hour < 19 ? '🌤️' : '🌙';
   const sum = (list) => ({ count: list.length, total: list.reduce((t, p) => t + p.amount, 0) });
-  const yesterday = paylog.read(paylog.dayKey(new Date(Date.now() - 86400000))).payments;
   const end = new Date();
   end.setHours(23, 59, 59, 999);
   const todayReminders = reminders().filter((r) => new Date(r.at) <= end).slice(0, 4).map((r) => {
@@ -1630,8 +1661,8 @@ function maybeWelcome() {
     icon,
     name: profile ? profile.name : '',
     date: new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' }),
-    yesterday: sum(yesterday),
     today: sum(paylog.read().payments),
+    prints: paylog.read().prints.length,
     pendingShipments: sales.pendingShipments().length,
     unread: openAccounts().reduce((t, a) => t + (a.muted ? 0 : unread.get(a.id) || 0), 0),
     reminders: todayReminders,
@@ -1684,6 +1715,7 @@ function settingsPanel() {
         id: 'ventas', icon: '📦', title: 'Ventas y envíos', color: '#0ea5e9',
         items: [
           action('sales', 'Registro de ventas'),
+          action('printsPanel', '🖨 Impresiones de hoy (reimprimir)'),
           action('shipments', 'Envíos pendientes'),
           action('ticketProfiles', 'Remitentes de tickets (logo, QR, datos)'),
           action('forms', 'Formularios de envío (Shalom / Olva)'),
@@ -1792,6 +1824,7 @@ function settingsDo(id, value) {
     phoneLinkCheck: showPhoneLinkCheck,
     sales: () => send('ui:sales'),
     shipments: () => send('ui:shipments'),
+    printsPanel: () => send('ui:prints-panel'),
     ticketProfiles: () => send('ui:ticket-profiles'),
     forms: () => send('ui:forms'),
     trackShalom: () => send('ui:tracking-url', { carrier: 'Shalom', url: settings.trackingUrls.Shalom }),
@@ -2160,7 +2193,9 @@ function registerIpc() {
   ipcMain.handle('ticket:profiles', () => (locked ? [] : store.get().ticketProfiles.map(ticketProfileView)));
   ipcMain.handle('ticket:save-profiles', (_e, list) => (locked ? { ok: false } : saveTicketProfiles(list)));
   ipcMain.handle('ticket:pick-image', (_e, kind) => (locked ? null : pickTicketImage(kind)));
-  ipcMain.handle('ticket:print', (_e, ticket, options) => (locked ? { ok: false } : printTicket(ticket, options || {})));
+  ipcMain.handle('ticket:print', (_e, ticket, options) => (locked ? { ok: false } : printTicket(ticket, { pdf: Boolean(options && options.pdf), printer: options && options.printer })));
+  ipcMain.handle('prints:state', () => printsState());
+  ipcMain.handle('prints:reprint', (_e, id) => (locked ? { ok: false } : reprintTicket(id)));
   ipcMain.handle('ticket:last-profile', () => store.get().settings.lastTicketProfile || '');
   // Pega en el chat abierto los datos del envío para que el cliente los confirme (el usuario presiona Enter).
   ipcMain.handle('ticket:to-chat', async (_e, text) => {
@@ -2199,8 +2234,7 @@ function registerIpc() {
     changelog: CHANGELOG,
   }));
   ipcMain.handle('update:check', () => updater.check());
-  ipcMain.handle('payments:state', (_e, day) => paymentsState(typeof day === 'string' ? day : undefined));
-  ipcMain.handle('payments:export', (_e, day) => exportPaymentsCsv(day));
+  ipcMain.handle('payments:state', () => paymentsState());
   ipcMain.handle('flyer:pick-image', () => (locked ? null : pickFlyerImage()));
   ipcMain.on('ai:open', () => { if (!locked) openAssistantFromSelection(); });
   ipcMain.handle('ai:config', () => (locked ? { hasKey: false, context: '' } : assistantConfig()));
@@ -2321,14 +2355,12 @@ function pushPayments() {
   if (win && !win.isDestroyed()) win.webContents.send('payments:update');
 }
 
-async function paymentsState(day = paylog.dayKey()) {
+async function paymentsState() {
   const { settings } = store.get();
-  const log = locked ? { payments: [], notifications: [] } : paylog.read(day);
+  const log = locked ? { payments: [], notifications: [], prints: [] } : paylog.read();
   const dbFound = process.platform === 'win32' && fs.existsSync(payments.databasePath());
   return {
-    day,
-    isToday: day === paylog.dayKey(),
-    days: locked ? [] : paylog.days(),
+    prints: log.prints.length,
     alerts: settings.paymentAlerts,
     voice: settings.paymentVoice,
     readAll: settings.readAllPhone,
@@ -2368,18 +2400,6 @@ function syncKeepAwake() {
   }
 }
 
-async function exportPaymentsCsv(day) {
-  if (locked || !/^\d{4}-\d{2}-\d{2}$/.test(String(day))) return { ok: false };
-  const { canceled, filePath } = await dialog.showSaveDialog(win, {
-    title: 'Exportar pagos del día',
-    defaultPath: `pagos-${day}.csv`,
-    filters: [{ name: 'Excel (CSV)', extensions: ['csv'] }],
-  });
-  if (canceled || !filePath) return { ok: false, canceled: true };
-  fs.writeFileSync(filePath, paylog.csv(day));
-  return { ok: true };
-}
-
 function syncPaymentWatcher() {
   if (process.platform !== 'win32') return;
   // Siempre vigila (los avisos se activan o no con "paymentAlerts"), así el panel muestra lo que llega del celular.
@@ -2398,11 +2418,9 @@ function syncPaymentWatcher() {
 
 // ---------- Verificador de pagos (capturas de Yape / Plin) ----------
 
-// Pagos registrados del día de la captura (o de hoy y ayer si la captura no dice la fecha).
+// Pagos registrados del día de trabajo actual.
 function paymentsForReceipt(info) {
-  if (info.date) return paylog.read(paylog.dayKey(new Date(info.date.y, info.date.mo, info.date.d))).payments;
-  const yesterday = new Date(Date.now() - 86400000);
-  return [...paylog.read(paylog.dayKey(yesterday)).payments, ...paylog.read().payments];
+  return paylog.read().payments; // solo se guarda el día de trabajo actual
 }
 
 function sendVerifyResult(info, extra = {}) {
@@ -2536,10 +2554,17 @@ function init() {
       { label: 'Ocultar la burbuja', click: () => setBubbleEnabled(false) },
     ]).popup({ window: bubbleWindow }),
   });
-  // Pagos de hoy y ayer que la versión anterior no reconoció (quedaron como notificación): se suman ahora.
-  for (const day of [paylog.dayKey(), paylog.dayKey(new Date(Date.now() - 86400000))]) {
-    try { paylog.recover(day, payments.parsePayment); } catch { /* registro dañado: se ignora */ }
-  }
+  // Solo se guarda el día de trabajo actual (desde las 7:00 a. m.): lo de días anteriores se borra.
+  paylog.purgeOldDays();
+  let workday = paylog.dayKey();
+  setInterval(() => {
+    if (paylog.dayKey() === workday) return;
+    workday = paylog.dayKey();
+    paylog.purgeOldDays();
+    pushPayments();
+  }, 60_000);
+  // Pagos de hoy que una versión anterior no reconoció (quedaron como notificación): se suman ahora.
+  try { paylog.recover(payments.parsePayment); } catch { /* registro dañado: se ignora */ }
   syncPaymentWatcher();
   syncKeepAwake();
   setTimeout(announceUpdated, 4000);

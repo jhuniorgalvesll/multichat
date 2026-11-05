@@ -3,6 +3,14 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.9.3',
+    items: [
+      'Pagos solo del día de trabajo (desde las 7:00 a. m.): al día siguiente se borran solos y empieza en S/ 0.00.',
+      'Se quitaron los días anteriores y el Excel.',
+      'Nuevo: Impresiones de hoy, con Reimprimir y cuántos tickets de Shalom y Olva. También se borra al día siguiente.',
+    ],
+  },
+  {
     version: '1.9.2',
     items: [
       'Yapeos que llegan por correo del BCP ("Recibiste un yapeo de S/ 1,157.00 de …"): se avisan, se dicen en voz y se suman.',
