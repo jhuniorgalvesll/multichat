@@ -1632,7 +1632,7 @@ async function loadPayments() {
     row.className = `pay-row ${PAY_ICON[p.app] || 'plin'}`;
     const badge = document.createElement('span');
     badge.className = 'pay-app';
-    badge.textContent = p.app;
+    badge.textContent = p.app === 'BBVA' ? 'Plin' : p.app;
     const who = document.createElement('div');
     who.className = 'pay-who';
     who.textContent = p.name;

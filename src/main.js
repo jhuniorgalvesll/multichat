@@ -1870,8 +1870,9 @@ function registerIpc() {
 let paymentWatcher = null;
 const todayPayments = []; // solo en memoria: pagos avisados desde que se abrió la app hoy
 
-const PAY_VERB = { Yape: 'te yapeó', Plin: 'te plineó', BBVA: 'te pagó' };
-const PAY_LABEL = { Yape: 'Yape', Plin: 'Plin · BBVA', BBVA: 'BBVA Empresas · Cobro con QR' };
+// Yape → "te yapeó"; Plin y cobros de BBVA Empresas → "te plineó".
+const PAY_VERB = { Yape: 'te yapeó', Plin: 'te plineó', BBVA: 'te plineó' };
+const PAY_LABEL = { Yape: 'Yape', Plin: 'Plin · BBVA', BBVA: 'Plin · BBVA Empresas' };
 
 const money = (n) => `S/ ${n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 

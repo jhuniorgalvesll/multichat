@@ -40,6 +40,11 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.5.3
+
+- Los cobros de **BBVA Empresas** se anuncian como Plin: aviso *"Plin · BBVA Empresas — Melissa Galvez te plineó
+  S/ 50.00"* y voz *"Melissa Galvez te plineó 50 soles"*. Los de **Yape**: *"… te yapeó 50 soles"*.
+
 ## Novedades v1.5.2 — las actualizaciones nunca cierran la app
 
 - Con MultiChat abierto **no se cierra ni se reinicia nada**: la versión nueva se descarga en segundo plano y solo
