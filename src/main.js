@@ -1714,7 +1714,7 @@ function showSettingsMenu() {
     },
     { type: 'separator' },
     {
-      label: 'Mantener siempre encima',
+      label: 'Mantener siempre encima (no se esconde al hacer clic en otro programa)',
       type: 'checkbox',
       checked: settings.alwaysOnTop,
       click: () => {
@@ -2234,6 +2234,13 @@ function init() {
     store.get().settings.openHiddenOnce = startHidden;
     store.flush();
     return;
+  }
+  // Una vez (v1.8.1): "Mantener siempre encima" deja la ventana por encima de todos los programas aunque se haga
+  // clic en otro; se apaga por si quedó activado sin querer. Se puede volver a activar en ⚙.
+  if (!store.get().settings.alwaysOnTopReset) {
+    store.get().settings.alwaysOnTopReset = true;
+    store.get().settings.alwaysOnTop = false;
+    store.save();
   }
   // Reabierta después de instalar una actualización al iniciar oculta (con Windows): sigue en la bandeja.
   if (store.get().settings.openHiddenOnce) {

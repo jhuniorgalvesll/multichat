@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.8.1',
+    items: ['MultiChat ya no se queda encima de los demás programas: al hacer clic en otro, pasa atrás como cualquier ventana.'],
+  },
+  {
     version: '1.8.0',
     items: [
       'Asistente con IA: selecciona el mensaje del cliente y te sugiere 3 respuestas para pegar en el chat.',

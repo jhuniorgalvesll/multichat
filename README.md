@@ -40,6 +40,11 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.8.1
+
+- Se desactiva (una vez) *Mantener siempre encima*: con esa opción la ventana no pasaba atrás al hacer clic en otro
+  programa. Se puede volver a activar en ⚙.
+
 ## Novedades v1.8.0 — asistente con IA
 
 - **✨ Asistente con IA** (botón de estrellas en la barra, o clic derecho → *Sugerir respuesta con IA*): selecciona el
