@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.9.1',
+    items: [
+      'Corregido: los Yape con el nombre oculto ("Yodver Lim*") no se sumaban. Ahora sí, y se recuperan los de hoy y ayer.',
+      'El total cobrado muestra cuántos Yape y cuántos Plin hay, con su suma.',
+    ],
+  },
+  {
     version: '1.9.0',
     items: [
       'Configuración nueva: panel que se desliza desde la derecha, con buscador, accesos rápidos y secciones.',

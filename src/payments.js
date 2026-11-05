@@ -37,7 +37,9 @@ const PAYMENT_PHRASE = /te\s+(?:envi[oó]|ha enviado|hizo|yape[oó]|pline[oó]|t
 
 function parsePayment(texts) {
   const all = texts.join('\n');
-  const isYape = /yape/i.test(all);
+  // Yape avisa "Confirmación de Pago · Fulano* te envió un pago por S/ 45. El cód. de seguridad es: 217"
+  // (a veces sin la palabra "Yape" en el texto).
+  const isYape = /yape/i.test(all) || /c[oó]d\.?\s*de\s*seguridad/i.test(all) || /confirmaci[oó]n de pago/i.test(all);
   const isBank = /plin|bbva/i.test(all);
   if (!isYape && !isBank && !/cobro con qr/i.test(all)) return null;
   if (!PAYMENT_PHRASE.test(all)) return null;
@@ -51,8 +53,9 @@ function parsePayment(texts) {
 
   // El nombre se busca en cada línea por separado (título, cuerpo...), así no se mezcla con el nombre de la app.
   const lines = texts.map((t) => t.replace(/\s+/g, ' ').trim())
-    .filter((t) => !/^(yape|plin|bbva|bbva ?empresas|bbva per[uú]|enlace m[oó]vil|cobro con qr)$/i.test(t));
-  const NAME = "([\\p{L}][\\p{L} .'-]{1,60}?)";
+    .filter((t) => !/^(yape|plin|bbva|bbva ?empresas|bbva per[uú]|enlace m[oó]vil|cobro con qr|confirmaci[oó]n de pago)$/i.test(t));
+  // Yape oculta parte del nombre con "*" ("Yodver Lim*"): se acepta.
+  const NAME = "([\\p{L}][\\p{L} .'*-]{1,60}?)";
   const patterns = [
     new RegExp(`^(?:¡?te yapearon!?\\s*|¡?yape!?\\s*)?${NAME}\\s+te\\s+(?:envi[oó]|ha enviado|hizo|yape[oó]|pline[oó]|transfiri[oó]|pag[oó])`, 'iu'),
     new RegExp(`(?:de|desde)\\s+${NAME}\\s+(?:por|de|con|a\\s+tu|S\\/)`, 'iu'),

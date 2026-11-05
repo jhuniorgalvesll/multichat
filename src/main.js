@@ -2269,7 +2269,7 @@ function announcePayment(payment) {
   if (!store.get().settings.paymentVoice || !win || win.isDestroyed()) return;
   const text = locked
     ? `Recibiste un ${payment.app}`
-    : `${payment.name} ${PAY_VERB[payment.app]} ${spokenMoney(payment.amount)}`;
+    : `${payment.name.replace(/\*/g, '')} ${PAY_VERB[payment.app]} ${spokenMoney(payment.amount)}`;
   win.webContents.send('ui:speak', text);
 }
 
@@ -2529,6 +2529,10 @@ function init() {
       { label: 'Ocultar la burbuja', click: () => setBubbleEnabled(false) },
     ]).popup({ window: bubbleWindow }),
   });
+  // Pagos de hoy y ayer que la versión anterior no reconoció (quedaron como notificación): se suman ahora.
+  for (const day of [paylog.dayKey(), paylog.dayKey(new Date(Date.now() - 86400000))]) {
+    try { paylog.recover(day, payments.parsePayment); } catch { /* registro dañado: se ignora */ }
+  }
   syncPaymentWatcher();
   syncKeepAwake();
   setTimeout(announceUpdated, 4000);

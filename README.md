@@ -40,6 +40,13 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.9.1
+
+- Corregido: los avisos de Yape *"Confirmación de Pago · Yodver Lim\* te envió un pago por S/ 45"* (nombre con asterisco
+  y a veces sin la palabra "Yape") no se reconocían. Al abrir, se vuelven a revisar las notificaciones guardadas de hoy y
+  ayer y se suman los pagos que faltaban.
+- El total cobrado muestra **cuántos Yape y cuántos Plin** hay y cuánto suma cada uno (BBVA Empresas cuenta como Plin).
+
 ## Novedades v1.9.0 — configuración nueva y app más animada
 
 - **⚙ Configuración**: ya no es la lista gris de Windows; es un panel que se desliza desde la derecha y se cierra al hacer

@@ -55,6 +55,29 @@ function addNotification({ texts, payment, at }) {
   write(day, data);
 }
 
+// Vuelve a revisar las notificaciones guardadas de un día con la versión actual del lector de pagos: los pagos que
+// antes no se reconocían (por ejemplo, Yape con el nombre "Yodver Lim*") se agregan al día. Devuelve cuántos sumó.
+function recover(day, parse) {
+  const data = read(day);
+  let added = 0;
+  for (const n of data.notifications) {
+    if (n.payment) continue;
+    const texts = Array.isArray(n.texts) ? n.texts : [];
+    if (/whatsapp|telegram|messenger|instagram/i.test(texts.join(' '))) continue;
+    const p = parse(texts);
+    if (!p) continue;
+    n.payment = true;
+    if (data.payments.some((x) => Math.abs(x.at - n.at) < 2000 && Math.abs(x.amount - p.amount) < 0.005)) continue;
+    data.payments.push({ app: p.app, name: p.name, amount: p.amount, at: n.at, text: String(p.text || '').slice(0, 300) });
+    added += 1;
+  }
+  if (added || data.notifications.some((n) => n.payment)) {
+    data.payments.sort((a, b) => a.at - b.at);
+    write(day, data);
+  }
+  return added;
+}
+
 // Días que tienen registro, del más nuevo al más viejo.
 function days() {
   try {
@@ -74,4 +97,4 @@ function csv(day) {
   return `﻿${rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\r\n')}`;
 }
 
-module.exports = { dayKey, read, addPayment, addNotification, days, csv };
+module.exports = { dayKey, read, addPayment, addNotification, recover, days, csv };

@@ -1928,6 +1928,17 @@ async function loadPayments() {
     $('pay-total').closest('.pay-total').classList.add('bump');
   } else $('pay-total').textContent = soles(data.total);
   $('pay-total-count').textContent = `${data.today.length} pago${data.today.length === 1 ? '' : 's'}`;
+  // Cuántos Yape y cuántos Plin (los cobros de BBVA Empresas cuentan como Plin), con su suma.
+  const groups = [['Yape', (p) => p.app === 'Yape'], ['Plin', (p) => p.app !== 'Yape']].map(([name, test]) => {
+    const list = data.today.filter(test);
+    return { name, count: list.length, total: list.reduce((t, p) => t + p.amount, 0) };
+  });
+  $('pay-split').replaceChildren(...groups.map((g) => {
+    const chip = document.createElement('span');
+    chip.className = `pay-chip ${g.name.toLowerCase()}`;
+    chip.append(Object.assign(document.createElement('b'), { textContent: `${g.count} ${g.name}` }), ` · ${soles(g.total)}`);
+    return chip;
+  }));
   $('pay-list').replaceChildren(...(data.today.length ? data.today.slice().reverse().map((p) => {
     const row = document.createElement('div');
     row.className = `pay-row ${PAY_ICON[p.app] || 'plin'}`;
