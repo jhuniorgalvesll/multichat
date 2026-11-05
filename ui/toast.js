@@ -16,6 +16,11 @@ api.onData((data) => {
     $('avatar').onerror = () => { $('avatar').hidden = true; };
   }
   $('reply-btn').hidden = !data.canReply;
+  if (data.kind === 'payment') {
+    document.body.classList.add('payment', data.payApp === 'Yape' ? 'yape' : 'plin');
+    $('open-btn').hidden = true;
+    $('actions').hidden = true;
+  }
   $('open-btn').textContent = data.kind === 'reminder' ? 'Abrir cuenta' : 'Abrir chat';
   reportSize();
 });

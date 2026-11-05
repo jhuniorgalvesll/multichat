@@ -11,6 +11,8 @@ const store = require('./store');
 const { hashSecret, verifySecret, normalizeAnswer } = require('./security');
 const SERVICES = require('./services');
 const sales = require('./sales');
+const payments = require('./payments');
+const updater = require('./updater');
 const notifier = require('./notifier');
 const { templateImages: media, receipts, ticketImages } = require('./media');
 const tickets = require('./tickets');
@@ -606,6 +608,7 @@ function showServiceNotification(id, payload) {
 
 function openFromNotification(data) {
   showWindow();
+  if (data.kind === 'payment') return showTodayPayments();
   if (!data.accountId || !findAccount(data.accountId)) return;
   setActive(data.accountId);
   if (data.notifId) views.get(data.accountId)?.webContents.send('notify-open', data.notifId);
@@ -1525,6 +1528,19 @@ function showSettingsMenu() {
         syncNotifyState();
       },
     },
+    {
+      label: 'Avisos de Yape y Plin (Enlace Móvil)',
+      submenu: [
+        {
+          label: 'Avisar cuando llegue un Yape o Plin',
+          type: 'checkbox',
+          checked: settings.paymentAlerts,
+          click: () => { settings.paymentAlerts = !settings.paymentAlerts; store.save(); syncPaymentWatcher(); },
+        },
+        { label: 'Pagos de hoy…', click: showTodayPayments },
+        { label: 'Revisar notificaciones de Enlace Móvil…', click: showPhoneLinkCheck },
+      ],
+    },
     { label: 'Respuestas rápidas…', click: openTemplatesDialog },
     {
       label: 'Páginas de rastreo',
@@ -1593,6 +1609,7 @@ function showSettingsMenu() {
     { label: 'Formularios de envío (Shalom / Olva)…', click: () => win.webContents.send('ui:forms') },
     { type: 'separator' },
     { label: '☕ Invítale un cafecito al creador', click: () => win.webContents.send('ui:coffee') },
+    { label: 'Buscar actualizaciones…', click: () => updater.checkNow() },
     { label: `Acerca de ${APP_NAME}`, click: showAbout },
     { type: 'separator' },
     { label: `Salir de ${APP_NAME}`, click: quit },
@@ -1796,6 +1813,66 @@ function registerIpc() {
   });
 }
 
+// ---------- Avisos de Yape y Plin (por Enlace Móvil de Windows) ----------
+
+let paymentWatcher = null;
+const todayPayments = []; // solo en memoria: pagos avisados desde que se abrió la app hoy
+
+const money = (n) => `S/ ${n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+function onPayment(payment) {
+  const today = new Date().toDateString();
+  while (todayPayments.length && new Date(todayPayments[0].at).toDateString() !== today) todayPayments.shift();
+  todayPayments.push(payment);
+  const verb = payment.app === 'Yape' ? 'te yapeó' : 'te plineó';
+  // Los pagos se avisan siempre, también en "no molestar": son ventas.
+  notifier.show({
+    kind: 'payment',
+    payApp: payment.app,
+    accountName: payment.app === 'Yape' ? 'Yape' : 'Plin · BBVA',
+    title: locked ? `Pago recibido por ${payment.app}` : `${payment.name} ${verb} ${money(payment.amount)}`,
+    body: locked ? 'Desbloquea MultiChat Pro para ver el detalle' : `Hoy: ${todayPayments.length} pago${todayPayments.length === 1 ? '' : 's'} · ${money(todayPayments.reduce((t, p) => t + p.amount, 0))}`,
+    canReply: false,
+  });
+}
+
+function syncPaymentWatcher() {
+  if (process.platform !== 'win32') return;
+  paymentWatcher = paymentWatcher || payments.createWatcher({ onPayment });
+  if (store.get().settings.paymentAlerts) paymentWatcher.start();
+  else paymentWatcher.stop();
+}
+
+function showTodayPayments() {
+  if (locked) return;
+  const total = todayPayments.reduce((t, p) => t + p.amount, 0);
+  const lines = todayPayments.map((p) => `${new Date(p.at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}  ${p.app}  ${p.name}  ${money(p.amount)}`);
+  dialog.showMessageBox(win, {
+    type: 'info',
+    title: 'Pagos de hoy',
+    message: todayPayments.length ? `Hoy: ${todayPayments.length} pagos · ${money(total)}` : 'Todavía no llegaron pagos de Yape o Plin hoy.',
+    detail: (lines.join('\n') || 'Los pagos aparecen aquí cuando llega su notificación por Enlace Móvil.')
+      + '\n\nSolo se cuentan los que llegaron con MultiChat abierto. No se guardan.',
+  });
+}
+
+// Muestra las últimas notificaciones de Enlace Móvil tal como llegan, para ajustar el formato si un pago no se reconoce.
+function showPhoneLinkCheck() {
+  if (locked) return;
+  const watcher = paymentWatcher || payments.createWatcher({ onPayment });
+  const recent = process.platform === 'win32' ? watcher.recentPhoneLink() : null;
+  dialog.showMessageBox(win, {
+    type: recent && recent.length ? 'info' : 'warning',
+    title: 'Revisar Enlace Móvil',
+    message: recent === null
+      ? 'No se encontraron notificaciones de Windows. ¿Enlace Móvil está instalado y conectado al iPhone?'
+      : recent.length ? 'Últimas notificaciones que llegaron por Enlace Móvil:' : 'Enlace Móvil todavía no mostró notificaciones.',
+    detail: recent && recent.length
+      ? recent.map((t, i) => `${i + 1}. ${t}`).join('\n\n') + '\n\nSi un Yape o Plin aparece aquí pero no se avisó, envía una captura de esta ventana al creador.'
+      : 'En el iPhone: Ajustes → Bluetooth (conectado a la PC) y Ajustes → Notificaciones → Yape / BBVA → "Compartir notificaciones" activado.',
+  });
+}
+
 // ---------- Inicio ----------
 
 function init() {
@@ -1826,6 +1903,8 @@ function init() {
   // así Windows no sigue abriendo una copia vieja de la app.
   app.setLoginItemSettings({ openAtLogin: Boolean(data.settings.openAtLogin), args: ['--hidden'] });
 
+  syncPaymentWatcher();
+  updater.start({ getWindow: () => win });
   setInterval(hibernateIdle, 60_000);
   setInterval(checkAutoLock, 30_000);
   setInterval(checkDndSchedule, 30_000);

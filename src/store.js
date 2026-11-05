@@ -23,6 +23,7 @@ const DEFAULTS = {
     trackingUrls: { Shalom: '', Olva: 'https://www.olvacourier.com/' }, // páginas de rastreo
     closeToTray: true,
     openAtLogin: false,
+    paymentAlerts: true, // avisos de Yape y Plin que llegan por Enlace Móvil
   },
 };
 

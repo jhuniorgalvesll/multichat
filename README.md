@@ -38,6 +38,26 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.3.0 — avisos de Yape y Plin, y actualización automática
+
+- **Avisos de Yape y Plin (BBVA)**: cuando el iPhone recibe un pago, Enlace Móvil de Windows muestra la notificación
+  y MultiChat avisa: "💜 Yape · Junior Galvez te yapeó S/ 25.00" con el total del día.
+  ⚙ → *Avisos de Yape y Plin (Enlace Móvil)*: activar/desactivar, *Pagos de hoy…* y *Revisar notificaciones de
+  Enlace Móvil…* (para ver el texto tal como llega si un pago no se reconoce). Solo se lee el registro de
+  notificaciones de Windows de tu PC; no se toca el celular, Yape ni el banco, y los pagos no se guardan.
+- **Actualización automática**: la app revisa GitHub al abrir y cada 4 horas, descarga la versión nueva y pregunta
+  *Reiniciar ahora / Después*. También en ⚙ → *Buscar actualizaciones…*.
+
+### Cómo publicar una actualización
+
+1. Subir el código a `jhuniorgalvesll/multichat` (privado) con la versión nueva en `package.json`.
+2. Crear la etiqueta: `git tag v1.3.1 && git push origin v1.3.1`.
+3. GitHub Actions arma el instalador en Windows y lo publica en `jhuniorgalvesll/multichat-updates` (público).
+4. Las apps instaladas lo descargan solas.
+
+Requisito (una sola vez): en `multichat` → Settings → Secrets and variables → Actions, crear `UPDATES_TOKEN` con un
+token de GitHub (fine-grained) que tenga permiso **Contents: Read and write** sobre `multichat-updates`.
+
 ## Novedades v1.2.7 — avisos para que el ticket no se descuadre
 
 En ⚙ → *Remitentes de tickets*, para cada empresa:

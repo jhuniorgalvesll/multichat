@@ -20,6 +20,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 html, body {
   margin: 0;
@@ -120,3 +121,10 @@ html, body {
 
 .status { margin-top: 8px; font-size: 12.5px; color: var(--muted); }
 .status.ok { color: var(--accent); font-weight: 600; }
+
+/* Pagos de Yape (morado) y Plin (celeste) */
+.payment .toast { border-left: 6px solid #742284; }
+.payment.plin .toast { border-left-color: #00b5c8; }
+.payment .account { color: #742284; }
+.payment.plin .account { color: #0098a8; }
+.payment .title { font-size: 15px; font-weight: 700; white-space: normal; }

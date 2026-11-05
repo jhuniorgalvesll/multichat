@@ -1,0 +1,25 @@
+# Arma el instalador de Windows y lo publica en jhuniorgalvesll/multichat-updates (Releases).
+# Las apps instaladas revisan ese repositorio y se actualizan solas.
+# Se ejecuta al subir una etiqueta de versión, por ejemplo: git tag v1.3.0 && git push origin v1.3.0
+name: Publicar actualización
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Armar y publicar el instalador
+        run: npx electron-builder --win --publish always
+        env:
+          # Token con permiso de escritura en multichat-updates (Settings → Secrets → Actions → UPDATES_TOKEN)
+          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
