@@ -1521,7 +1521,7 @@ const UPDATE_TEXT = {
   idle: ['Actualizaciones automáticas', 'Se revisan solas. Nunca se cierra la app mientras trabajas.', 'Buscar actualizaciones'],
   checking: ['Buscando actualizaciones…', 'Un momento.', ''],
   downloading: ['Descargando la versión {v}…', 'Te avisaremos cuando esté lista.', ''],
-  ready: ['Versión {v} descargada', 'Se instala sola al cerrar MultiChat o de madrugada. Si quieres, instálala ya.', 'Instalar ahora'],
+  ready: ['Versión {v} descargada', 'Se instalará sola la próxima vez que abras MultiChat. No se cierra nada ahora.', ''],
   latest: ['Tienes la última versión', 'Las actualizaciones se revisan solas.', 'Buscar de nuevo'],
   error: ['No se pudo revisar', 'Revisa tu conexión a internet.', 'Intentar de nuevo'],
   dev: ['Actualizaciones automáticas', 'Funcionan en la app instalada.', ''],
@@ -1560,11 +1560,34 @@ async function loadAbout() {
 }
 
 $('update-action').addEventListener('click', async () => {
-  if ($('update-card').dataset.status === 'ready') return api.installUpdate();
   showUpdateState({ status: 'checking' });
   showUpdateState(await api.checkUpdate());
 });
 api.onAboutPanel(() => openDrawer('about'));
+
+// Aviso de versión nueva encima de la app: no cierra ni reinicia nada.
+let updatePopupOpen = false;
+api.onUpdateReady(({ version, items }) => {
+  if (state.locked || passwordMode) return;
+  closeCoffee();
+  $('upd-version').textContent = `Versión ${version}`;
+  $('upd-items').replaceChildren(...(items || []).map((text) => Object.assign(document.createElement('li'), { textContent: text })));
+  $('upd-items').hidden = !(items && items.length);
+  $('update-modal').hidden = false;
+  if (!updatePopupOpen) api.setOverlay(true);
+  updatePopupOpen = true;
+  $('upd-ok').focus();
+});
+function closeUpdatePopup() {
+  if (!updatePopupOpen) return;
+  updatePopupOpen = false;
+  $('update-modal').hidden = true;
+  api.setOverlay(false);
+}
+$('upd-ok').addEventListener('click', closeUpdatePopup);
+$('update-modal').addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeUpdatePopup();
+});
 api.onUpdateState((update) => {
   if (drawerOpen === 'about') showUpdateState(update);
 });

@@ -40,6 +40,15 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.5.2 — las actualizaciones nunca cierran la app
+
+- Con MultiChat abierto **no se cierra ni se reinicia nada**: la versión nueva se descarga en segundo plano y solo
+  aparece un aviso encima de la app (*Actualización lista · Entendido*), o una notificación chiquita si está en la
+  bandeja.
+- Se instala **la próxima vez que se abre MultiChat** (por ejemplo, al prender la PC): antes de abrir las cuentas
+  aparece la ventanita **"Actualizando MultiChat Pro…"** unos segundos y luego la app se abre sola.
+- Se quitaron la instalación al cerrar, la de madrugada y el botón *Instalar ahora*.
+
 ## Novedades v1.5.1 — actualizaciones sin interrumpir
 
 - La app **ya no se cierra para actualizarse**: descarga la versión nueva en segundo plano y la instala en silencio

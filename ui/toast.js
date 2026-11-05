@@ -21,7 +21,7 @@ api.onData((data) => {
     $('open-btn').hidden = true;
     $('actions').hidden = true;
   }
-  $('open-btn').textContent = { reminder: 'Abrir cuenta', update: 'Instalar ahora (opcional)', updated: 'Ver novedades' }[data.kind] || 'Abrir chat';
+  $('open-btn').textContent = { reminder: 'Abrir cuenta', update: 'Ver detalles', updated: 'Ver novedades' }[data.kind] || 'Abrir chat';
   if (data.kind === 'update' || data.kind === 'updated') document.body.classList.add('update');
   reportSize();
 });

@@ -607,21 +607,10 @@ function showServiceNotification(id, payload) {
   });
 }
 
-// Ventanita "Actualizando MultiChat Pro…" mientras se cierra para instalar la versión nueva.
-function showUpdatingWindow() {
-  const box = new BrowserWindow({
-    width: 340,
-    height: 128,
-    frame: false,
-    resizable: false,
-    alwaysOnTop: true,
-    skipTaskbar: true,
-    show: false,
-    backgroundColor: '#140b2e',
-    webPreferences: { sandbox: true, contextIsolation: true },
-  });
-  box.loadFile(path.join(__dirname, '..', 'ui', 'updating.html'));
-  box.once('ready-to-show', () => box.show());
+// Novedades de una versión (para el aviso de actualización).
+function changesFor(version) {
+  const entry = CHANGELOG.find((e) => e.version === version);
+  return entry ? entry.items : [];
 }
 
 // Al abrir una versión nueva: aviso "Se actualizó a vX" (una sola vez).
@@ -644,7 +633,7 @@ function announceUpdated() {
 function openFromNotification(data) {
   showWindow();
   if (data.kind === 'payment') return showTodayPayments();
-  if (data.kind === 'update') return updater.install();
+  if (data.kind === 'update') return win.webContents.send('ui:update-ready', { version: data.version, items: changesFor(data.version) });
   if (data.kind === 'updated') return win.webContents.send('ui:about');
   if (!data.accountId || !findAccount(data.accountId)) return;
   setActive(data.accountId);
@@ -1861,7 +1850,6 @@ function registerIpc() {
     changelog: CHANGELOG,
   }));
   ipcMain.handle('update:check', () => updater.check());
-  ipcMain.on('update:install', () => updater.install());
   ipcMain.handle('payments:state', () => paymentsState());
   ipcMain.on('payments:set', (_e, key, value) => { if (!locked) setPaymentOption(key, value); });
   ipcMain.on('payments:test', () => { if (!locked) onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }); });
@@ -2010,7 +1998,13 @@ function showPhoneLinkCheck() {
 
 function init() {
   store.load();
-  // Reabierta después de una actualización de madrugada: sigue oculta en la bandeja, como estaba.
+  // Hay una versión nueva descargada: se instala ahora, antes de abrir las cuentas (ventanita "Actualizando…").
+  if (updater.installPendingOnStart()) {
+    store.get().settings.openHiddenOnce = startHidden;
+    store.flush();
+    return;
+  }
+  // Reabierta después de instalar una actualización al iniciar oculta (con Windows): sigue en la bandeja.
   if (store.get().settings.openHiddenOnce) {
     startHidden = true;
     store.get().settings.openHiddenOnce = false;
@@ -2047,18 +2041,20 @@ function init() {
   updater.start({
     getWindow: () => win,
     onChange: (state) => { if (win && !win.isDestroyed()) win.webContents.send('update:state', state); },
-    notify: (version) => notifier.show({
-      kind: 'update',
-      accountName: 'Actualización de MultiChat Pro',
-      title: `Versión v${version} descargada`,
-      body: 'No hace falta cerrar nada: se instala sola cuando cierres MultiChat o de madrugada si la PC no se usa.',
-      canReply: false,
-    }),
-    beforeInstall: (quiet) => {
-      // Después de instalar, MultiChat se abre solo; si fue de madrugada, se queda oculto en la bandeja.
-      store.get().settings.openHiddenOnce = quiet && !(win && win.isVisible());
-      store.flush();
-      if (!quiet) showUpdatingWindow();
+    // Aviso encima de la app (sin cerrarla). Si la app está oculta en la bandeja, una notificación chiquita.
+    notify: (version) => {
+      if (win && !win.isDestroyed() && win.isVisible() && !locked) {
+        win.webContents.send('ui:update-ready', { version, items: changesFor(version) });
+      } else {
+        notifier.show({
+          kind: 'update',
+          version,
+          accountName: 'MultiChat Pro',
+          title: `Versión ${version} descargada`,
+          body: 'Se instalará sola la próxima vez que abras MultiChat. No se cierra nada ahora.',
+          canReply: false,
+        });
+      }
     },
   });
   setInterval(hibernateIdle, 60_000);

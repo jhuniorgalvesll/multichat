@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.5.2',
+    items: [
+      'Las actualizaciones nunca cierran MultiChat: se avisa con una ventanita encima de la app.',
+      'La versión nueva se instala al volver a abrir MultiChat, con la ventanita "Actualizando…".',
+    ],
+  },
+  {
     version: '1.5.1',
     items: [
       'Las actualizaciones ya no cierran la app: se instalan solas al cerrarla o de madrugada.',

@@ -462,6 +462,18 @@
     </aside>
   </section>
 
+  <!-- Aviso de versión nueva (encima de la app, no la cierra) -->
+  <section class="backdrop update-backdrop" id="update-modal" hidden>
+    <div class="card update-pop">
+      <img class="update-pop-logo" src="../build/icon.png" alt="">
+      <div class="update-pop-tag">Actualización lista</div>
+      <h2 id="upd-version"></h2>
+      <ul class="update-pop-list" id="upd-items"></ul>
+      <p class="hint">Ya se descargó. <b>Se instalará sola la próxima vez que abras MultiChat</b> (por ejemplo, al prender la PC). No se cierra nada ahora: sigue trabajando.</p>
+      <button type="button" class="primary" id="upd-ok">Entendido</button>
+    </div>
+  </section>
+
   <!-- Invítale un cafecito al creador (voluntario) -->
   <section class="backdrop" id="coffee-modal" hidden>
     <div class="card coffee">
