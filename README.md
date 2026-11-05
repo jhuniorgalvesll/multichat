@@ -40,6 +40,12 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.8.4
+
+- **Burbuja más discreta**: al llegar un mensaje o pago aparece **3 segundos** si estás usando la PC (otra app abierta) y
+  **2 minutos** si la PC lleva más de un minuto sin uso (en el escritorio, sin tocar mouse ni teclado), para verla al
+  volver. Se activa o apaga en ⚙ → *Burbuja flotante*.
+
 ## Novedades v1.8.3
 
 - **Pestañas que se adaptan**: el ancho se calcula según el espacio libre de la barra. Si entran, se ven completas; si

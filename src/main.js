@@ -1705,7 +1705,7 @@ function showSettingsMenu() {
       ],
     },
     {
-      label: 'Burbuja flotante al llegar mensajes o pagos (2 minutos)',
+      label: 'Burbuja flotante al llegar mensajes o pagos (3 segundos)',
       type: 'checkbox',
       checked: settings.bubble === true,
       click: () => setBubbleEnabled(settings.bubble !== true),

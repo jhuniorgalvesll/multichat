@@ -1,15 +1,18 @@
 'use strict';
 
 // Burbuja flotante (opcional, apagada de fábrica): un círculo con el logo encima de los demás programas. Aparece solo
-// cuando llega un mensaje nuevo o un pago con MultiChat en segundo plano, y se va sola a los 2 minutos.
+// cuando llega un mensaje nuevo o un pago con MultiChat en segundo plano: 3 segundos si se está usando la PC (otra
+// app abierta) y 2 minutos si la PC está sin uso (en el escritorio, sin tocar el mouse ni el teclado).
 // Muestra los mensajes sin leer y, con un pago, el aviso "+ S/ 50 · Melissa".
 // Clic: abre MultiChat. Se puede arrastrar a cualquier lugar (la posición se recuerda).
-const { BrowserWindow, screen, ipcMain } = require('electron');
+const { BrowserWindow, screen, ipcMain, powerMonitor } = require('electron');
 const path = require('path');
 
 const SIZE = 76; // burbuja sola
 const WIDE = 300; // con el aviso de pago al costado
-const SHOW_FOR = 2 * 60 * 1000; // se esconde sola a los 2 minutos
+const SHOW_BUSY = 3000; // usando otra app: aviso rápido de 3 segundos
+const SHOW_IDLE = 2 * 60 * 1000; // PC sin uso: se queda 2 minutos para verla al volver
+const IDLE_SECONDS = 60;
 
 let bubbleWin = null;
 let ctx = { getState: () => ({ unread: 0, accounts: [] }), onOpen: () => {}, settings: () => ({}), save: () => {}, onMenu: () => {} };
@@ -92,7 +95,7 @@ function popup() {
   if (ctx.settings().bubble !== true) return;
   wantVisible = true;
   clearTimeout(hideTimer);
-  hideTimer = setTimeout(hide, SHOW_FOR);
+  hideTimer = setTimeout(hide, powerMonitor.getSystemIdleTime() >= IDLE_SECONDS ? SHOW_IDLE : SHOW_BUSY);
   const w = create();
   if (!w.webContents.isLoading()) {
     update();
@@ -101,9 +104,10 @@ function popup() {
 }
 
 function showPayment(text) {
-  payment = { text, until: Date.now() + 8000 };
+  const ms = powerMonitor.getSystemIdleTime() >= IDLE_SECONDS ? SHOW_IDLE : SHOW_BUSY;
+  payment = { text, until: Date.now() + ms };
   clearTimeout(paymentTimer);
-  paymentTimer = setTimeout(() => { payment = null; update(); }, 8100);
+  paymentTimer = setTimeout(() => { payment = null; update(); }, ms + 100);
   update();
   popup();
 }

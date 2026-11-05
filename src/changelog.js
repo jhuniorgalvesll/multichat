@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.8.4',
+    items: ['La burbuja aparece solo 3 segundos si estás usando otra app, y 2 minutos si la PC está sin uso.'],
+  },
+  {
     version: '1.8.3',
     items: [
       'Las pestañas se achican solas para que entren todas; con muchas, se ve solo el ícono con su contador.',
