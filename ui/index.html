@@ -426,6 +426,37 @@
     </aside>
   </section>
 
+  <!-- Bienvenida del día -->
+  <section class="backdrop" id="welcome-modal" hidden>
+    <div class="card welcome-card">
+      <div class="welcome-sun" id="wel-icon"></div>
+      <h1 id="wel-title"></h1>
+      <div class="welcome-date" id="wel-date"></div>
+      <div class="welcome-stats">
+        <div class="wstat"><div class="wstat-num" id="wel-yesterday">S/ 0</div><div class="wstat-label" id="wel-yesterday-label">Cobrado ayer</div></div>
+        <div class="wstat"><div class="wstat-num" id="wel-today">S/ 0</div><div class="wstat-label" id="wel-today-label">Cobrado hoy</div></div>
+        <div class="wstat"><div class="wstat-num" id="wel-ship">0</div><div class="wstat-label">Envíos pendientes</div></div>
+        <div class="wstat"><div class="wstat-num" id="wel-unread">0</div><div class="wstat-label">Mensajes sin leer</div></div>
+      </div>
+      <div class="welcome-rem" id="wel-rem"></div>
+      <button type="button" class="primary welcome-go" id="wel-go">¡A vender! 🚀</button>
+    </div>
+  </section>
+
+  <!-- Configuración: panel que se desliza desde la derecha (botón ⚙) -->
+  <section class="backdrop drawer-backdrop" id="settings-modal" hidden>
+    <aside class="drawer drawer-right settings-drawer">
+      <button type="button" class="icon-btn drawer-x" id="settings-close" title="Cerrar">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <h2 class="drawer-title">Configuración</h2>
+      <input class="settings-search" id="settings-search" type="search" placeholder="🔍 Buscar una opción… (ej.: contraseña)">
+      <div class="settings-quick" id="settings-quick"></div>
+      <div class="settings-sections" id="settings-sections"></div>
+      <p class="drawer-empty" id="settings-none" hidden>No hay opciones con ese nombre.</p>
+    </aside>
+  </section>
+
   <!-- Panel de pagos (Yape, Plin, BBVA) y notificaciones del celular por Enlace Móvil -->
   <section class="backdrop drawer-backdrop" id="pay-modal" hidden>
     <aside class="drawer drawer-right">

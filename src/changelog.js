@@ -3,6 +3,16 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.9.0',
+    items: [
+      'Configuración nueva: panel que se desliza desde la derecha, con buscador, accesos rápidos y secciones.',
+      'Bienvenida del día: lo cobrado ayer y hoy, envíos pendientes, mensajes y recordatorios.',
+      'Los botones de la barra muestran su nombre al pasar el mouse.',
+      'Color de la app a elección: violeta, azul, verde, naranja o rosa.',
+      'Animaciones: cambio de pestaña, ventanas y el total cobrado.',
+    ],
+  },
+  {
     version: '1.8.4',
     items: ['La burbuja aparece solo 3 segundos si estás usando otra app, y 2 minutos si la PC está sin uso.'],
   },

@@ -40,6 +40,18 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.9.0 — configuración nueva y app más animada
+
+- **⚙ Configuración**: ya no es la lista gris de Windows; es un panel que se desliza desde la derecha y se cierra al hacer
+  clic fuera. Arriba: buscador ("contraseña", "voz"…) y accesos rápidos (Bloquear, Modo oscuro, No molestar,
+  Cuadrícula). Debajo, secciones con ícono que se abren con un clic: Avisos, Pagos, Ventas y envíos, Herramientas,
+  Apariencia, Seguridad, Ventana y sistema, MultiChat Pro. Interruptores modernos en lugar de vistos.
+- **Bienvenida del día** (una vez al día al abrir): saludo según la hora, cobrado ayer y hoy, envíos pendientes,
+  mensajes sin leer y recordatorios de hoy, con números animados. Se apaga en Apariencia.
+- **Botones con nombre**: al pasar el mouse, cada botón de la barra se estira y muestra su nombre y su atajo (Ctrl+P…).
+- **Color de la app**: violeta, azul, verde, naranja o rosa (Apariencia → Color de la app).
+- **Animaciones** al cambiar de pestaña, al abrir ventanas y al subir el total cobrado (se pueden apagar).
+
 ## Novedades v1.8.4
 
 - **Burbuja más discreta**: al llegar un mensaje o pago aparece **3 segundos** si estás usando la PC (otra app abierta) y

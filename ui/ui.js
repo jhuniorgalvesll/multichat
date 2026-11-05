@@ -248,8 +248,23 @@ function fitTabs() {
 }
 window.addEventListener('resize', fitTabs);
 
+let lastActiveId = null;
+
+function applyLook() {
+  const [a, b] = ACCENT_COLORS[state.accent] || ACCENT_COLORS.violeta;
+  document.documentElement.style.setProperty('--acc1', a);
+  document.documentElement.style.setProperty('--acc2', b);
+  document.body.classList.toggle('no-anim', state.animations === false);
+}
+
 function render() {
+  applyLook();
   tabsEl.replaceChildren(...state.accounts.map(renderTab));
+  // Animación al cambiar de pestaña (solo cuando cambia, no en cada actualización).
+  if (state.activeId !== lastActiveId) {
+    tabsEl.querySelector('.tab.active')?.classList.add('just-active');
+    lastActiveId = state.activeId;
+  }
   fitTabs();
   emptyEl.hidden = state.accounts.length > 0;
   tabsEl.querySelector('.tab.active')?.scrollIntoView({ inline: 'nearest' });
@@ -1524,6 +1539,7 @@ function closeCoffee() {
   if (typeof closeVerify === 'function' && verifyOpen) closeVerify();
   if (typeof closeFlyer === 'function' && flyer.open) closeFlyer();
   if (typeof closeAssistantPanel === 'function' && aiOpen) closeAssistantPanel();
+  if (welcomeOpen) closeWelcome();
   if (!coffeeOpen) return;
   coffeeOpen = false;
   $('coffee-modal').hidden = true;
@@ -1546,6 +1562,7 @@ function openDrawer(name) {
   if (!drawerOpen) api.setOverlay(true);
   drawerOpen = name;
   if (name === 'about') loadAbout();
+  else if (name === 'settings') loadSettings();
   else loadPayments();
 }
 
@@ -1556,7 +1573,7 @@ function closeDrawer() {
   api.setOverlay(false);
 }
 
-for (const name of ['about', 'pay']) {
+for (const name of ['about', 'pay', 'settings']) {
   $(`${name}-close`).addEventListener('click', closeDrawer);
   $(`${name}-modal`).addEventListener('click', (e) => {
     if (e.target === $(`${name}-modal`)) closeDrawer();
@@ -1577,6 +1594,201 @@ $('about-coffee').addEventListener('click', () => {
   closeDrawer();
   openCoffee();
 });
+
+// -- Configuración --
+
+const ACCENT_COLORS = {
+  violeta: ['#7c3aed', '#db2777'],
+  azul: ['#2563eb', '#06b6d4'],
+  verde: ['#059669', '#84cc16'],
+  naranja: ['#ea580c', '#f59e0b'],
+  rosa: ['#db2777', '#f43f5e'],
+};
+let settingsOpenSections = new Set(['avisos']);
+
+function settingRow(item) {
+  const row = document.createElement('div');
+  row.className = `set-row set-${item.type}`;
+  row.dataset.search = `${item.label} ${item.hint || ''}`.toLowerCase();
+  const text = document.createElement('div');
+  text.className = 'set-text';
+  text.append(Object.assign(document.createElement('div'), { className: 'set-label', textContent: item.label }));
+  if (item.hint) text.append(Object.assign(document.createElement('div'), { className: 'set-hint', textContent: item.hint }));
+  row.append(text);
+  const run = async (value) => {
+    const next = await api.settingsDo(item.id, value);
+    if (next) renderSettings(next);
+    else closeDrawer();
+  };
+  if (item.type === 'toggle') {
+    const input = Object.assign(document.createElement('input'), { type: 'checkbox', checked: item.value, className: 'set-switch' });
+    input.addEventListener('change', () => run(input.checked));
+    row.append(input);
+    row.addEventListener('click', (e) => { if (e.target !== input) { input.checked = !input.checked; run(input.checked); } });
+  } else if (item.type === 'choice') {
+    const select = document.createElement('select');
+    select.className = 'set-select';
+    for (const o of item.options) select.append(new Option(o.label, o.value, false, String(o.value) === String(item.value)));
+    select.addEventListener('change', () => run(select.value));
+    row.append(select);
+  } else if (item.type === 'accent') {
+    const dots = document.createElement('div');
+    dots.className = 'accent-dots';
+    for (const name of item.options) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.title = name[0].toUpperCase() + name.slice(1);
+      b.className = `accent-dot${name === item.value ? ' on' : ''}`;
+      b.style.background = `linear-gradient(135deg, ${ACCENT_COLORS[name].join(', ')})`;
+      b.addEventListener('click', () => run(name));
+      dots.append(b);
+    }
+    row.append(dots);
+  } else {
+    row.append(Object.assign(document.createElement('span'), { className: 'set-chevron', textContent: '›' }));
+    row.addEventListener('click', () => run());
+  }
+  return row;
+}
+
+function renderSettings(panel) {
+  $('settings-quick').replaceChildren(...panel.quick.map((q) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `quick-btn${q.on ? ' on' : ''}`;
+    b.append(Object.assign(document.createElement('span'), { className: 'quick-icon', textContent: q.icon }), q.label);
+    b.addEventListener('click', async () => {
+      const next = await api.settingsDo(q.id);
+      if (next) renderSettings(next);
+      else closeDrawer();
+    });
+    return b;
+  }));
+  $('settings-sections').replaceChildren(...panel.sections.map((section) => {
+    const box = document.createElement('details');
+    box.className = 'set-section';
+    box.dataset.id = section.id;
+    box.open = settingsOpenSections.has(section.id);
+    box.style.setProperty('--sec', section.color);
+    const summary = document.createElement('summary');
+    summary.append(Object.assign(document.createElement('span'), { className: 'sec-icon', textContent: section.icon }), section.title);
+    box.append(summary, ...section.items.map(settingRow));
+    box.addEventListener('toggle', () => {
+      if (box.open) settingsOpenSections.add(section.id);
+      else settingsOpenSections.delete(section.id);
+    });
+    return box;
+  }));
+  filterSettings();
+}
+
+function filterSettings() {
+  const q = $('settings-search').value.trim().toLowerCase();
+  let any = false;
+  for (const section of document.querySelectorAll('.set-section')) {
+    let visible = 0;
+    const title = section.querySelector('summary').textContent.toLowerCase();
+    for (const row of section.querySelectorAll('.set-row')) {
+      const show = !q || row.dataset.search.includes(q) || title.includes(q);
+      row.hidden = !show;
+      if (show) visible += 1;
+    }
+    section.hidden = !visible;
+    if (q && visible) section.open = true;
+    any = any || visible > 0;
+  }
+  $('settings-quick').hidden = Boolean(q);
+  $('settings-none').hidden = any;
+}
+
+async function loadSettings() {
+  $('settings-search').value = '';
+  const panel = await api.settingsPanel();
+  if (panel) renderSettings(panel);
+  setTimeout(() => $('settings-search').focus(), 50);
+}
+
+$('settings-search').addEventListener('input', filterSettings);
+
+// -- Botones de la barra con su nombre: al pasar el mouse el botón se estira y muestra el nombre (y el atajo) --
+
+function syncButtonLabel(button) {
+  const title = button.getAttribute('title');
+  if (title === null) return;
+  const shortcut = (title.match(/\((Ctrl[^)]*)\)/) || [])[1] || '';
+  const name = title.replace(/\s*\([^)]*\)\s*$/, '').split(' · ')[0].trim();
+  let label = button.querySelector('.btn-label');
+  if (!label) {
+    label = document.createElement('span');
+    label.className = 'btn-label';
+    button.append(label);
+  }
+  label.textContent = name;
+  if (shortcut) label.append(Object.assign(document.createElement('kbd'), { textContent: shortcut }));
+  button.setAttribute('aria-label', title);
+  button.removeAttribute('title');
+}
+
+for (const button of document.querySelectorAll('.toolbar .icon-btn')) syncButtonLabel(button);
+new MutationObserver((changes) => {
+  for (const change of changes) if (change.target.classList.contains('icon-btn')) syncButtonLabel(change.target);
+}).observe(document.querySelector('.toolbar'), { subtree: true, attributes: true, attributeFilter: ['title'] });
+
+// -- Bienvenida del día --
+
+let welcomeOpen = false;
+
+// Cuenta del 0 al número final (animación); sin animaciones, pone el número directo.
+function countUp(el, to, format) {
+  if (state.animations === false) {
+    el.textContent = format(to);
+    return;
+  }
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - start) / 900);
+    el.textContent = format(to * (1 - (1 - t) ** 3));
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+api.onWelcome((data) => {
+  if (state.locked || passwordMode) return;
+  closeCoffee();
+  $('wel-icon').textContent = data.icon;
+  $('wel-title').textContent = data.name ? `${data.greeting}, ${data.name}` : `${data.greeting}`;
+  $('wel-date').textContent = data.date;
+  const money = (n) => `S/ ${Math.round(n).toLocaleString('es-PE')}`;
+  countUp($('wel-yesterday'), data.yesterday.total, money);
+  $('wel-yesterday-label').textContent = `Cobrado ayer · ${data.yesterday.count} pago${data.yesterday.count === 1 ? '' : 's'}`;
+  countUp($('wel-today'), data.today.total, money);
+  $('wel-today-label').textContent = `Cobrado hoy · ${data.today.count} pago${data.today.count === 1 ? '' : 's'}`;
+  countUp($('wel-ship'), data.pendingShipments, (n) => String(Math.round(n)));
+  countUp($('wel-unread'), data.unread, (n) => String(Math.round(n)));
+  $('wel-rem').replaceChildren(...(data.reminders.length ? [
+    Object.assign(document.createElement('div'), { className: 'wel-rem-title', textContent: '⏰ Recordatorios de hoy' }),
+    ...data.reminders.map((r) => Object.assign(document.createElement('div'), {
+      className: 'wel-rem-item',
+      textContent: `${new Date(r.at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })} · ${r.account ? `${r.account}: ` : ''}${r.note}`,
+    })),
+  ] : []));
+  $('welcome-modal').hidden = false;
+  if (!welcomeOpen) api.setOverlay(true);
+  welcomeOpen = true;
+  $('wel-go').focus();
+});
+
+function closeWelcome() {
+  if (!welcomeOpen) return;
+  welcomeOpen = false;
+  $('welcome-modal').hidden = true;
+  api.setOverlay(false);
+}
+
+$('wel-go').addEventListener('click', closeWelcome);
+$('welcome-modal').addEventListener('click', (e) => { if (e.target === $('welcome-modal')) closeWelcome(); });
+$('welcome-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeWelcome(); });
 
 // -- Panel de MultiChat Pro --
 
@@ -1701,7 +1913,20 @@ async function loadPayments() {
   $('link-sub').textContent = sub;
   $('link-open').hidden = !data.windows || status === 'on';
 
-  $('pay-total').textContent = soles(data.total);
+  const prevTotal = Number($('pay-total').dataset.value || 0);
+  $('pay-total').dataset.value = data.total;
+  if (data.total > prevTotal && state.animations !== false) {
+    const start = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / 800);
+      $('pay-total').textContent = soles(prevTotal + (data.total - prevTotal) * (1 - (1 - t) ** 3));
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    $('pay-total').closest('.pay-total').classList.remove('bump');
+    void $('pay-total').offsetWidth;
+    $('pay-total').closest('.pay-total').classList.add('bump');
+  } else $('pay-total').textContent = soles(data.total);
   $('pay-total-count').textContent = `${data.today.length} pago${data.today.length === 1 ? '' : 's'}`;
   $('pay-list').replaceChildren(...(data.today.length ? data.today.slice().reverse().map((p) => {
     const row = document.createElement('div');
@@ -1930,7 +2155,7 @@ for (const [key, name, color] of SERVICES) {
 }
 
 $('add').addEventListener('click', () => api.addMenu());
-$('settings').addEventListener('click', () => api.settingsMenu());
+$('settings').addEventListener('click', () => (drawerOpen === 'settings' ? closeDrawer() : openDrawer('settings')));
 $('layout').addEventListener('click', () => api.toggleLayout());
 $('lock-btn').addEventListener('click', () => api.lockNow());
 $('quick').addEventListener('click', () => api.quickMenu());

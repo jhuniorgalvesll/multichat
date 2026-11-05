@@ -1310,6 +1310,9 @@ function createWindow() {
   win.on('blur', applyPrivacyBlur);
   // Burbuja flotante: se esconde al volver a MultiChat.
   win.on('focus', () => bubble.hide());
+  // Bienvenida del día: la primera vez que se ve la ventana en el día.
+  win.on('show', () => setTimeout(maybeWelcome, 1500));
+  win.on('focus', () => setTimeout(maybeWelcome, 1500));
   win.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
   win.once('ready-to-show', () => {
     if (!startHidden) win.show();
@@ -1373,6 +1376,8 @@ function pushState() {
     creatorYape: CREATOR_YAPE,
     bubble: data.settings.bubble === true,
     replyAlertMinutes: data.settings.replyAlertMinutes || 10,
+    accent: data.settings.accent || 'violeta',
+    animations: data.settings.animations !== false,
   });
   bubble.update();
 }
@@ -1598,6 +1603,216 @@ function setLayout(layout) {
   store.save();
   applyLayout();
   pushState();
+}
+
+// ---------- Bienvenida del día (una vez al día, al abrir o mostrar la ventana) ----------
+
+function maybeWelcome() {
+  const { settings } = store.get();
+  const today = paylog.dayKey();
+  if (locked || settings.welcome === false || settings.lastWelcome === today || !win || !win.isVisible()) return;
+  settings.lastWelcome = today;
+  store.save();
+  const hour = new Date().getHours();
+  const greeting = hour >= 5 && hour < 12 ? 'Buenos días' : hour >= 12 && hour < 19 ? 'Buenas tardes' : 'Buenas noches';
+  const icon = hour >= 5 && hour < 12 ? '☀️' : hour >= 12 && hour < 19 ? '🌤️' : '🌙';
+  const sum = (list) => ({ count: list.length, total: list.reduce((t, p) => t + p.amount, 0) });
+  const yesterday = paylog.read(paylog.dayKey(new Date(Date.now() - 86400000))).payments;
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  const todayReminders = reminders().filter((r) => new Date(r.at) <= end).slice(0, 4).map((r) => {
+    const acc = findAccount(r.accountId);
+    return { at: r.at, note: r.note || 'Revisar este chat', account: acc ? acc.name : '' };
+  });
+  const profile = store.get().ticketProfiles[0];
+  win.webContents.send('ui:welcome', {
+    greeting,
+    icon,
+    name: profile ? profile.name : '',
+    date: new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' }),
+    yesterday: sum(yesterday),
+    today: sum(paylog.read().payments),
+    pendingShipments: sales.pendingShipments().length,
+    unread: openAccounts().reduce((t, a) => t + (a.muted ? 0 : unread.get(a.id) || 0), 0),
+    reminders: todayReminders,
+  });
+}
+
+// ---------- Panel de configuración (se desliza desde la derecha) ----------
+// main.js describe las opciones (secciones, interruptores, listas y acciones) y la ventana las dibuja.
+
+const ACCENTS = ['violeta', 'azul', 'verde', 'naranja', 'rosa'];
+
+function settingsPanel() {
+  const data = store.get();
+  const s = data.settings;
+  const hasLock = Boolean(data.lock);
+  const toggle = (id, label, value, hint) => ({ id, type: 'toggle', label, value: Boolean(value), hint });
+  const action = (id, label, hint) => ({ id, type: 'action', label, hint });
+  const minutes = (values, never, fmt) => values.map((v) => ({ value: v, label: v ? fmt(v) : never }));
+  return {
+    quick: [
+      { id: hasLock ? 'lockNow' : 'passwordSetup', icon: '🔒', label: hasLock ? 'Bloquear' : 'Contraseña' },
+      { id: 'themeToggle', icon: nativeTheme.shouldUseDarkColors ? '☀️' : '🌙', label: nativeTheme.shouldUseDarkColors ? 'Modo claro' : 'Modo oscuro' },
+      { id: 'dndToggle', icon: '🔕', label: 'No molestar', on: s.dnd.enabled },
+      { id: 'layoutToggle', icon: '⊞', label: 'Cuadrícula', on: isGrid() },
+    ],
+    sections: [
+      {
+        id: 'avisos', icon: '🔔', title: 'Avisos y notificaciones', color: '#f59e0b',
+        items: [
+          toggle('dnd.schedule', 'Avisar solo en horario de atención', s.dnd.schedule),
+          { id: 'dnd.hours', type: 'choice', label: 'Horario de atención', value: s.dnd.hours, options: ATTENTION_HOURS.map(([a, b]) => ({ value: `${b}-${a}`, label: `${a} a ${b}` })) },
+          toggle('customNotifications', 'Notificaciones con botón Responder', s.customNotifications),
+          toggle('bubble', 'Burbuja flotante al llegar mensajes o pagos', s.bubble === true, '3 segundos si usas otra app, 2 minutos con la PC sin uso'),
+        ],
+      },
+      {
+        id: 'pagos', icon: '💳', title: 'Pagos (Yape, Plin, BBVA)', color: '#16a34a',
+        items: [
+          action('paymentsPanel', 'Ver pagos de hoy y notificaciones del celular'),
+          toggle('paymentAlerts', 'Avisar cuando llegue un pago', s.paymentAlerts),
+          toggle('paymentVoice', 'Decir los pagos en voz alta', s.paymentVoice),
+          toggle('readAllPhone', 'Leer en voz alta todas las notificaciones del celular', s.readAllPhone),
+          toggle('keepAwake', 'Seguir avisando con la pantalla apagada', s.keepAwake),
+          action('testPayment', '🔊 Probar aviso y voz'),
+          action('verifyPayment', '🛡️ Verificar la captura de un cliente'),
+          action('phoneLinkCheck', 'Revisar notificaciones de Enlace Móvil'),
+        ],
+      },
+      {
+        id: 'ventas', icon: '📦', title: 'Ventas y envíos', color: '#0ea5e9',
+        items: [
+          action('sales', 'Registro de ventas'),
+          action('shipments', 'Envíos pendientes'),
+          action('ticketProfiles', 'Remitentes de tickets (logo, QR, datos)'),
+          action('forms', 'Formularios de envío (Shalom / Olva)'),
+          action('trackShalom', 'Página de rastreo de Shalom', s.trackingUrls.Shalom || 'Sin configurar'),
+          action('trackOlva', 'Página de rastreo de Olva', s.trackingUrls.Olva || 'Sin configurar'),
+        ],
+      },
+      {
+        id: 'herramientas', icon: '⚡', title: 'Herramientas', color: '#8b5cf6',
+        items: [
+          action('templates', 'Respuestas rápidas'),
+          action('assistant', '✨ Asistente con IA'),
+          action('flyer', '🎨 Crear estado u oferta'),
+        ],
+      },
+      {
+        id: 'apariencia', icon: '🎨', title: 'Apariencia', color: '#ec4899',
+        items: [
+          { id: 'accent', type: 'accent', label: 'Color de la app', value: ACCENTS.includes(s.accent) ? s.accent : 'violeta', options: ACCENTS },
+          { id: 'theme', type: 'choice', label: 'Modo', value: s.theme, options: [{ value: 'light', label: 'Claro' }, { value: 'dark', label: 'Oscuro' }, { value: 'system', label: 'Igual que Windows' }] },
+          toggle('animations', 'Animaciones', s.animations !== false),
+          toggle('welcome', 'Bienvenida del día al abrir', s.welcome !== false),
+        ],
+      },
+      {
+        id: 'seguridad', icon: '🔐', title: 'Seguridad', color: '#ef4444',
+        items: [
+          ...(hasLock ? [
+            action('lockNow', 'Bloquear ahora', 'Ctrl+L'),
+            action('passwordChange', 'Cambiar contraseña'),
+            action('passwordRemove', 'Quitar contraseña'),
+            { id: 'autoLockMinutes', type: 'choice', label: 'Bloqueo automático', value: s.autoLockMinutes, options: minutes([0, 5, 15, 30, 60], 'Nunca', (v) => (v === 60 ? 'Tras 1 hora sin usar la PC' : `Tras ${v} minutos sin usar la PC`)) },
+          ] : [action('passwordSetup', 'Poner contraseña')]),
+          toggle('privacyBlur', 'Difuminar chats al salir de la app', s.privacyBlur),
+        ],
+      },
+      {
+        id: 'sistema', icon: '🖥️', title: 'Ventana y sistema', color: '#06b6d4',
+        items: [
+          toggle('openAtLogin', 'Iniciar con Windows', s.openAtLogin),
+          toggle('closeToTray', 'Al cerrar, seguir en la bandeja', s.closeToTray),
+          toggle('alwaysOnTop', 'Mantener siempre encima', s.alwaysOnTop, 'No se esconde al hacer clic en otro programa'),
+          { id: 'hibernateMinutes', type: 'choice', label: 'Suspender cuentas inactivas', value: s.hibernateMinutes, options: minutes([0, 5, 15, 30, 60], 'Nunca', (v) => (v === 60 ? 'Después de 1 hora' : `Después de ${v} minutos`)) },
+          action('exportBackup', 'Exportar copia de seguridad'),
+          action('importBackup', 'Importar copia de seguridad'),
+          action('memory', 'Ver uso de memoria'),
+        ],
+      },
+      {
+        id: 'acerca', icon: 'ℹ️', title: 'MultiChat Pro', color: '#64748b',
+        items: [
+          action('about', 'Acerca de, novedades y actualizaciones', `Versión ${app.getVersion()}`),
+          action('checkUpdates', 'Buscar actualizaciones'),
+          action('coffee', '☕ Invítale un cafecito al creador'),
+          action('quit', `Salir de ${APP_NAME}`),
+        ],
+      },
+    ],
+  };
+}
+
+// Ejecuta una opción del panel. Devuelve el panel actualizado (o null si la opción abrió otra ventana).
+function settingsDo(id, value) {
+  const { settings } = store.get();
+  const send = (channel, payload) => win.webContents.send(channel, payload);
+  const flip = (key, after) => {
+    settings[key] = Boolean(value);
+    store.save();
+    if (after) after();
+  };
+  const actions = {
+    'dnd.schedule': () => updateDnd({ schedule: Boolean(value) }),
+    'dnd.hours': () => updateDnd({ hours: String(value), schedule: true }),
+    customNotifications: () => flip('customNotifications', syncNotifyState),
+    bubble: () => setBubbleEnabled(Boolean(value)),
+    paymentAlerts: () => flip('paymentAlerts', pushPayments),
+    paymentVoice: () => flip('paymentVoice'),
+    readAllPhone: () => flip('readAllPhone'),
+    keepAwake: () => flip('keepAwake', syncKeepAwake),
+    privacyBlur: () => flip('privacyBlur', applyPrivacyBlur),
+    openAtLogin: () => flip('openAtLogin', () => app.setLoginItemSettings({ openAtLogin: settings.openAtLogin, args: ['--hidden'] })),
+    closeToTray: () => flip('closeToTray'),
+    alwaysOnTop: () => flip('alwaysOnTop', () => win.setAlwaysOnTop(settings.alwaysOnTop)),
+    animations: () => flip('animations', pushState),
+    welcome: () => flip('welcome'),
+    accent: () => {
+      if (ACCENTS.includes(value)) settings.accent = value;
+      store.save();
+      pushState();
+    },
+    theme: () => setTheme(String(value)),
+    autoLockMinutes: () => { settings.autoLockMinutes = Number(value) || 0; store.save(); },
+    hibernateMinutes: () => { settings.hibernateMinutes = Number(value) || 0; store.save(); },
+    themeToggle: () => setTheme(nativeTheme.shouldUseDarkColors ? 'light' : 'dark'),
+    dndToggle: () => updateDnd({ enabled: !settings.dnd.enabled }),
+    layoutToggle: () => setLayout(isGrid() ? 'single' : 'grid'),
+  };
+  const windows = {
+    lockNow: lockApp,
+    passwordSetup: () => send('ui:password', 'setup'),
+    passwordChange: () => send('ui:password', 'change'),
+    passwordRemove: () => send('ui:password', 'remove'),
+    paymentsPanel: () => send('ui:payments-panel'),
+    testPayment: () => onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }),
+    verifyPayment: () => send('ui:verify', { status: 'ask' }),
+    phoneLinkCheck: showPhoneLinkCheck,
+    sales: () => send('ui:sales'),
+    shipments: () => send('ui:shipments'),
+    ticketProfiles: () => send('ui:ticket-profiles'),
+    forms: () => send('ui:forms'),
+    trackShalom: () => send('ui:tracking-url', { carrier: 'Shalom', url: settings.trackingUrls.Shalom }),
+    trackOlva: () => send('ui:tracking-url', { carrier: 'Olva', url: settings.trackingUrls.Olva }),
+    templates: openTemplatesDialog,
+    assistant: openAssistantFromSelection,
+    flyer: () => send('ui:flyer'),
+    exportBackup,
+    importBackup,
+    memory: showMemory,
+    about: () => send('ui:about'),
+    checkUpdates: () => updater.checkNow(),
+    coffee: () => send('ui:coffee'),
+    quit,
+  };
+  if (actions[id]) {
+    actions[id]();
+    return settingsPanel();
+  }
+  if (windows[id]) windows[id]();
+  return null;
 }
 
 function showSettingsMenu() {
@@ -1870,6 +2085,8 @@ function registerIpc() {
   ipcMain.on('add:menu', showAddMenu);
   ipcMain.on('add:service', (_e, service) => addAccount(service));
   ipcMain.on('settings:menu', showSettingsMenu);
+  ipcMain.handle('settings:panel', () => (locked ? null : settingsPanel()));
+  ipcMain.handle('settings:do', (_e, id, value) => (locked ? null : settingsDo(String(id), value)));
   ipcMain.on('layout:toggle', () => setLayout(isGrid() ? 'single' : 'grid'));
   ipcMain.on('lock:now', lockApp);
   ipcMain.on('quick:menu', showQuickMenu);
@@ -2315,6 +2532,7 @@ function init() {
   syncPaymentWatcher();
   syncKeepAwake();
   setTimeout(announceUpdated, 4000);
+  setTimeout(maybeWelcome, 3500);
   updater.start({
     getWindow: () => win,
     onChange: (state) => { if (win && !win.isDestroyed()) win.webContents.send('update:state', state); },
