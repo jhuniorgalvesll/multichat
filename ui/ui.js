@@ -1499,6 +1499,8 @@ function openCoffee() {
 
 function closeCoffee() {
   closeDrawer(); // las otras ventanas llaman a closeCoffee() antes de abrirse: también cierran los paneles laterales
+  if (typeof closeVerify === 'function' && verifyOpen) closeVerify();
+  if (typeof closeFlyer === 'function' && flyer.open) closeFlyer();
   if (!coffeeOpen) return;
   coffeeOpen = false;
   $('coffee-modal').hidden = true;
@@ -1730,6 +1732,76 @@ for (const [id, key] of [['opt-alerts', 'alerts'], ['opt-voice', 'voice'], ['opt
   $(id).addEventListener('change', () => api.setPaymentOption(key, $(id).checked));
 }
 $('pay-test').addEventListener('click', () => api.testPayment());
+$('pay-verify').addEventListener('click', () => {
+  closeDrawer();
+  showVerify({ status: 'ask' });
+});
+
+// ---------- Verificador de pagos ----------
+
+let verifyOpen = false;
+const VERIFY = {
+  reading: ['⏳', 'Leyendo la captura…', 'Un momento.'],
+  ask: ['🛡️', 'Verificar un pago', 'Haz clic derecho sobre la captura que te mandó el cliente → "Verificar pago de esta captura". O escribe el monto aquí abajo.'],
+  confirmed: ['✅', 'Pago confirmado', 'Este pago sí llegó a tu cuenta.'],
+  probable: ['🟡', 'Hay un pago de ese monto', 'Revisa que el nombre y la hora coincidan antes de despachar.'],
+  'not-found': ['❌', 'Este pago NO llegó', 'No hay ningún pago de ese monto. Puede ser una captura falsa: revisa tu app de Yape o BBVA antes de despachar.'],
+  unreadable: ['❓', 'No pude leer el monto', 'Escribe el monto de la captura aquí abajo para buscarlo.'],
+};
+
+function showVerify(result) {
+  if (state.locked || passwordMode) return;
+  closeCoffee();
+  const [icon, title, text] = VERIFY[result.status] || VERIFY.ask;
+  $('verify-card').dataset.status = result.status;
+  $('verify-icon').textContent = icon;
+  $('verify-title').textContent = result.status === 'not-found' && result.info && result.info.amount
+    ? `No llegó ningún pago de ${soles(result.info.amount)}` : title;
+  $('verify-text').textContent = result.reason ? `${result.reason} ${text}` : text;
+  const info = result.info || {};
+  const read = [];
+  if (info.amount && !result.manual) read.push(`Monto ${soles(info.amount)}`);
+  if (info.time && !result.manual) read.push(`Hora ${String(info.time.h).padStart(2, '0')}:${String(info.time.m).padStart(2, '0')}`);
+  if (info.operation) read.push(`Operación ${info.operation}`);
+  if (info.app) read.push(info.app);
+  $('verify-read').textContent = read.length ? `En la captura: ${read.join(' · ')}` : '';
+  $('verify-read').hidden = !read.length;
+  $('verify-matches').replaceChildren(...(result.matches || []).map((p) => {
+    const row = document.createElement('div');
+    row.className = `pay-row ${PAY_ICON[p.app] || 'plin'}`;
+    const badge = Object.assign(document.createElement('span'), { className: 'pay-app', textContent: p.app === 'BBVA' ? 'Plin' : p.app });
+    const who = Object.assign(document.createElement('div'), { className: 'pay-who', textContent: p.name });
+    const when = document.createElement('small');
+    const day = new Date(p.at).toDateString() === new Date().toDateString() ? 'hoy' : new Date(p.at).toLocaleDateString('es-PE');
+    when.textContent = `${p.label} · ${day} ${hhmm(p.at)}`;
+    who.append(when);
+    const amount = Object.assign(document.createElement('div'), { className: 'pay-amount', textContent: soles(p.amount) });
+    row.append(badge, who, amount);
+    return row;
+  }));
+  $('verify-modal').hidden = false;
+  if (!verifyOpen) api.setOverlay(true);
+  verifyOpen = true;
+  if (result.status === 'unreadable' || result.status === 'ask') $('verify-amount').focus();
+}
+
+function closeVerify() {
+  if (!verifyOpen) return;
+  verifyOpen = false;
+  $('verify-modal').hidden = true;
+  api.setOverlay(false);
+}
+
+api.onVerify(showVerify);
+$('verify-close').addEventListener('click', closeVerify);
+$('verify-modal').addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeVerify();
+});
+$('verify-check').addEventListener('click', () => api.verifyManual($('verify-amount').value, $('verify-time').value.trim()));
+$('verify-amount').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('verify-check').click();
+});
+$('verify-paste').addEventListener('click', () => api.verifyClipboard());
 $('link-open').addEventListener('click', () => api.openPhoneLink());
 api.onPaymentsUpdate(() => {
   if (drawerOpen === 'pay') loadPayments();

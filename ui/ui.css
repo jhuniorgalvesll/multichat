@@ -1271,3 +1271,34 @@ tbody tr:hover { background: var(--tab-hover); }
 .day-nav { display: flex; align-items: center; gap: 6px; }
 .day-nav span { flex: 1; text-align: center; font-weight: 700; text-transform: capitalize; }
 .day-nav button:disabled { opacity: 0.4; cursor: default; }
+
+/* ---- Verificador de pagos ---- */
+.verify-card { width: 420px; }
+.verify-icon { font-size: 46px; line-height: 1; }
+.verify-card[data-status="confirmed"] h2 { color: #16a34a; }
+.verify-card[data-status="not-found"] h2 { color: var(--danger); }
+.verify-card[data-status="probable"] h2 { color: #d97706; }
+.verify-card[data-status="not-found"] { box-shadow: 0 20px 60px rgb(220 38 38 / 0.35), 0 0 0 2px rgb(220 38 38 / 0.5); }
+.verify-card[data-status="confirmed"] { box-shadow: 0 20px 60px rgb(22 163 74 / 0.3), 0 0 0 2px rgb(22 163 74 / 0.45); }
+.verify-read { margin: 4px 0 8px; padding: 8px 10px; border-radius: 10px; background: var(--page); font-size: 12.5px; color: var(--muted); }
+.verify-card .pay-list { margin-bottom: 10px; text-align: left; }
+.verify-manual { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 12px; text-align: left; }
+.verify-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; }
+
+/* ---- Creador de estados y ofertas ---- */
+.flyer-card { width: min(900px, calc(100vw - 40px)); display: grid; grid-template-columns: 1fr 300px; gap: 22px; text-align: left; }
+.flyer-form { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.flyer-form h2 { margin: 0 0 4px; }
+.flyer-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--muted); }
+.flyer-form textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--bar-border); border-radius: 8px; background: var(--page); color: var(--text); font: inherit; resize: vertical; }
+.fly-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.fly-sizes { display: flex; gap: 4px; }
+.card .fly-sizes button { flex: 1; padding: 9px 6px; font-size: 12.5px; }
+.card .fly-sizes button.on { border-color: #7c3aed; background: rgb(124 58 237 / 0.12); color: #7c3aed; font-weight: 700; }
+.fly-label { font-size: 12.5px; color: var(--muted); }
+.fly-themes { display: flex; gap: 10px; }
+.card .fly-swatch { width: 44px; height: 44px; padding: 0; border-radius: 12px; border: 2px solid var(--bar-border); }
+.card .fly-swatch.on { border-color: #7c3aed; box-shadow: 0 0 0 3px rgb(124 58 237 / 0.3); }
+.fly-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.flyer-preview { display: grid; place-items: center; padding: 10px; border-radius: 14px; background: var(--page); }
+.flyer-preview canvas { width: 100%; height: auto; max-height: calc(100vh - 160px); object-fit: contain; border-radius: 10px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.2); }

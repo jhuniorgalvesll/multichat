@@ -40,6 +40,17 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.7.0
+
+- **🛡️ Verificador de pagos**: clic derecho sobre la captura de Yape/Plin que manda un cliente →
+  *Verificar pago de esta captura*. Windows lee el texto de la imagen (monto, hora, n° de operación, sin internet) y se
+  compara con los pagos que de verdad llegaron: ✅ confirmado, 🟡 hay un pago de ese monto (revisar), ❌ **no llegó:
+  posible captura falsa**. También se puede verificar una captura copiada o escribir el monto a mano
+  (panel de pagos → *Verificar la captura de un cliente*). La imagen no se guarda.
+- **🎨 Creador de estados y ofertas** (botón de imagen en la barra o ⚙): foto del producto, precio y precio anterior,
+  etiqueta (Oferta, Nuevo…), texto, logo del remitente y pie con teléfono y tienda; 4 diseños y 2 tamaños
+  (estado vertical o cuadrado). *Pegar en el chat* (WhatsApp muestra la vista previa; tú envías) o *Guardar imagen*.
+
 ## Novedades v1.6.0
 
 - **Pantalla apagada**: con *Seguir avisando con la pantalla apagada* (panel de pagos, activado) la laptop no se

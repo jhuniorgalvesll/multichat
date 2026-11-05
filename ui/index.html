@@ -31,6 +31,9 @@
     <button class="icon-btn" id="quick" title="Respuestas rápidas (Ctrl+Shift+R)">
       <svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
     </button>
+    <button class="icon-btn" id="flyer-btn" title="Crear estado u oferta (imagen con foto, precio y logo)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/><path d="M15 5.5h4M17 3.5v4"/></svg>
+    </button>
     <button class="icon-btn has-count" id="reminders" title="Recordatorios">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M5 3 2 6M19 3l3 3"/></svg>
       <span class="count" id="reminder-count" hidden></span>
@@ -464,6 +467,7 @@
       <label class="switch-row"><span>Leer en voz alta todas las notificaciones del celular</span><input type="checkbox" id="opt-readall"></label>
       <label class="switch-row"><span>Seguir avisando con la pantalla apagada (la laptop no se suspende)</span><input type="checkbox" id="opt-awake"></label>
       <button type="button" class="drawer-btn" id="pay-test">🔊 Probar aviso y voz</button>
+      <button type="button" class="drawer-btn primary" id="pay-verify">🛡️ Verificar la captura de un cliente</button>
 
       <div class="drawer-section" id="phone-title">Notificaciones del celular de hoy</div>
       <div class="phone-list" id="phone-list"></div>
@@ -479,6 +483,63 @@
       <ul class="update-pop-list" id="upd-items"></ul>
       <p class="hint">Ya se descargó. <b>Se instalará sola la próxima vez que abras MultiChat</b> (por ejemplo, al prender la PC). No se cierra nada ahora: sigue trabajando.</p>
       <button type="button" class="primary" id="upd-ok">Entendido</button>
+    </div>
+  </section>
+
+  <!-- Verificador de pagos: resultado de comparar una captura con los pagos que llegaron -->
+  <section class="backdrop" id="verify-modal" hidden>
+    <div class="card verify-card" id="verify-card">
+      <div class="verify-icon" id="verify-icon"></div>
+      <h2 id="verify-title"></h2>
+      <p class="hint" id="verify-text"></p>
+      <div class="verify-read" id="verify-read"></div>
+      <div class="pay-list" id="verify-matches"></div>
+      <div class="verify-manual">
+        <div class="note">¿Otra captura? Haz clic derecho sobre la imagen en el chat → <b>Verificar pago</b>, o cópiala y usa el botón. También puedes escribir el monto:</div>
+        <div class="verify-row">
+          <input id="verify-amount" placeholder="Monto, ej. 50" inputmode="decimal">
+          <input id="verify-time" placeholder="Hora, ej. 10:42">
+          <button type="button" id="verify-check">Buscar</button>
+        </div>
+        <button type="button" id="verify-paste">📋 Verificar la captura copiada</button>
+      </div>
+      <button type="button" class="primary" id="verify-close">Listo</button>
+    </div>
+  </section>
+
+  <!-- Creador de estados y ofertas -->
+  <section class="backdrop" id="flyer-modal" hidden>
+    <div class="card flyer-card">
+      <div class="flyer-form">
+        <h2>🎨 Crear estado u oferta</h2>
+        <button type="button" id="fly-photo">📷 Elegir foto del producto</button>
+        <label>Producto <input id="fly-name" maxlength="80" placeholder="Ej.: Fipronil 250 ml"></label>
+        <div class="fly-row">
+          <label>Precio (S/) <input id="fly-price" maxlength="10" inputmode="decimal" placeholder="45"></label>
+          <label>Antes (opcional) <input id="fly-old" maxlength="10" inputmode="decimal" placeholder="60"></label>
+        </div>
+        <label>Etiqueta <input id="fly-tag" maxlength="18" value="Oferta" placeholder="Oferta, Nuevo, Últimas unidades…"></label>
+        <label>Texto <textarea id="fly-text" maxlength="160" rows="2" placeholder="Envíos a todo el Perú por Shalom y Olva"></textarea></label>
+        <div class="fly-row">
+          <label>Logo <select id="fly-profile"></select></label>
+          <label>Tamaño
+            <span class="fly-sizes" id="fly-sizes">
+              <button type="button" data-size="estado" class="on">Estado</button>
+              <button type="button" data-size="post">Cuadrado</button>
+            </span>
+          </label>
+        </div>
+        <label>Pie (teléfono, tienda) <input id="fly-footer" maxlength="70"></label>
+        <div class="fly-label">Diseño</div>
+        <div class="fly-themes" id="fly-themes"></div>
+        <p class="note" id="fly-status"></p>
+        <div class="fly-actions">
+          <button type="button" class="primary" id="fly-paste">📋 Pegar en el chat</button>
+          <button type="button" id="fly-save">💾 Guardar imagen</button>
+          <button type="button" id="fly-close">Cerrar</button>
+        </div>
+      </div>
+      <div class="flyer-preview"><canvas id="fly-canvas"></canvas></div>
     </div>
   </section>
 
@@ -525,5 +586,6 @@
   <script src="vendor/qrcode.js"></script>
   <script src="ticket.js"></script>
   <script src="ui.js"></script>
+  <script src="flyer.js"></script>
 </body>
 </html>

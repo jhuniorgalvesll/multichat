@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.7.0',
+    items: [
+      'Verificador de pagos: clic derecho en la captura del cliente → te dice si el pago llegó o si puede ser falsa.',
+      'Creador de estados y ofertas: foto, precio y logo en una imagen lista para pegar o subir a estados.',
+    ],
+  },
+  {
     version: '1.6.0',
     items: [
       'Sigue diciendo los pagos con la pantalla apagada (la laptop no se suspende).',

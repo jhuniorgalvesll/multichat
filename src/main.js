@@ -13,6 +13,7 @@ const SERVICES = require('./services');
 const sales = require('./sales');
 const payments = require('./payments');
 const paylog = require('./paylog');
+const verify = require('./verify');
 const bubble = require('./bubble');
 const updater = require('./updater');
 const CHANGELOG = require('./changelog');
@@ -524,6 +525,52 @@ async function insertTemplate(template) {
     await sleep(900); // tiempo para que se abra la vista previa de la foto
   }
   await pasteText(wc, text);
+}
+
+// ---------- Creador de estados y ofertas ----------
+// La imagen se dibuja en la ventana principal; aquí solo se elige la foto y se guarda o se pega en el chat.
+
+async function pickFlyerImage() {
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    title: 'Elegir foto del producto',
+    properties: ['openFile'],
+    filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] }],
+  });
+  if (canceled || !filePaths[0]) return null;
+  let image = await decodeImage(filePaths[0]);
+  if (image.isEmpty()) return null;
+  const { width, height } = image.getSize();
+  if (Math.max(width, height) > 1600) image = width >= height ? image.resize({ width: 1600, quality: 'best' }) : image.resize({ height: 1600, quality: 'best' });
+  return image.toDataURL();
+}
+
+function flyerImage(dataUrl) {
+  return typeof dataUrl === 'string' && dataUrl.startsWith('data:image/png;base64,') ? nativeImage.createFromDataURL(dataUrl) : null;
+}
+
+async function saveFlyer(dataUrl) {
+  const image = flyerImage(dataUrl);
+  if (!image || image.isEmpty()) return { ok: false };
+  const { canceled, filePath } = await dialog.showSaveDialog(win, {
+    title: 'Guardar imagen',
+    defaultPath: `oferta-${new Date().toISOString().slice(0, 10)}.png`,
+    filters: [{ name: 'Imagen PNG', extensions: ['png'] }],
+  });
+  if (canceled || !filePath) return { ok: false, canceled: true };
+  fs.writeFileSync(filePath, image.toPNG());
+  return { ok: true };
+}
+
+// Pega la imagen en el chat abierto: WhatsApp muestra su vista previa y tú decides si enviarla.
+async function pasteFlyer(dataUrl) {
+  const image = flyerImage(dataUrl);
+  if (!image || image.isEmpty() || locked) return { ok: false };
+  await copyImage(image);
+  const view = views.get(activeId);
+  if (!view) return { ok: true, copied: true };
+  view.webContents.focus();
+  view.webContents.paste();
+  return { ok: true };
 }
 
 function showQuickMenu() {
@@ -1385,7 +1432,11 @@ function showEditMenu(wc, params) {
     );
   }
   if (params.hasImageContents) {
-    template.push({ label: 'Copiar imagen', click: () => wc.copyImageAt(params.x, params.y) }, { type: 'separator' });
+    template.push(
+      { label: '🛡️ Verificar pago de esta captura (Yape / Plin)', click: () => verifyImageAt(wc, params.x, params.y) },
+      { label: 'Copiar imagen', click: () => wc.copyImageAt(params.x, params.y) },
+      { type: 'separator' },
+    );
   }
   const selection = params.selectionText.trim();
   template.push(
@@ -1601,6 +1652,7 @@ function showSettingsMenu() {
       checked: settings.bubble !== false,
       click: () => setBubbleEnabled(settings.bubble === false),
     },
+    { label: '🎨 Crear estado u oferta…', click: () => win.webContents.send('ui:flyer') },
     { label: 'Respuestas rápidas…', click: openTemplatesDialog },
     {
       label: 'Páginas de rastreo',
@@ -1874,6 +1926,21 @@ function registerIpc() {
   ipcMain.handle('update:check', () => updater.check());
   ipcMain.handle('payments:state', (_e, day) => paymentsState(typeof day === 'string' ? day : undefined));
   ipcMain.handle('payments:export', (_e, day) => exportPaymentsCsv(day));
+  ipcMain.handle('flyer:pick-image', () => (locked ? null : pickFlyerImage()));
+  ipcMain.handle('flyer:save', (_e, dataUrl) => (locked ? { ok: false } : saveFlyer(dataUrl)));
+  ipcMain.handle('flyer:paste', (_e, dataUrl) => pasteFlyer(dataUrl));
+  // Verificar: captura copiada (Ctrl+C / recorte) o un monto escrito a mano.
+  ipcMain.on('verify:clipboard', () => {
+    if (locked) return;
+    win.webContents.send('ui:verify', { status: 'reading' });
+    verifyImage(clipboard.readImage());
+  });
+  ipcMain.on('verify:manual', (_e, amount, time) => {
+    if (locked) return;
+    const value = Number(String(amount).replace(',', '.'));
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(time || ''));
+    sendVerifyResult({ amount: value > 0 ? value : null, time: m ? { h: Number(m[1]), m: Number(m[2]) } : null, date: null, operation: '', app: '' }, { manual: true });
+  });
   ipcMain.on('payments:set', (_e, key, value) => { if (!locked) setPaymentOption(key, value); });
   ipcMain.on('payments:test', () => { if (!locked) onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }); });
   ipcMain.on('payments:open-phone-link', () => shell.openExternal('ms-phone:').catch(() => {}));
@@ -2029,6 +2096,52 @@ function syncPaymentWatcher() {
     },
   });
   paymentWatcher.start();
+}
+
+// ---------- Verificador de pagos (capturas de Yape / Plin) ----------
+
+// Pagos registrados del día de la captura (o de hoy y ayer si la captura no dice la fecha).
+function paymentsForReceipt(info) {
+  if (info.date) return paylog.read(paylog.dayKey(new Date(info.date.y, info.date.mo, info.date.d))).payments;
+  const yesterday = new Date(Date.now() - 86400000);
+  return [...paylog.read(paylog.dayKey(yesterday)).payments, ...paylog.read().payments];
+}
+
+function sendVerifyResult(info, extra = {}) {
+  const result = verify.match(info, paymentsForReceipt(info));
+  win.webContents.send('ui:verify', {
+    ...result,
+    info,
+    matches: result.matches.map(({ app: payApp, name, amount, at, diffMin }) => ({ app: payApp, label: PAY_LABEL[payApp], name, amount, at, diffMin })),
+    ...extra,
+  });
+}
+
+// Clic derecho en una imagen del chat → se lee su texto y se compara con los pagos que llegaron.
+async function verifyImageAt(wc, x, y) {
+  if (locked) return;
+  win.webContents.send('ui:verify', { status: 'reading' });
+  wc.copyImageAt(x, y);
+  await new Promise((r) => setTimeout(r, 400));
+  await verifyImage(clipboard.readImage());
+}
+
+async function verifyImage(image) {
+  if (!image || image.isEmpty()) {
+    win.webContents.send('ui:verify', { status: 'unreadable', info: {}, matches: [], reason: 'No se pudo tomar la imagen.' });
+    return;
+  }
+  const text = await verify.readImageText(image.toPNG());
+  if (!text) {
+    win.webContents.send('ui:verify', {
+      status: 'unreadable',
+      info: {},
+      matches: [],
+      reason: process.platform === 'win32' ? 'Windows no pudo leer el texto de la imagen.' : 'La lectura de capturas funciona en Windows.',
+    });
+    return;
+  }
+  sendVerifyResult(verify.parseReceipt(text));
 }
 
 function showTodayPayments() {
