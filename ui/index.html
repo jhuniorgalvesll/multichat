@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data:; style-src 'self'">
+  <title>MultiChat Pro</title>
+  <link rel="stylesheet" href="ui.css">
+  <link rel="stylesheet" href="ticket.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="brand" id="brand" title="MultiChat Pro · Invítale un cafecito al creador ☕">
+      <img src="../build/icon.png" alt="">
+      <div>
+        <div class="brand-name">MultiChat <span class="pro">PRO</span></div>
+        <div class="brand-meta"><span class="js-version"></span> · por <span class="js-creator"></span></div>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs"></nav>
+    <button class="icon-btn add" id="add" title="Agregar cuenta">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="ask-data" title="Pedir datos de envío (formulario Shalom / Olva)">
+      <svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 4V2.5h6V4M8.5 10h7M8.5 14h7M8.5 18h4"/></svg>
+    </button>
+    <button class="icon-btn" id="print-ticket" title="Imprimir ticket de envío (Ctrl+P)">
+      <svg viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7z"/></svg>
+    </button>
+    <button class="icon-btn" id="quick" title="Respuestas rápidas (Ctrl+Shift+R)">
+      <svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+    </button>
+    <button class="icon-btn has-count" id="reminders" title="Recordatorios">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M5 3 2 6M19 3l3 3"/></svg>
+      <span class="count" id="reminder-count" hidden></span>
+    </button>
+    <button class="icon-btn" id="dnd" title="No molestar">
+      <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 9.3-5M18 8c0 7 3 9 3 9H9M13.7 21a2 2 0 0 1-3.4 0M3 3l18 18M6 8c0 2.5-.5 4.3-1.1 5.6"/></svg>
+    </button>
+    <button class="icon-btn" id="theme" title="Modo oscuro">
+      <svg viewBox="0 0 24 24" id="theme-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg viewBox="0 0 24 24" id="theme-sun" hidden><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+    <button class="icon-btn" id="layout" title="Ver varias cuentas a la vez (Ctrl+G)">
+      <svg viewBox="0 0 24 24" id="layout-grid"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <svg viewBox="0 0 24 24" id="layout-single" hidden><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+    </button>
+    <button class="icon-btn" id="lock-btn" title="Bloquear (Ctrl+L)" hidden>
+      <svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    </button>
+    <button class="icon-btn coffee-btn" id="coffee" title="Invítale un cafecito al creador ☕">
+      <svg viewBox="0 0 24 24"><path d="M3 8h14v6a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5zM17 10h1.5a2.5 2.5 0 0 1 0 5H17M7 2.5c0 1 1 1 1 2s-1 1-1 2M11 2.5c0 1 1 1 1 2s-1 1-1 2"/></svg>
+    </button>
+    <button class="icon-btn" id="settings" title="Configuración">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+</header>
+
+  <div class="tile-heads" id="tile-heads"></div>
+
+  <main class="empty" id="empty" hidden>
+    <h1>Bienvenido a MultiChat <span class="pro">PRO</span></h1>
+    <p>Agrega tu primera cuenta. Puedes tener todas las que quieras.</p>
+    <div class="services" id="services"></div>
+  </main>
+
+  <!-- Pantalla de bloqueo -->
+  <section class="lock" id="lock" hidden>
+    <div class="card">
+      <img class="lock-logo" src="../build/icon.png" alt="">
+      <h1>MultiChat <span class="pro">PRO</span></h1>
+
+      <form id="unlock-form" autocomplete="off">
+        <p class="hint">Ingresa tu contraseña para continuar</p>
+        <input type="password" id="unlock-pw" placeholder="Contraseña">
+        <p class="error" id="unlock-error"></p>
+        <button type="submit" class="primary">Desbloquear</button>
+        <button type="button" class="link" id="forgot">¿Olvidaste tu contraseña?</button>
+      </form>
+
+      <form id="reset-form" autocomplete="off" hidden>
+        <p class="hint">Responde tu pregunta de seguridad para crear una contraseña nueva.</p>
+        <p class="question" id="reset-question"></p>
+        <input type="text" id="reset-answer" placeholder="Tu respuesta">
+        <input type="password" id="reset-pw" placeholder="Nueva contraseña">
+        <input type="password" id="reset-pw2" placeholder="Repite la nueva contraseña">
+        <p class="error" id="reset-error"></p>
+        <button type="submit" class="primary">Cambiar contraseña y entrar</button>
+        <button type="button" class="link" id="back-unlock">Volver</button>
+      </form>
+
+      <p class="credit"><span class="js-version"></span> · Creado por <span class="js-creator"></span></p>
+    </div>
+  </section>
+
+  <!-- Poner / cambiar / quitar contraseña -->
+  <section class="backdrop" id="pw-modal" hidden>
+    <form class="card modal" id="pw-form" autocomplete="off">
+      <h2 id="pw-title"></h2>
+      <label data-show="change remove">Contraseña actual
+        <input type="password" id="pw-current">
+      </label>
+      <label data-show="setup change">Nueva contraseña (mínimo 4 caracteres)
+        <input type="password" id="pw-new">
+      </label>
+      <label data-show="setup change">Repite la contraseña
+        <input type="password" id="pw-new2">
+      </label>
+      <label data-show="setup">Pregunta de seguridad (por si la olvidas)
+        <select id="pw-question">
+          <option>¿Cuál es el nombre de tu primera mascota?</option>
+          <option>¿En qué ciudad naciste?</option>
+          <option>¿Cuál es el nombre de tu mejor amigo de la infancia?</option>
+          <option>¿Cuál es tu comida favorita?</option>
+          <option value="custom">Escribir mi propia pregunta…</option>
+        </select>
+      </label>
+      <label id="pw-custom-label" hidden>Tu pregunta
+        <input type="text" id="pw-custom" maxlength="120">
+      </label>
+      <label data-show="setup">Respuesta
+        <input type="text" id="pw-answer">
+      </label>
+      <p class="note" data-show="setup">Recuerda bien la respuesta: es la forma de recuperar el acceso si olvidas la contraseña.</p>
+      <p class="error" id="pw-error"></p>
+      <div class="actions">
+        <button type="button" id="pw-cancel">Cancelar</button>
+        <button type="submit" class="primary" id="pw-submit"></button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Respuestas rápidas -->
+  <section class="backdrop" id="tpl-modal" hidden>
+    <form class="card modal wide" id="tpl-form" autocomplete="off">
+      <h2>Respuestas rápidas</h2>
+      <p class="note">Textos y fotos que usas seguido: QR de Yape y Plin, cuentas bancarias, link de pago, precios. Con el botón ⚡ (o Ctrl+Shift+R) se pegan en el chat abierto y <b>tú decides cuándo enviarlos</b>. Puedes escribir {saludo} (Buenos días / Buenas tardes), {cuenta} o {fecha}.</p>
+      <div class="tpl-list" id="tpl-list"></div>
+      <button type="button" id="tpl-add">+ Agregar respuesta</button>
+      <p class="error" id="tpl-error"></p>
+      <div class="actions">
+        <button type="button" id="tpl-cancel">Cancelar</button>
+        <button type="submit" class="primary">Guardar</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Panel lateral: registrar o editar una venta (el chat sigue visible a la izquierda) -->
+  <aside class="side-panel" id="sale-panel" hidden>
+    <form id="sale-form" autocomplete="off">
+      <div class="panel-head">
+        <h2 id="sale-title">Registrar venta</h2>
+        <button type="button" class="icon-btn" id="sale-close" title="Cerrar">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <p class="detected" id="sale-detected" hidden></p>
+      <label>Cuenta <select id="sale-account"></select></label>
+      <label>Fecha y hora <input type="datetime-local" id="sale-date"></label>
+      <label>Cliente (nombre) <input id="sale-customer" maxlength="80"></label>
+      <div class="row">
+        <label>DNI <input id="sale-dni" inputmode="numeric" maxlength="12"></label>
+        <label>Celular <input id="sale-phone" inputmode="tel" maxlength="20"></label>
+      </div>
+      <label>Producto o servicio <input id="sale-product" maxlength="120"></label>
+      <div class="row">
+        <label>Cantidad <input type="number" id="sale-quantity" min="1" step="1" value="1"></label>
+        <label>Monto total (S/) <input id="sale-amount" inputmode="decimal" placeholder="0.00"></label>
+      </div>
+      <label>Método de pago
+        <select id="sale-payment">
+          <option>Efectivo</option><option>Yape</option><option>Plin</option>
+          <option>Transferencia</option><option>Tarjeta</option><option>Link de pago</option><option>Otro</option>
+        </select>
+      </label>
+      <fieldset class="ship-fields">
+        <legend>Envío</legend>
+        <label>Empresa
+          <select id="sale-carrier">
+            <option value="">Sin envío</option>
+            <option>Shalom</option><option>Olva</option><option>Recojo en tienda</option><option>Otro</option>
+          </select>
+        </label>
+        <div class="ship-detail" id="ship-detail" hidden>
+          <div class="row">
+            <label>N° de orden <input id="sale-orderNumber" maxlength="40"></label>
+            <label>Estado
+              <select id="sale-shipStatus">
+                <option>Por enviar</option><option>Enviado</option><option>En agencia</option><option>Entregado</option>
+              </select>
+            </label>
+          </div>
+          <label>Agencia o dirección de destino <input id="sale-destination" maxlength="160" placeholder="Ej.: Shalom Arequipa - Av. Parra"></label>
+          <label>Costo de envío (S/) <input id="sale-shippingCost" inputmode="decimal" placeholder="0.00"></label>
+        </div>
+      </fieldset>
+      <label>Notas <textarea id="sale-notes" maxlength="500"></textarea></label>
+      <p class="error" id="sale-error"></p>
+      <div class="actions">
+        <button type="button" id="sale-cancel">Cancelar</button>
+        <button type="submit" class="primary">Guardar venta</button>
+      </div>
+      <p class="note">Consejo: selecciona en el chat el mensaje con los datos del cliente, clic derecho → <b>Registrar venta con lo seleccionado</b>, y se rellenan solos. Los datos se guardan solo en esta PC.</p>
+    </form>
+  </aside>
+
+  <!-- Panel lateral: ticket de envío para ticketera (formulario + vista previa) -->
+  <aside class="side-panel ticket-panel" id="ticket-panel" hidden>
+    <form id="ticket-form" autocomplete="off">
+      <div class="panel-head">
+        <h2>Ticket de envío</h2>
+        <button type="button" class="icon-btn" id="ticket-close" title="Cerrar">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div class="ticket-columns">
+        <div class="ticket-fields">
+          <p class="detected" id="ticket-detected" hidden></p>
+          <div class="carrier-switch" id="ticket-carrier">
+            <button type="button" data-carrier="Shalom">Shalom</button>
+            <button type="button" data-carrier="Olva">Olva</button>
+            <button type="button" data-carrier="Otra">Otra</button>
+          </div>
+          <label id="ticket-carrierName-label" hidden>Nombre de la empresa de envío <input id="ticket-carrierName" maxlength="30" placeholder="Ej.: Marvisur"></label>
+          <div class="row">
+            <label>Remitente <select id="ticket-profileId"></select></label>
+            <label>Canalización
+              <select id="ticket-channel">
+                <option>WhatsApp</option><option>Facebook</option><option>Instagram</option>
+                <option>TikTok</option><option>Tienda Online</option><option>Otro</option>
+              </select>
+            </label>
+          </div>
+          <label>Destinatario (nombre completo) <input id="ticket-name" maxlength="90"></label>
+          <div class="row">
+            <label>DNI <input id="ticket-dni" inputmode="numeric" maxlength="12"></label>
+            <label>Celular <input id="ticket-phone" inputmode="tel" maxlength="20"></label>
+          </div>
+          <label>Destino (opcional) <input id="ticket-destination" maxlength="140" placeholder="LIMA / LIMA / SANTIAGO DE SURCO"></label>
+          <label>Nombre de la agencia (Shalom) <input id="ticket-agent" maxlength="120"></label>
+          <label>Dirección (de la agencia o de la casa) <textarea id="ticket-address" maxlength="220" rows="2"></textarea></label>
+          <label>Distrito <input id="ticket-district" maxlength="80"></label>
+          <label>Referencia 1 <textarea id="ticket-reference" maxlength="220" rows="2"></textarea></label>
+          <label>Referencia 2 <input id="ticket-reference2" maxlength="220"></label>
+          <label>Nota (por si no lo encuentran) <input id="ticket-note" maxlength="220"></label>
+          <label>N° de orden (código de barras, opcional) <input id="ticket-orderNumber" maxlength="30"></label>
+          <details class="sender-edit">
+            <summary>Datos del remitente (editables para este envío)</summary>
+            <div class="row">
+              <label>Origen <input id="ticket-origin" maxlength="40"></label>
+              <label>Teléfono <input id="ticket-storePhone" maxlength="40"></label>
+            </div>
+            <label>Remitente <input id="ticket-sender" maxlength="80"></label>
+            <label>Dirección del remitente <input id="ticket-senderAddress" maxlength="120"></label>
+            <div class="row">
+              <label>Correo <input id="ticket-email" maxlength="80"></label>
+              <label>Tienda online <input id="ticket-website" maxlength="80"></label>
+            </div>
+            <p class="note">Los cambios valen solo para este ticket. Para cambiarlos siempre: ⚙ → Remitentes de tickets.</p>
+          </details>
+        </div>
+        <div class="ticket-actions">
+          <label>Impresora (ticketera)
+            <select id="ticket-printer"></select>
+          </label>
+          <p class="error" id="ticket-error"></p>
+          <button type="button" id="ticket-to-chat" class="to-chat">📋 Enviar datos al cliente para confirmar</button>
+          <div class="actions">
+            <button type="button" id="ticket-pdf">Guardar PDF</button>
+            <button type="submit" class="primary">🖨 Imprimir</button>
+          </div>
+          <p class="note">Imprime directo en la impresora elegida y no guarda los datos del cliente. Todo es editable y solo se imprime lo que llenes. Selecciona en el chat el mensaje con los datos del cliente → clic derecho → <b>Imprimir ticket de envío con lo seleccionado</b> (o Ctrl+P) y se rellenan solos.</p>
+        </div>
+        <div class="ticket-preview-wrap" id="ticket-preview-wrap">
+          <div class="ticket-preview-label" id="ticket-preview-label">Vista previa · 72 × 297 mm</div>
+          <div class="ticket-fit" id="ticket-fit" hidden>⚠ Datos muy largos: se achicó la letra para que quepa en 297 mm.</div>
+          <div class="ticket-preview" id="ticket-preview"></div>
+        </div>
+      </div>
+    </form>
+  </aside>
+
+  <!-- Remitentes de los tickets -->
+  <section class="backdrop" id="prof-modal" hidden>
+    <form class="card modal wide" id="prof-form" autocomplete="off">
+      <h2>Remitentes de los tickets</h2>
+      <p class="note">Datos fijos que salen en cada ticket: logo, QR, origen, dirección, tienda y la nota "Importante".</p>
+      <div class="tpl-list" id="prof-list"></div>
+      <button type="button" id="prof-add">+ Agregar remitente</button>
+      <p class="error" id="prof-error"></p>
+      <div class="actions">
+        <button type="button" id="prof-cancel">Cancelar</button>
+        <button type="submit" class="primary">Guardar</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Formularios para pedir los datos de envío -->
+  <section class="backdrop" id="forms-modal" hidden>
+    <form class="card modal wide" id="forms-form" autocomplete="off">
+      <h2>Formularios de envío</h2>
+      <p class="note">Se pegan en el chat con el botón 📝. El cliente los responde y, al seleccionar su respuesta → clic derecho → <b>Imprimir ticket de envío</b>, los datos se llenan solos. Usa títulos como Nombre, DNI, Celular, Agencia, Dirección, Distrito, Referencia 1, Referencia 2 y Nota.</p>
+      <label>Shalom (agencia) <textarea id="forms-Shalom" rows="9"></textarea></label>
+      <label>Olva (domicilio) <textarea id="forms-Olva" rows="11"></textarea></label>
+      <div class="actions">
+        <button type="button" id="forms-reset">Restaurar originales</button>
+        <button type="button" id="forms-cancel">Cancelar</button>
+        <button type="submit" class="primary">Guardar</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Lista de ventas -->
+  <section class="backdrop" id="sales-modal" hidden>
+    <div class="card modal sales">
+      <div class="panel-head">
+        <h2>Registro de ventas</h2>
+        <button type="button" class="icon-btn" id="sales-close" title="Cerrar">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div class="kpis" id="sales-kpis"></div>
+      <div class="toolbar">
+        <input id="sales-search" placeholder="Buscar por cliente, DNI, celular o producto">
+        <select id="sales-filter"></select>
+        <button type="button" id="sales-export">Exportar a Excel</button>
+        <button type="button" class="primary" id="sales-new">+ Nueva venta</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Fecha</th><th>Cuenta</th><th>Cliente</th><th>DNI</th><th>Celular</th><th>Producto</th><th class="num">Monto</th><th>Pago</th><th></th></tr>
+          </thead>
+          <tbody id="sales-body"></tbody>
+        </table>
+        <p class="tpl-empty" id="sales-empty" hidden>No hay ventas registradas.</p>
+      </div>
+      <p class="sales-total" id="sales-total"></p>
+      <div class="insights" id="sales-insights"></div>
+    </div>
+  </section>
+
+  <!-- Envíos pendientes -->
+  <section class="backdrop" id="ship-modal" hidden>
+    <div class="card modal sales">
+      <div class="panel-head">
+        <h2>Envíos pendientes</h2>
+        <button type="button" class="icon-btn" id="ship-close" title="Cerrar">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div class="toolbar">
+        <input id="ship-search" placeholder="Buscar por cliente, DNI, celular o N° de orden">
+        <select id="ship-filter">
+          <option value="">Todas las empresas</option>
+          <option>Shalom</option><option>Olva</option><option>Recojo en tienda</option><option>Otro</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Fecha</th><th>Cliente</th><th>Empresa</th><th>N° de orden</th><th>Destino</th><th>Estado</th><th>Boleta</th><th></th></tr>
+          </thead>
+          <tbody id="ship-body"></tbody>
+        </table>
+        <p class="tpl-empty" id="ship-empty" hidden>No hay envíos pendientes 🎉</p>
+      </div>
+      <p class="note" id="ship-note">"Enviar al cliente" abre el chat de su celular y deja la boleta y el mensaje listos: tú revisas y presionas Enter.</p>
+    </div>
+  </section>
+
+  <!-- Página de rastreo -->
+  <section class="backdrop" id="url-modal" hidden>
+    <form class="card modal" id="url-form" autocomplete="off">
+      <h2 id="url-title">Página de rastreo</h2>
+      <p class="note">Pega la dirección de la página donde rastreas los envíos (ábrela en tu navegador y copia la barra de direcciones). Al tocar "Rastrear", se abrirá esa página con el N° de orden ya copiado: solo pégalo con Ctrl+V.</p>
+      <label>Dirección <input id="url-input" placeholder="https://…"></label>
+      <p class="error" id="url-error"></p>
+      <div class="actions">
+        <button type="button" id="url-cancel">Cancelar</button>
+        <button type="submit" class="primary">Guardar</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Invítale un cafecito al creador (voluntario) -->
+  <section class="backdrop" id="coffee-modal" hidden>
+    <div class="card coffee">
+      <div class="coffee-cup">☕</div>
+      <h2>Invítale un cafecito al creador</h2>
+      <p class="hint">MultiChat Pro lo hace <b class="js-creator"></b>. Si te ayuda en tu negocio, puedes apoyar con un Yape del monto que quieras.</p>
+      <div class="yape-box">
+        <div class="yape-label">Yape</div>
+        <div class="yape-number" id="coffee-number"></div>
+        <div class="yape-name js-creator"></div>
+      </div>
+      <button type="button" class="primary" id="coffee-copy">Copiar número</button>
+      <button type="button" id="coffee-close">Cerrar</button>
+      <p class="note">Es totalmente voluntario: todas las funciones de la app son gratis. ¡Gracias! 💜</p>
+    </div>
+  </section>
+
+  <!-- Nuevo recordatorio -->
+  <section class="backdrop" id="rem-modal" hidden>
+    <form class="card modal" id="rem-form" autocomplete="off">
+      <h2>Nuevo recordatorio</h2>
+      <label>Cuenta <select id="rem-account"></select></label>
+      <label>¿Qué tienes que hacer?
+        <textarea id="rem-note" maxlength="300" placeholder="Ej.: Confirmar el pago de Juan Pérez"></textarea>
+      </label>
+      <div class="chips" id="rem-chips">
+        <button type="button" data-min="30">En 30 min</button>
+        <button type="button" data-min="60">En 1 hora</button>
+        <button type="button" data-min="180">En 3 horas</button>
+        <button type="button" data-tomorrow="9">Mañana 9:00</button>
+      </div>
+      <label>Fecha y hora <input type="datetime-local" id="rem-at"></label>
+      <p class="error" id="rem-error"></p>
+      <div class="actions">
+        <button type="button" id="rem-cancel">Cancelar</button>
+        <button type="submit" class="primary">Guardar recordatorio</button>
+      </div>
+    </form>
+  </section>
+
+  <script src="vendor/qrcode.js"></script>
+  <script src="ticket.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>
