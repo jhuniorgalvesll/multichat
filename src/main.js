@@ -145,6 +145,8 @@ function createView(acc) {
     // Semáforo de respuesta: desde cuándo esta cuenta tiene mensajes sin leer.
     if (count && !waitingSince.has(acc.id)) waitingSince.set(acc.id, Date.now());
     if (!count) waitingSince.delete(acc.id);
+    // Mensaje nuevo con MultiChat en segundo plano: la burbuja (si está activada) aparece 2 minutos.
+    if (count > (unread.get(acc.id) || 0) && !acc.muted && !locked && win && !win.isFocused()) bubble.popup();
     unread.set(acc.id, count);
     pushState();
   });
@@ -483,6 +485,20 @@ const MAX_TEMPLATE_IMAGES = 6;
 
 // El portapapeles de Electron es asíncrono (como el de los navegadores).
 const copyText = (text) => clipboard.writeText(text).catch(() => {});
+
+// Imagen del portapapeles (API asíncrona de Electron 44: clipboard.read() devuelve ClipboardItem con Blob).
+async function readClipboardImage() {
+  try {
+    for (const item of await clipboard.read()) {
+      const type = item.types.find((t) => /^image\//.test(t));
+      if (!type) continue;
+      const blob = await item.getType(type);
+      const image = nativeImage.createFromBuffer(Buffer.from(await blob.arrayBuffer()));
+      if (!image.isEmpty()) return image;
+    }
+  } catch { /* sin imagen */ }
+  return null;
+}
 // Pega el texto como Ctrl+V. WhatsApp borra los saltos de línea si el texto se escribe de golpe,
 // pero los respeta al pegarlo.
 async function pasteText(wc, text) {
@@ -1292,9 +1308,8 @@ function createWindow() {
   win.setAlwaysOnTop(store.get().settings.alwaysOnTop);
   win.on('focus', applyPrivacyBlur);
   win.on('blur', applyPrivacyBlur);
-  // Burbuja flotante: aparece cuando MultiChat no está al frente.
-  win.on('focus', () => bubble.setVisible(false));
-  for (const event of ['blur', 'hide', 'minimize']) win.on(event, () => bubble.setVisible(!locked));
+  // Burbuja flotante: se esconde al volver a MultiChat.
+  win.on('focus', () => bubble.hide());
   win.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
   win.once('ready-to-show', () => {
     if (!startHidden) win.show();
@@ -1356,7 +1371,7 @@ function pushState() {
     version: app.getVersion(),
     creator: CREATOR,
     creatorYape: CREATOR_YAPE,
-    bubble: data.settings.bubble !== false,
+    bubble: data.settings.bubble === true,
     replyAlertMinutes: data.settings.replyAlertMinutes || 10,
   });
   bubble.update();
@@ -1690,10 +1705,10 @@ function showSettingsMenu() {
       ],
     },
     {
-      label: 'Burbuja flotante (encima de otros programas)',
+      label: 'Burbuja flotante al llegar mensajes o pagos (2 minutos)',
       type: 'checkbox',
-      checked: settings.bubble !== false,
-      click: () => setBubbleEnabled(settings.bubble === false),
+      checked: settings.bubble === true,
+      click: () => setBubbleEnabled(settings.bubble !== true),
     },
     { label: '🎨 Crear estado u oferta…', click: () => win.webContents.send('ui:flyer') },
     { label: 'Respuestas rápidas…', click: openTemplatesDialog },
@@ -1992,7 +2007,7 @@ function registerIpc() {
   ipcMain.on('verify:clipboard', () => {
     if (locked) return;
     win.webContents.send('ui:verify', { status: 'reading' });
-    verifyImage(clipboard.readImage());
+    readClipboardImage().then(verifyImage);
   });
   ipcMain.on('verify:manual', (_e, amount, time) => {
     if (locked) return;
@@ -2113,7 +2128,7 @@ function setPaymentOption(key, value) {
 function setBubbleEnabled(enabled) {
   store.get().settings.bubble = enabled;
   store.save();
-  bubble.setVisible(enabled && !(win && win.isFocused()));
+  if (!enabled) bubble.hide();
   pushState();
 }
 
@@ -2182,7 +2197,7 @@ async function verifyImageAt(wc, x, y) {
   win.webContents.send('ui:verify', { status: 'reading' });
   wc.copyImageAt(x, y);
   await new Promise((r) => setTimeout(r, 400));
-  await verifyImage(clipboard.readImage());
+  await verifyImage(await readClipboardImage());
 }
 
 async function verifyImage(image) {
@@ -2237,6 +2252,12 @@ function init() {
   }
   // Una vez (v1.8.1): "Mantener siempre encima" deja la ventana por encima de todos los programas aunque se haga
   // clic en otro; se apaga por si quedó activado sin querer. Se puede volver a activar en ⚙.
+  // Una vez (v1.8.2): la burbuja pasa a estar apagada de fábrica (ocupa espacio en pantallas chicas).
+  if (!store.get().settings.bubbleReset) {
+    store.get().settings.bubbleReset = true;
+    store.get().settings.bubble = false;
+    store.save();
+  }
   if (!store.get().settings.alwaysOnTopReset) {
     store.get().settings.alwaysOnTopReset = true;
     store.get().settings.alwaysOnTop = false;

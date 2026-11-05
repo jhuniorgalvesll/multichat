@@ -1,19 +1,22 @@
 'use strict';
 
-// Burbuja flotante: un círculo con el logo, siempre encima de los demás programas, que aparece cuando MultiChat no
-// está al frente. Muestra los mensajes sin leer y, cuando llega un pago, un aviso "+ S/ 50 · Melissa".
+// Burbuja flotante (opcional, apagada de fábrica): un círculo con el logo encima de los demás programas. Aparece solo
+// cuando llega un mensaje nuevo o un pago con MultiChat en segundo plano, y se va sola a los 2 minutos.
+// Muestra los mensajes sin leer y, con un pago, el aviso "+ S/ 50 · Melissa".
 // Clic: abre MultiChat. Se puede arrastrar a cualquier lugar (la posición se recuerda).
 const { BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 
 const SIZE = 76; // burbuja sola
 const WIDE = 300; // con el aviso de pago al costado
+const SHOW_FOR = 2 * 60 * 1000; // se esconde sola a los 2 minutos
 
 let bubbleWin = null;
 let ctx = { getState: () => ({ unread: 0, accounts: [] }), onOpen: () => {}, settings: () => ({}), save: () => {}, onMenu: () => {} };
 let wantVisible = false;
 let payment = null; // { text, until }
 let paymentTimer = null;
+let hideTimer = null;
 
 function position() {
   const { workArea } = screen.getPrimaryDisplay();
@@ -78,13 +81,18 @@ function update() {
   bubbleWin.setBounds(bounds());
 }
 
-// Muestra u oculta según la opción y si MultiChat está al frente.
-function setVisible(visible) {
-  wantVisible = Boolean(visible) && ctx.settings().bubble !== false;
-  if (!wantVisible) {
-    if (bubbleWin && !bubbleWin.isDestroyed()) bubbleWin.hide();
-    return;
-  }
+function hide() {
+  wantVisible = false;
+  clearTimeout(hideTimer);
+  if (bubbleWin && !bubbleWin.isDestroyed()) bubbleWin.hide();
+}
+
+// Algo nuevo llegó (mensaje o pago): la burbuja aparece 2 minutos, si está activada.
+function popup() {
+  if (ctx.settings().bubble !== true) return;
+  wantVisible = true;
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(hide, SHOW_FOR);
   const w = create();
   if (!w.webContents.isLoading()) {
     update();
@@ -97,6 +105,7 @@ function showPayment(text) {
   clearTimeout(paymentTimer);
   paymentTimer = setTimeout(() => { payment = null; update(); }, 8100);
   update();
+  popup();
 }
 
 function init(options) {
@@ -116,9 +125,12 @@ function init(options) {
   ipcMain.on('bubble:drag-end', (_e, moved) => {
     drag = null;
     if (moved) ctx.save();
-    else ctx.onOpen();
+    else {
+      hide();
+      ctx.onOpen();
+    }
   });
   ipcMain.on('bubble:menu', () => ctx.onMenu(bubbleWin));
 }
 
-module.exports = { init, update, setVisible, showPayment };
+module.exports = { init, update, popup, hide, showPayment };

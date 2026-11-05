@@ -27,7 +27,7 @@ const DEFAULTS = {
     paymentVoice: true, // decir en voz alta "Melissa te yapeó 50 soles"
     readAllPhone: false, // leer en voz alta todas las notificaciones del celular (no solo los pagos)
     keepAwake: true, // que la laptop no se suspenda (la pantalla sí se apaga): así sigue diciendo los pagos
-    bubble: true, // burbuja flotante encima de otros programas cuando MultiChat no está al frente
+    bubble: false, // burbuja flotante: aparece 2 minutos al llegar un mensaje o pago con MultiChat en segundo plano
     replyAlertMinutes: 10, // semáforo de respuesta: rojo después de estos minutos sin contestar
   },
 };

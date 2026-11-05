@@ -40,6 +40,13 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.8.2
+
+- Corregido: *Verificar pago* / *Verificar la captura copiada* daba el error "clipboard.readImage is not a function"
+  (Electron 44 lee el portapapeles de forma asíncrona).
+- **Burbuja flotante apagada de fábrica** (se apaga una vez para todos). Si se activa en ⚙ → *Burbuja flotante al llegar
+  mensajes o pagos*, aparece solo cuando llega algo con MultiChat en segundo plano y se esconde sola a los 2 minutos.
+
 ## Novedades v1.8.1
 
 - Se desactiva (una vez) *Mantener siempre encima*: con esa opción la ventana no pasaba atrás al hacer clic en otro

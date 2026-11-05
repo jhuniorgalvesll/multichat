@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.8.2',
+    items: [
+      'Corregido el error al verificar una captura copiada ("clipboard.readImage is not a function").',
+      'La burbuja flotante viene apagada; si la activas, aparece 2 minutos al llegar un mensaje o pago.',
+    ],
+  },
+  {
     version: '1.8.1',
     items: ['MultiChat ya no se queda encima de los demás programas: al hacer clic en otro, pasa atrás como cualquier ventana.'],
   },
