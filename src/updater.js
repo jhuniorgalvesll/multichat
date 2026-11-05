@@ -1,19 +1,23 @@
 'use strict';
 
-// Actualizaciones automáticas desde GitHub (Releases de jhuniorgalvesll/multichat).
-// La app revisa al abrir y cada hora; si hay versión nueva la descarga sola en segundo plano y avisa con una
-// notificación de MultiChat "Actualizar ahora". Si no se pulsa, se instala sola al cerrar la app.
-// Las cuentas y ajustes no se tocan (están en la carpeta de datos, no en la de la app).
-const { app, dialog } = require('electron');
+// Actualizaciones automáticas (Releases de jhuniorgalvesll/multichat).
+// La app revisa al abrir y cada hora y descarga la versión nueva en segundo plano. Nunca se cierra sola mientras
+// se trabaja: Windows no deja reemplazar un programa abierto, así que la versión nueva se instala en silencio
+// cuando se cierra MultiChat, o de madrugada si la PC lleva un rato sin uso (y se vuelve a abrir sola, oculta).
+// "Instalar ahora" la aplica en el momento. Las cuentas y ajustes no se tocan (están en la carpeta de datos).
+const { app, dialog, powerMonitor } = require('electron');
 
 const CHECK_EVERY = 60 * 60 * 1000; // cada hora
+const NIGHT_HOURS = [1, 5]; // de 1:00 a 5:59 a. m.
+const IDLE_SECONDS = 20 * 60; // PC sin uso 20 minutos
 
 let updater = null;
 let state = { status: 'idle', version: '' }; // idle | checking | downloading | ready | latest | error
 let askedFor = '';
 let getWindow = () => null;
 let onChange = () => {};
-let notify = () => {}; // muestra la notificación "Actualizar ahora" dentro de MultiChat
+let notify = () => {}; // muestra la notificación "Actualización lista" dentro de MultiChat
+let beforeInstall = () => {}; // (silent) => prepara el reinicio: ventanita "Actualizando…" o abrir oculta después
 
 function set(next) {
   state = { ...state, ...next };
@@ -43,10 +47,17 @@ function start(options = {}) {
   getWindow = options.getWindow || getWindow;
   onChange = options.onChange || onChange;
   notify = options.notify || notify;
+  beforeInstall = options.beforeInstall || beforeInstall;
   if (!app.isPackaged || process.platform !== 'win32') return;
   const check = () => load().checkForUpdates().catch(() => set({ status: 'error' }));
   setTimeout(check, 15_000);
   setInterval(check, CHECK_EVERY);
+  // De madrugada, con la PC sin uso, se instala sola y MultiChat vuelve a abrirse (oculta, en la bandeja).
+  setInterval(() => {
+    const hour = new Date().getHours();
+    if (state.status === 'ready' && hour >= NIGHT_HOURS[0] && hour <= NIGHT_HOURS[1]
+      && powerMonitor.getSystemIdleTime() >= IDLE_SECONDS) install({ quiet: true });
+  }, 10 * 60 * 1000);
 }
 
 // Desde el panel de MultiChat Pro: revisa sin ventanas; el resultado llega por onChange (state).
@@ -83,8 +94,10 @@ async function checkNow() {
 }
 
 // "Actualizar ahora": cierra MultiChat, instala en segundo plano y la vuelve a abrir.
-function install() {
-  if (state.status === 'ready') setImmediate(() => load().quitAndInstall(true, true));
+function install({ quiet = false } = {}) {
+  if (state.status !== 'ready') return;
+  beforeInstall(quiet);
+  setTimeout(() => load().quitAndInstall(true, true), quiet ? 0 : 1500);
 }
 
 module.exports = { start, check, checkNow, install, get state() { return state; } };

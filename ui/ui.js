@@ -1518,11 +1518,11 @@ $('about-coffee').addEventListener('click', () => {
 // -- Panel de MultiChat Pro --
 
 const UPDATE_TEXT = {
-  idle: ['Actualizaciones automáticas', 'MultiChat revisa GitHub al abrir y cada hora.', 'Buscar actualizaciones'],
+  idle: ['Actualizaciones automáticas', 'Se revisan solas. Nunca se cierra la app mientras trabajas.', 'Buscar actualizaciones'],
   checking: ['Buscando actualizaciones…', 'Un momento.', ''],
   downloading: ['Descargando la versión {v}…', 'Te avisaremos cuando esté lista.', ''],
-  ready: ['Versión {v} lista para instalar', 'Se reinicia en segundos; tus cuentas no se tocan.', 'Actualizar ahora'],
-  latest: ['Tienes la última versión', 'MultiChat revisa GitHub al abrir y cada hora.', 'Buscar de nuevo'],
+  ready: ['Versión {v} descargada', 'Se instala sola al cerrar MultiChat o de madrugada. Si quieres, instálala ya.', 'Instalar ahora'],
+  latest: ['Tienes la última versión', 'Las actualizaciones se revisan solas.', 'Buscar de nuevo'],
   error: ['No se pudo revisar', 'Revisa tu conexión a internet.', 'Intentar de nuevo'],
   dev: ['Actualizaciones automáticas', 'Funcionan en la app instalada.', ''],
 };
@@ -1564,6 +1564,7 @@ $('update-action').addEventListener('click', async () => {
   showUpdateState({ status: 'checking' });
   showUpdateState(await api.checkUpdate());
 });
+api.onAboutPanel(() => openDrawer('about'));
 api.onUpdateState((update) => {
   if (drawerOpen === 'about') showUpdateState(update);
 });

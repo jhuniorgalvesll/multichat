@@ -63,6 +63,7 @@ contextBridge.exposeInMainWorld('multichat', {
   onShipments: (fn) => ipcRenderer.on('ui:shipments', () => fn()),
   onTicketProfiles: (fn) => ipcRenderer.on('ui:ticket-profiles', () => fn()),
   onFormsDialog: (fn) => ipcRenderer.on('ui:forms', () => fn()),
+  onAboutPanel: (fn) => ipcRenderer.on('ui:about', () => fn()),
   onSpeak: (fn) => ipcRenderer.on('ui:speak', (_e, text) => fn(text)),
   about: () => ipcRenderer.invoke('app:about'),
   checkUpdate: () => ipcRenderer.invoke('update:check'),

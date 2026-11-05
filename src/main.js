@@ -71,7 +71,7 @@ const lastUsed = new Map();  // id -> timestamp de la última vez que estuvo vis
 const configuredSessions = new WeakSet();
 const blurKeys = new Map();  // id -> promesa con la clave del CSS de difuminado
 
-const startHidden = process.argv.includes('--hidden');
+let startHidden = process.argv.includes('--hidden');
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -607,10 +607,45 @@ function showServiceNotification(id, payload) {
   });
 }
 
+// Ventanita "Actualizando MultiChat Pro…" mientras se cierra para instalar la versión nueva.
+function showUpdatingWindow() {
+  const box = new BrowserWindow({
+    width: 340,
+    height: 128,
+    frame: false,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    backgroundColor: '#140b2e',
+    webPreferences: { sandbox: true, contextIsolation: true },
+  });
+  box.loadFile(path.join(__dirname, '..', 'ui', 'updating.html'));
+  box.once('ready-to-show', () => box.show());
+}
+
+// Al abrir una versión nueva: aviso "Se actualizó a vX" (una sola vez).
+function announceUpdated() {
+  const { settings } = store.get();
+  const version = app.getVersion();
+  if (settings.lastVersion && settings.lastVersion !== version) {
+    notifier.show({
+      kind: 'updated',
+      accountName: 'MultiChat Pro',
+      title: `✓ Actualizada a la versión ${version}`,
+      body: 'Mira las novedades haciendo clic en el logo de MultiChat Pro.',
+      canReply: false,
+    });
+  }
+  settings.lastVersion = version;
+  store.save();
+}
+
 function openFromNotification(data) {
   showWindow();
   if (data.kind === 'payment') return showTodayPayments();
   if (data.kind === 'update') return updater.install();
+  if (data.kind === 'updated') return win.webContents.send('ui:about');
   if (!data.accountId || !findAccount(data.accountId)) return;
   setActive(data.accountId);
   if (data.notifId) views.get(data.accountId)?.webContents.send('notify-open', data.notifId);
@@ -1975,6 +2010,12 @@ function showPhoneLinkCheck() {
 
 function init() {
   store.load();
+  // Reabierta después de una actualización de madrugada: sigue oculta en la bandeja, como estaba.
+  if (store.get().settings.openHiddenOnce) {
+    startHidden = true;
+    store.get().settings.openHiddenOnce = false;
+    store.save();
+  }
   sales.load();
   seedTemplates();
   seedTicketProfiles();
@@ -2002,16 +2043,23 @@ function init() {
   app.setLoginItemSettings({ openAtLogin: Boolean(data.settings.openAtLogin), args: ['--hidden'] });
 
   syncPaymentWatcher();
+  setTimeout(announceUpdated, 4000);
   updater.start({
     getWindow: () => win,
     onChange: (state) => { if (win && !win.isDestroyed()) win.webContents.send('update:state', state); },
     notify: (version) => notifier.show({
       kind: 'update',
       accountName: 'Actualización de MultiChat Pro',
-      title: `Nueva versión v${version} lista`,
-      body: 'Pulsa "Actualizar ahora": se reinicia en segundos y tus cuentas no se tocan. Si no, se instala al cerrar la app.',
+      title: `Versión v${version} descargada`,
+      body: 'No hace falta cerrar nada: se instala sola cuando cierres MultiChat o de madrugada si la PC no se usa.',
       canReply: false,
     }),
+    beforeInstall: (quiet) => {
+      // Después de instalar, MultiChat se abre solo; si fue de madrugada, se queda oculto en la bandeja.
+      store.get().settings.openHiddenOnce = quiet && !(win && win.isVisible());
+      store.flush();
+      if (!quiet) showUpdatingWindow();
+    },
   });
   setInterval(hibernateIdle, 60_000);
   setInterval(checkAutoLock, 30_000);

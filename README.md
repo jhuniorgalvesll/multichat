@@ -40,6 +40,15 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.5.1 — actualizaciones sin interrumpir
+
+- La app **ya no se cierra para actualizarse**: descarga la versión nueva en segundo plano y la instala en silencio
+  **al cerrar MultiChat** o **de madrugada (1–5 a. m.) si la PC lleva 20 min sin uso**; después se vuelve a abrir
+  sola (oculta en la bandeja si lo estaba). Las sesiones de WhatsApp no se cierran.
+- *Instalar ahora (opcional)* muestra una ventanita **"Actualizando MultiChat Pro…"** y vuelve a abrirse en segundos.
+- Al abrir la versión nueva: aviso **"✓ Actualizada a la versión X"** con *Ver novedades*.
+- Los textos de la app ya no mencionan GitHub.
+
 ## Novedades v1.5.0 — paneles de MultiChat Pro y de pagos
 
 - **Clic en el logo**: panel con la versión, el estado de las **actualizaciones** (*Buscar actualizaciones* /
