@@ -2254,6 +2254,9 @@ let paymentWatcher = null;
 const PAY_VERB = { Yape: 'te yapeó', Plin: 'te plineó', BBVA: 'te plineó' };
 const PAY_LABEL = { Yape: 'Yape', Plin: 'Plin · BBVA', BBVA: 'Plin · BBVA Empresas' };
 
+// "Yape · correo BCP" cuando el pago se tomó del correo de constancia del BCP (aviso del nuevo Outlook).
+const payLabel = (p) => (p.source === 'mail' ? `${PAY_LABEL[p.app]} · correo BCP` : PAY_LABEL[p.app]);
+
 const money = (n) => `S/ ${n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 // Monto para decirlo en voz alta: "50 soles", "25 soles con 50 céntimos", "1 sol".
@@ -2277,6 +2280,10 @@ const todayPayments = () => paylog.read().payments;
 
 // payment.catchUp: llegó mientras MultiChat estaba cerrado; solo se registra, sin aviso ni voz.
 function onPayment(payment) {
+  // El mismo yapeo puede llegar por el celular y por el correo del BCP: si ya hay uno del mismo monto en los últimos
+  // 5 minutos que vino por el otro camino, no se cuenta ni se avisa dos veces.
+  if (!payment.test && paylog.read(paylog.dayKey(payment.at)).payments.some((p) => Math.abs(p.amount - payment.amount) < 0.005
+    && Math.abs(p.at - payment.at) < 5 * 60000 && (p.source === 'mail') !== (payment.source === 'mail'))) return;
   if (!payment.test) paylog.addPayment(payment);
   pushPayments();
   if (payment.catchUp || (!payment.test && !store.get().settings.paymentAlerts)) return;
@@ -2286,7 +2293,7 @@ function onPayment(payment) {
   notifier.show({
     kind: 'payment',
     payApp: payment.app,
-    accountName: PAY_LABEL[payment.app],
+    accountName: payLabel(payment),
     title: locked ? `Pago recibido por ${payment.app}` : `${payment.name} ${verb} ${money(payment.amount)}`,
     body: locked ? 'Desbloquea MultiChat Pro para ver el detalle' : payment.test ? 'Prueba: así llegarán los pagos de Yape y Plin' : `Hoy: ${list.length} pago${list.length === 1 ? '' : 's'} · ${money(list.reduce((t, p) => t + p.amount, 0))}`,
     canReply: false,
@@ -2328,7 +2335,7 @@ async function paymentsState(day = paylog.dayKey()) {
     keepAwake: settings.keepAwake,
     windows: process.platform === 'win32',
     phoneLink: { running: await payments.phoneLinkRunning(), dbFound, lastAt: lastPhoneAt, watching: Boolean(paymentWatcher && paymentWatcher.running) },
-    today: log.payments.map(({ app: payApp, name, amount, at }) => ({ app: payApp, label: PAY_LABEL[payApp], name, amount, at })),
+    today: log.payments.map((p) => ({ app: p.app, label: payLabel(p), name: p.name, amount: p.amount, at: p.at })),
     total: log.payments.reduce((t, p) => t + p.amount, 0),
     recent: log.notifications.slice(0, 60),
   };
@@ -2403,7 +2410,7 @@ function sendVerifyResult(info, extra = {}) {
   win.webContents.send('ui:verify', {
     ...result,
     info,
-    matches: result.matches.map(({ app: payApp, name, amount, at, diffMin }) => ({ app: payApp, label: PAY_LABEL[payApp], name, amount, at, diffMin })),
+    matches: result.matches.map((p) => ({ app: p.app, label: payLabel(p), name: p.name, amount: p.amount, at: p.at, diffMin: p.diffMin })),
     ...extra,
   });
 }

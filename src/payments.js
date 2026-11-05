@@ -10,6 +10,10 @@ const path = require('path');
 const POLL_MS = 5000;
 // Enlace Móvil (antes "Tu teléfono"): sus notificaciones llevan este identificador de app.
 const PHONE_LINK = /YourPhone|PhoneExperienceHost|PhoneLink/i;
+// Outlook (el nuevo y el clásico): sus avisos de correo nuevo. Solo se usan los de pagos de BCP / BBVA
+// ("Constancia de recepción de Yapeo a celular BCP"); el resto de correos se ignora y no se guarda.
+const OUTLOOK = /Outlook/i;
+const BANK_MAIL = /\b(bcp|bbva)\b/i;
 
 function databasePath() {
   const base = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
@@ -57,6 +61,8 @@ function parsePayment(texts) {
   // Yape oculta parte del nombre con "*" ("Yodver Lim*"): se acepta.
   const NAME = "([\\p{L}][\\p{L} .'*-]{1,60}?)";
   const patterns = [
+    // Correo de BCP: "Recibiste un yapeo de S/ 1,157.00 de Negociaciones Josecito Sac."
+    new RegExp(`recibiste\\s+un\\s+(?:yapeo|plin|pago|abono|dep[oó]sito|transferencia)\\s+de\\s+S\\/\\.?\\s*[\\d.,]+\\s+de\\s+${NAME}(?:\\.\\s|\\.?$|\\s+por\\b)`, 'iu'),
     new RegExp(`^(?:¡?te yapearon!?\\s*|¡?yape!?\\s*)?${NAME}\\s+te\\s+(?:envi[oó]|ha enviado|hizo|yape[oó]|pline[oó]|transfiri[oó]|pag[oó])`, 'iu'),
     new RegExp(`(?:de|desde)\\s+${NAME}\\s+(?:por|de|con|a\\s+tu|S\\/)`, 'iu'),
     new RegExp(`S\\/\\.?\\s*[\\d.,]+\\s+(?:de|desde)\\s+${NAME}(?:[.,!]|\\s+(?:por|con|a\\s+tu)|$)`, 'iu'),
@@ -66,7 +72,7 @@ function parsePayment(texts) {
     for (const line of lines) {
       const m = line.match(re);
       if (m && !/^(un|una|tu|te|pago|yape|plin|bbva|s)$/i.test(m[1].trim())) {
-        name = m[1].replace(/^(?:¡?te yapearon!?|¡?yape!?|recibiste un (?:pago|plin)|plin)\s*/i, '').trim();
+        name = m[1].replace(/^(?:¡?te yapearon!?|¡?yape!?|recibiste un (?:pago|plin)|plin)\s*/i, '').replace(/[.,]+$/, '').trim();
         if (name) break search;
       }
     }
@@ -165,13 +171,21 @@ function createWatcher({ onPayment, onPhoneNotification = () => {}, onStatus = (
     const old = catchUp;
     catchUp = false;
     for (const row of rows) {
-      if (!PHONE_LINK.test(String(row.app || ''))) continue;
+      const appId = String(row.app || '');
+      const fromPhone = PHONE_LINK.test(appId);
+      const fromMail = !fromPhone && OUTLOOK.test(appId);
+      if (!fromPhone && !fromMail) continue;
       const texts = toastTexts(row.payload);
       if (!texts.length) continue;
-      const isChat = /whatsapp|telegram|messenger|instagram/i.test(texts.join(' ')); // chats, no pagos
-      const payment = isChat ? null : parsePayment(texts);
       // Hora real de llegada (ArrivalTime de Windows) para lo atrasado; si no, la de ahora.
       const at = (old && fileTimeToMs(row.arrival)) || Date.now();
+      if (fromMail) {
+        const payment = BANK_MAIL.test(texts.join(' ')) ? parsePayment(texts) : null;
+        if (payment) onPayment({ ...payment, source: 'mail', id: row.id, at, catchUp: old });
+        continue;
+      }
+      const isChat = /whatsapp|telegram|messenger|instagram/i.test(texts.join(' ')); // chats, no pagos
+      const payment = isChat ? null : parsePayment(texts);
       onPhoneNotification({ texts, payment: Boolean(payment), at, catchUp: old });
       if (payment) onPayment({ ...payment, id: row.id, at, catchUp: old });
     }

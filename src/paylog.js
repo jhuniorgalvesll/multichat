@@ -40,10 +40,10 @@ function write(day, data) {
   fs.renameSync(tmp, file);
 }
 
-function addPayment({ app: payApp, name, amount, at, text }) {
+function addPayment({ app: payApp, name, amount, at, text, source }) {
   const day = dayKey(at);
   const data = read(day);
-  data.payments.push({ app: payApp, name, amount, at, text: String(text || '').slice(0, 300) });
+  data.payments.push({ app: payApp, name, amount, at, text: String(text || '').slice(0, 300), ...(source ? { source } : {}) });
   write(day, data);
 }
 
@@ -92,7 +92,7 @@ function csv(day) {
   const rows = [['Fecha', 'Hora', 'App', 'Nombre', 'Monto (S/)']];
   for (const p of read(day).payments) {
     const d = new Date(p.at);
-    rows.push([day, d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }), p.app === 'BBVA' ? 'Plin (BBVA Empresas)' : p.app, p.name, p.amount.toFixed(2)]);
+    rows.push([day, d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }), (p.app === 'BBVA' ? 'Plin (BBVA Empresas)' : p.app) + (p.source === 'mail' ? ' (correo BCP)' : ''), p.name, p.amount.toFixed(2)]);
   }
   return `﻿${rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\r\n')}`;
 }

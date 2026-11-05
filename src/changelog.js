@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.9.2',
+    items: [
+      'Yapeos que llegan por correo del BCP ("Recibiste un yapeo de S/ 1,157.00 de …"): se avisan, se dicen en voz y se suman.',
+      'Se toman del aviso del nuevo Outlook; los demás correos se ignoran y no se guardan.',
+    ],
+  },
+  {
     version: '1.9.1',
     items: [
       'Corregido: los Yape con el nombre oculto ("Yodver Lim*") no se sumaban. Ahora sí, y se recuperan los de hoy y ayer.',

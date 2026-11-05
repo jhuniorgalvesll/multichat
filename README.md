@@ -40,6 +40,15 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.9.2 — yapeos por correo del BCP
+
+- Cuando llega el correo **"Constancia de recepción de Yapeo a celular BCP"** (*"Recibiste un yapeo de S/ 1,157.00 de
+  Negociaciones Josecito Sac."*), MultiChat lo toma del aviso de Windows del **nuevo Outlook** (o del clásico): aviso,
+  voz, total del día (cuenta como Yape, marcado "correo BCP"), registro y Excel. No pide contraseñas.
+- Solo se usan los avisos de correo de **BCP/BBVA** que dicen que recibiste un pago; los demás correos se ignoran y no
+  se guardan. Si el mismo yapeo llega también por el celular, no se cuenta dos veces.
+- Requisito: Outlook abierto (puede estar minimizado) con las notificaciones de escritorio activadas.
+
 ## Novedades v1.9.1
 
 - Corregido: los avisos de Yape *"Confirmación de Pago · Yodver Lim\* te envió un pago por S/ 45"* (nombre con asterisco
