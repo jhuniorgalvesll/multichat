@@ -1587,4 +1587,32 @@ api.onSalesList(openSalesList);
 api.onShipments(openShipments);
 api.onTicketProfiles(openProfiles);
 api.onFormsDialog(openForms);
+
+// ---------- Voz: anuncia los pagos de Yape y Plin ----------
+// Usa las voces en español que trae Windows (funcionan sin internet).
+function spanishVoice() {
+  const voices = speechSynthesis.getVoices().filter((v) => /^es\b|^es-/i.test(v.lang));
+  const rank = (v) => ['es-PE', 'es-MX', 'es-US', 'es-ES'].indexOf(v.lang) + 1 || 9;
+  return voices.sort((a, b) => rank(a) - rank(b) || Number(b.localService) - Number(a.localService))[0] || null;
+}
+
+function speak(text) {
+  if (!('speechSynthesis' in window) || !text) return;
+  const say = () => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = spanishVoice();
+    if (voice) utterance.voice = voice;
+    utterance.lang = voice ? voice.lang : 'es-PE';
+    utterance.rate = 0.95;
+    speechSynthesis.speak(utterance); // si llegan varios pagos seguidos, se dicen uno tras otro
+  };
+  if (speechSynthesis.getVoices().length) return say();
+  // Las voces de Windows cargan unos instantes después de abrir la app.
+  let done = false;
+  const once = () => { if (!done) { done = true; say(); } };
+  speechSynthesis.addEventListener('voiceschanged', once, { once: true });
+  setTimeout(once, 1500);
+}
+
+api.onSpeak(speak);
 api.ready();

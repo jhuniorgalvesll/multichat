@@ -24,6 +24,7 @@ const DEFAULTS = {
     closeToTray: true,
     openAtLogin: false,
     paymentAlerts: true, // avisos de Yape y Plin que llegan por Enlace Móvil
+    paymentVoice: true, // decir en voz alta "Melissa te yapeó 50 soles"
   },
 };
 

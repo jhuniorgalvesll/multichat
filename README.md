@@ -40,6 +40,25 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.3.2 — los pagos se anuncian en voz alta
+
+- Cuando llega un Yape o Plin, MultiChat lo dice en voz alta con la voz en español de Windows (sin internet):
+  *"Melissa Galvez te yapeó 50 soles"*, *"Juan Martínez te plineó 30 soles con 50 céntimos"*.
+  Si la app está bloqueada solo dice *"Recibiste un Yape"*.
+- ⚙ → *Avisos de Yape y Plin (Enlace Móvil)* → *Decir los pagos en voz alta* (activar/desactivar) y
+  *Probar aviso y voz*.
+
+### Conectar el iPhone con Enlace Móvil (una sola vez)
+
+1. En la PC abre **Enlace Móvil** → *iPhone* y escanea el QR con la cámara del iPhone; acepta el emparejamiento
+   por Bluetooth.
+2. En el iPhone: **Ajustes → Bluetooth →** (ícono ⓘ junto a la PC) → activa **Compartir notificaciones del sistema**
+   y **Mostrar notificaciones**.
+3. En el iPhone: **Ajustes → Notificaciones → Yape** y **→ BBVA**: *Permitir notificaciones* activado.
+4. En la PC: Enlace Móvil → ⚙ → *Notificaciones*: activadas; y en Windows → *Configuración → Sistema →
+   Notificaciones* → **Enlace Móvil** activado.
+5. En MultiChat: ⚙ → *Avisos de Yape y Plin* → *Revisar notificaciones de Enlace Móvil…* para ver que llegan.
+
 ## Novedades v1.3.1
 
 - Publicación automática corregida: cada versión sube a *Releases* el instalador y el archivo `latest.yml` que usan

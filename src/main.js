@@ -1537,6 +1537,17 @@ function showSettingsMenu() {
           checked: settings.paymentAlerts,
           click: () => { settings.paymentAlerts = !settings.paymentAlerts; store.save(); syncPaymentWatcher(); },
         },
+        {
+          label: 'Decir los pagos en voz alta',
+          type: 'checkbox',
+          checked: settings.paymentVoice,
+          click: () => { settings.paymentVoice = !settings.paymentVoice; store.save(); },
+        },
+        {
+          label: 'Probar aviso y voz',
+          click: () => onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }),
+        },
+        { type: 'separator' },
         { label: 'Pagos de hoy…', click: showTodayPayments },
         { label: 'Revisar notificaciones de Enlace Móvil…', click: showPhoneLinkCheck },
       ],
@@ -1820,10 +1831,27 @@ const todayPayments = []; // solo en memoria: pagos avisados desde que se abrió
 
 const money = (n) => `S/ ${n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+// Monto para decirlo en voz alta: "50 soles", "25 soles con 50 céntimos", "1 sol".
+function spokenMoney(n) {
+  const soles = Math.floor(n + 1e-9);
+  const cents = Math.round((n - soles) * 100);
+  const main = soles === 1 ? '1 sol' : `${soles} soles`;
+  if (!soles) return `${cents} céntimos`;
+  return cents ? `${main} con ${cents} céntimos` : main;
+}
+
+function announcePayment(payment) {
+  if (!store.get().settings.paymentVoice || !win || win.isDestroyed()) return;
+  const text = locked
+    ? `Recibiste un ${payment.app}`
+    : `${payment.name} te ${payment.app === 'Yape' ? 'yapeó' : 'plineó'} ${spokenMoney(payment.amount)}`;
+  win.webContents.send('ui:speak', text);
+}
+
 function onPayment(payment) {
   const today = new Date().toDateString();
   while (todayPayments.length && new Date(todayPayments[0].at).toDateString() !== today) todayPayments.shift();
-  todayPayments.push(payment);
+  if (!payment.test) todayPayments.push(payment);
   const verb = payment.app === 'Yape' ? 'te yapeó' : 'te plineó';
   // Los pagos se avisan siempre, también en "no molestar": son ventas.
   notifier.show({
@@ -1831,9 +1859,10 @@ function onPayment(payment) {
     payApp: payment.app,
     accountName: payment.app === 'Yape' ? 'Yape' : 'Plin · BBVA',
     title: locked ? `Pago recibido por ${payment.app}` : `${payment.name} ${verb} ${money(payment.amount)}`,
-    body: locked ? 'Desbloquea MultiChat Pro para ver el detalle' : `Hoy: ${todayPayments.length} pago${todayPayments.length === 1 ? '' : 's'} · ${money(todayPayments.reduce((t, p) => t + p.amount, 0))}`,
+    body: locked ? 'Desbloquea MultiChat Pro para ver el detalle' : payment.test ? 'Prueba: así llegarán los pagos de Yape y Plin' : `Hoy: ${todayPayments.length} pago${todayPayments.length === 1 ? '' : 's'} · ${money(todayPayments.reduce((t, p) => t + p.amount, 0))}`,
     canReply: false,
   });
+  announcePayment(payment);
 }
 
 function syncPaymentWatcher() {
