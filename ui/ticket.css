@@ -1,0 +1,121 @@
+/* Ticket de envío: 72 × 297 mm, igual que los PDF de Shalom y Olva. Siempre blanco y negro.
+   Mismos datos y tamaños de letra que la etiqueta original, con secciones en recuadros. */
+
+.ticket {
+  width: 72.2mm;
+  height: 296.9mm;
+  box-sizing: border-box;
+  padding: 3mm 2.6mm;
+  overflow: hidden;
+  background: #fff;
+  color: #000;
+  font-family: "Poppins", "Segoe UI", Arial, sans-serif;
+  font-size: 9.2pt;
+  line-height: 1.25;
+  text-align: left;
+  user-select: none;
+}
+
+.ticket * { box-sizing: border-box; }
+
+.t-head { display: grid; grid-template-columns: 1fr 23mm; gap: 1.5mm; align-items: center; }
+.t-head.t-no-qr { grid-template-columns: 1fr; }
+.t-brand { min-width: 0; }
+.t-logo { display: block; max-width: 100%; max-height: 20mm; object-fit: contain; object-position: left center; }
+.t-logo-text { font-size: 15pt; font-weight: 800; letter-spacing: 0.02em; }
+.t-slogan { margin-top: 0.3mm; font-size: 6.8pt; font-weight: 700; }
+.t-meta { margin-top: 0.8mm; font-size: 9pt; line-height: 1.3; }
+.t-qr { width: 23mm; height: 23mm; object-fit: contain; image-rendering: pixelated; }
+.t-qr-box { display: flex; flex-direction: column; align-items: center; }
+.t-qr-web svg { display: block; width: 100%; height: 100%; fill: #000; }
+.t-qr-caption { margin-top: 0.2mm; font-size: 6.6pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.t-sender {
+  margin-top: 1.6mm;
+  padding: 1mm 1.2mm;
+  border: 0.35mm solid #000;
+  border-radius: 1.6mm;
+  text-align: center;
+  font-size: 6.9pt;
+  font-weight: 700;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.t-sender-name { font-size: 7.4pt; }
+
+.t-carrier {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5mm;
+  margin-top: 1.6mm;
+  padding: 1mm 1.5mm;
+  border-radius: 1.6mm;
+  background: #000;
+  color: #fff;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.t-truck svg { display: block; width: 7mm; height: 7mm; }
+.t-carrier-label { font-size: 8pt; font-weight: 700; }
+.t-carrier-name { font-size: 14pt; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.t-card { margin-top: 1.6mm; border: 0.35mm solid #000; border-radius: 1.6mm; overflow: hidden; }
+.t-card-title {
+  padding: 0.5mm 2mm;
+  background: #000;
+  color: #fff;
+  font-size: 8.6pt;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.t-card-row { display: grid; grid-template-columns: 11mm 1fr; padding: 1.2mm 1.4mm 1.4mm 1mm; }
+.t-icon { padding-top: 0.6mm; padding-right: 1mm; }
+.t-icon svg { width: 10mm; height: 10mm; display: block; }
+.t-block { border-left: 0.3mm solid #000; padding-left: 1.6mm; min-width: 0; }
+
+.t-label { font-weight: 800; font-size: 9.6pt; text-transform: uppercase; }
+.t-value { font-size: 8.4pt; text-transform: uppercase; overflow-wrap: anywhere; }
+.t-value.t-big { font-size: 10pt; }
+.t-value.t-name { font-size: 11pt; font-weight: 800; line-height: 1.2; }
+.t-value b { font-weight: 800; }
+
+.t-barcode { margin: 3mm auto 0; width: 50mm; text-align: center; }
+.t-barcode svg { display: block; width: 50mm; height: 11mm; fill: #000; }
+.t-barcode-code { margin-top: 0.4mm; font-family: Consolas, "Courier New", monospace; font-size: 7pt; letter-spacing: 0.06em; }
+.t-spacer { height: 2mm; }
+
+.t-foot { margin-top: 2.5mm; padding-top: 1.6mm; border-top: 0.35mm solid #000; font-size: 10.2pt; line-height: 1.35; }
+.t-foot-qr { display: grid; grid-template-columns: 1fr 23mm; gap: 1.5mm; align-items: center; }
+.t-foot-text { min-width: 0; overflow-wrap: anywhere; }
+.t-note { margin-top: 0.6mm; font-size: 7.6pt; line-height: 1.28; text-align: justify; }
+.t-note p { margin: 0; }
+
+/* Letra más pequeña (opción del remitente): todo al ~85 %, mismo diseño. */
+.t-small { font-size: 7.8pt; }
+.t-small .t-slogan { font-size: 5.8pt; }
+.t-small .t-meta { font-size: 7.6pt; }
+.t-small .t-sender { font-size: 5.9pt; }
+.t-small .t-sender-name { font-size: 6.3pt; }
+.t-small .t-carrier-label { font-size: 6.8pt; }
+.t-small .t-carrier-name { font-size: 12pt; }
+.t-small .t-card-title { font-size: 7.3pt; }
+.t-small .t-label { font-size: 8.2pt; }
+.t-small .t-value { font-size: 7.1pt; }
+.t-small .t-value.t-big { font-size: 8.5pt; }
+.t-small .t-value.t-name { font-size: 9.4pt; }
+.t-small .t-foot { font-size: 8.7pt; }
+.t-small .t-note { font-size: 6.5pt; }
+.t-small .t-qr-caption { font-size: 5.8pt; }
+
+/* Último recurso cuando los datos no caben en 297 mm: más apretado (lo pone fitTicket). */
+.t-tight { line-height: 1.15; }
+.t-tight .t-card, .t-tight .t-sender, .t-tight .t-carrier { margin-top: 1mm; }
+.t-tight .t-barcode { margin-top: 1.5mm; }
+.t-tight .t-foot { margin-top: 1.5mm; padding-top: 1mm; }
+.t-tight .t-note { font-size: 5.8pt; line-height: 1.18; }
+.t-tight .t-label { font-size: 7.4pt; }
+.t-tight .t-value { font-size: 6.6pt; }

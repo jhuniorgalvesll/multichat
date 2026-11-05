@@ -1,0 +1,32 @@
+# Arma el instalador de Windows y lo publica en Releases de este repositorio (jhuniorgalvesll/multichat).
+# Las apps instaladas revisan ese repositorio y se actualizan solas.
+# Se ejecuta al subir cambios a la rama `main`. Solo publica cuando la versión de package.json es nueva:
+# si ya existe la versión en Releases, electron-builder no la vuelve a subir.
+name: Publicar actualización
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Armar y publicar el instalador
+        run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

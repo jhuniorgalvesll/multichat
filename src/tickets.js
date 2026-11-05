@@ -1,0 +1,203 @@
+'use strict';
+
+// Tickets de envío para ticketera (72 × 297 mm), con el formato de Shalom y Olva.
+// Los "remitentes" (Fertisem, Agroandina, ...) guardan el logo, el QR y los datos fijos del ticket.
+const fs = require('fs');
+const path = require('path');
+
+const CARRIERS = ['Shalom', 'Olva'];
+// Otras empresas de envío que se reconocen en el mensaje del cliente (se eligen como "Otra").
+const OTHER_CARRIERS = [
+  [/marvisur/i, 'Marvisur'], [/cruz del sur/i, 'Cruz del Sur'], [/flores/i, 'Flores'], [/oltursa/i, 'Oltursa'],
+  [/m[oó]vil ?bus/i, 'Movil Bus'], [/\bciva\b/i, 'Civa'], [/excluciva/i, 'Excluciva'], [/turismo d[ií]as/i, 'Turismo Días'],
+  [/emtrafesa/i, 'Emtrafesa'], [/serpost/i, 'Serpost'], [/urbano/i, 'Urbano'], [/\bdhl\b/i, 'DHL'],
+];
+const CHANNELS = ['WhatsApp', 'Facebook', 'Instagram', 'TikTok', 'Tienda Online', 'Otro'];
+const PAGE_MM = { width: 72.2, height: 296.9 }; // medida de los PDF de ejemplo
+
+// **texto** sale en negrita en el ticket.
+const NOTE = '**Importante:** Fertisem es el vendedor del pedido. Antes del despacho se embala, se verifica y se '
+  + 'envían al cliente fotos y video como constancia del estado y contenido.\n'
+  + 'Desde la entrega al courier afiliado, el **CLIENTE asume la responsabilidad exclusiva** del traslado y de '
+  + 'cualquier incidencia en ruta, la cual se gestiona directamente con el courier usando la guía de envío.\n'
+  + 'Al recibir, el CLIENTE debe revisar antes de firmar. Si hay daño o faltante, exigir anotación en la guía, '
+  + 'tomar fotos/video y reportar de inmediato. **La firma implica conformidad.**';
+
+// Remitentes iniciales, tomados de los tickets de ejemplo. Los logos y el QR vienen en build/ticket/.
+const DEFAULT_PROFILES = [
+  {
+    id: 'fertisem',
+    name: 'FERTISEM',
+    logoFile: 'fertisem-logo.png',
+    qrFile: 'qr-whatsapp.png',
+    slogan: '',
+    origin: 'MALA',
+    sender: 'FERTISEM E.I.R.L',
+    address: 'JIRON REAL N° 125 MALA - LIMA',
+    email: 'VENTAS@FERTISEM.PE',
+    website: 'www.fertisem.pe',
+    phone: '950 233 689',
+    note: NOTE,
+  },
+  {
+    id: 'agroandina',
+    name: 'AGROANDINA',
+    logoFile: 'agroandina-logo.png',
+    qrFile: 'qr-whatsapp.png',
+    slogan: 'Tu tienda Agricola online',
+    origin: 'Tienda Online',
+    sender: 'AGROANDINA',
+    address: '',
+    email: '',
+    website: 'www.fertisem.pe',
+    phone: '967 867 089',
+    note: NOTE,
+  },
+];
+
+const text = (value, max) => String(value ?? '').trim().slice(0, max);
+
+// Crea los remitentes de ejemplo la primera vez, copiando sus imágenes a la carpeta de la app.
+function seedProfiles(images, defaultsDir) {
+  return DEFAULT_PROFILES.map(({ logoFile, qrFile, ...profile }) => ({
+    ...profile,
+    logo: fs.existsSync(path.join(defaultsDir, logoFile)) ? images.importImage(path.join(defaultsDir, logoFile)) || '' : '',
+    qr: fs.existsSync(path.join(defaultsDir, qrFile)) ? images.importImage(path.join(defaultsDir, qrFile)) || '' : '',
+  }));
+}
+
+function sanitizeProfile(input, images) {
+  const image = (name) => (typeof name === 'string' && images.exists(name) ? name : '');
+  return {
+    id: typeof input.id === 'string' && /^[a-z0-9]{1,24}$/.test(input.id)
+      ? input.id
+      : Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name: text(input.name, 40) || 'REMITENTE',
+    logo: image(input.logo),
+    qr: image(input.qr),
+    slogan: text(input.slogan, 60),
+    origin: text(input.origin, 40),
+    sender: text(input.sender, 80),
+    address: text(input.address, 120),
+    email: text(input.email, 80),
+    website: text(input.website, 80),
+    phone: text(input.phone, 40),
+    note: text(input.note, 1500),
+    // 'small': letras más pequeñas en todo el ticket (p. ej. para productos de mascotas).
+    textSize: input.textSize === 'small' ? 'small' : 'normal',
+    // Segundo QR, creado con la tienda online, junto al de WhatsApp.
+    webQr: input.webQr !== false,
+  };
+}
+
+function sanitizeTicket(input) {
+  const ticket = {
+    // Shalom, Olva u otra empresa escrita por el usuario (p. ej. Marvisur).
+    carrier: CARRIERS.includes(input.carrier) ? input.carrier : text(input.carrier, 30) || 'Shalom',
+    profileId: text(input.profileId, 24),
+    channel: CHANNELS.includes(input.channel) ? input.channel : 'WhatsApp',
+    name: text(input.name, 90),
+    phone: text(input.phone, 20).replace(/[^\d+ ]/g, ''),
+    destination: text(input.destination, 140),
+    agent: text(input.agent, 120),
+    address: text(input.address, 220),
+    reference: text(input.reference, 220),
+    reference2: text(input.reference2, 220),
+    district: text(input.district, 80),
+    note: text(input.note, 220),
+    dni: text(input.dni, 20).replace(/\D/g, '').slice(0, 12),
+    orderNumber: text(input.orderNumber, 30).replace(/[^\x20-\x7e]/g, ''),
+  };
+  // Datos del remitente cambiados solo para este ticket (si no vienen, se usan los del remitente).
+  const overrides = { origin: 40, sender: 80, senderAddress: 120, email: 80, website: 80, storePhone: 40 };
+  for (const [key, max] of Object.entries(overrides)) {
+    if (typeof input[key] === 'string') ticket[key] = text(input[key], max);
+  }
+  return ticket;
+}
+
+// Formularios que se envían al cliente para pedirle sus datos (editables en ⚙ → Formularios de envío).
+// Los títulos coinciden con los que entiende parseSelection, así la respuesta se lee sola.
+const DEFAULT_FORMS = {
+  Shalom: [
+    '*DATOS PARA TU ENVÍO POR SHALOM* 📦',
+    'Por favor completa y envíanos:',
+    '',
+    '*Nombre y apellidos completos:* ',
+    '*DNI:* ',
+    '*Celular:* ',
+    '*Nombre de la agencia Shalom:* ',
+    '*Dirección de la agencia:* ',
+  ].join('\n'),
+  Olva: [
+    '*DATOS PARA TU ENVÍO POR OLVA* 📦',
+    'Por favor completa y envíanos:',
+    '',
+    '*Nombre y apellidos completos:* ',
+    '*DNI:* ',
+    '*Celular:* ',
+    '*Dirección de tu casa:* ',
+    '*Distrito:* ',
+    '*Referencia 1:* ',
+    '*Referencia 2:* ',
+    '*Nota (por si no te encuentran):* ',
+  ].join('\n'),
+};
+
+// Campo del ticket según el título de la línea ("DNI:", "Distrito:", "Referencia 2:", ...).
+function fieldForLabel(label) {
+  const l = label.toLowerCase();
+  if (/direcci/.test(l)) return 'address';
+  if (/agencia|agente/.test(l)) return 'agent';
+  if (/distrito/.test(l)) return 'district';
+  if (/ref\w*\.?\s*2|segunda ref/.test(l)) return 'reference2';
+  if (/ref/.test(l)) return 'reference';
+  if (/nota|observ/.test(l)) return 'note';
+  if (/destino|ciudad|provincia|departamento/.test(l)) return 'destination';
+  if (/dni|documento/.test(l)) return 'dni';
+  if (/celular|cel\b|tel[eé]fono|whatsapp|n[uú]mero/.test(l)) return 'phone';
+  if (/nombre|recibe|destinatario|cliente/.test(l)) return 'name';
+  return null;
+}
+
+// Saca los datos del envío del texto que el usuario seleccionó en el chat (la respuesta del cliente).
+// `base` trae lo que detectó el registro de ventas (nombre, DNI, celular) para textos sin títulos.
+function parseSelection(raw, base = {}) {
+  const t = String(raw || '').slice(0, 3000).replace(/[*_~]/g, '');
+  const found = {};
+  if (/shalom/i.test(t)) found.carrier = 'Shalom';
+  else if (/olva/i.test(t)) found.carrier = 'Olva';
+  else {
+    const other = OTHER_CARRIERS.find(([re]) => re.test(t));
+    if (other) found.carrier = other[1];
+  }
+
+  // 1) Líneas con título: "Título: valor" (el valor también puede venir en la línea siguiente).
+  const lines = t.split(/\r?\n/).map((l) => l.trim());
+  lines.forEach((line, i) => {
+    const m = line.match(/^([^:]{2,60}?)\s*:\s*(.*)$/);
+    if (!m) return;
+    const field = fieldForLabel(m[1]);
+    if (!field || found[field]) return;
+    let value = m[2].trim();
+    if (!value && lines[i + 1] && !/^[^:]{2,60}:/.test(lines[i + 1])) value = lines[i + 1];
+    if (value) found[field] = value.replace(/\s+/g, ' ').slice(0, 220);
+  });
+  if (found.dni) found.dni = found.dni.replace(/\D/g, '');
+  if (found.phone) found.phone = found.phone.replace(/[^\d+ ]/g, '').trim();
+
+  // 2) Textos sin títulos: lo detectado por el registro de ventas y una línea "LIMA / LIMA / SURCO".
+  if (!found.name && base.customer) found.name = base.customer;
+  if (!found.phone && base.phone) found.phone = base.phone;
+  if (!found.dni && base.dni) found.dni = base.dni;
+  if (!found.destination) {
+    const line = lines.find((l) => /\S\s*\/\s*\S/.test(l) && !/https?:/i.test(l) && !/:/.test(l));
+    if (line) found.destination = line;
+  }
+  for (const key of Object.keys(found)) if (!found[key]) delete found[key];
+  return found;
+}
+
+module.exports = {
+  CARRIERS, CHANNELS, PAGE_MM, DEFAULT_FORMS, seedProfiles, sanitizeProfile, sanitizeTicket, parseSelection,
+};

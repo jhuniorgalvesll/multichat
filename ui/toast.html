@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data:; style-src 'self'">
+  <title>Notificación</title>
+  <link rel="stylesheet" href="toast.css">
+</head>
+<body>
+  <div class="toast" id="toast">
+    <div class="head">
+      <img src="../build/icon.png" alt="" class="app-icon">
+      <span class="account" id="account"></span>
+      <button class="x" id="close" title="Cerrar">
+        <svg viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+      </button>
+    </div>
+    <div class="content" id="content">
+      <img alt="" class="avatar" id="avatar" hidden>
+      <div class="text">
+        <div class="title" id="title"></div>
+        <div class="body" id="body"></div>
+      </div>
+    </div>
+    <div class="actions" id="actions">
+      <button id="reply-btn">Responder</button>
+      <button id="open-btn">Abrir chat</button>
+    </div>
+    <form class="reply" id="reply-form" hidden>
+      <textarea id="reply-text" rows="2" placeholder="Escribe tu respuesta…" maxlength="4000"></textarea>
+      <button type="submit" class="send" title="Enviar (Enter)">
+        <svg viewBox="0 0 24 24"><path d="M3 20.5 21 12 3 3.5 3 10l12 2-12 2z"/></svg>
+      </button>
+    </form>
+    <div class="status" id="status" hidden></div>
+  </div>
+  <script src="toast.js"></script>
+</body>
+</html>
