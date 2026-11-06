@@ -148,7 +148,7 @@ const DEFAULT_FORMS = {
 function fieldForLabel(label) {
   const l = label.toLowerCase();
   if (/direcci/.test(l)) return 'address';
-  if (/agencia|agente/.test(l)) return 'agent';
+  if (/agencia|agente|oficina|^\s*(shalom|olva|marvisur)\s*$/.test(l)) return 'agent';
   if (/distrito/.test(l)) return 'district';
   if (/ref\w*\.?\s*2|segunda ref/.test(l)) return 'reference2';
   if (/ref/.test(l)) return 'reference';
@@ -160,10 +160,34 @@ function fieldForLabel(label) {
   return null;
 }
 
+// Palabras que no forman parte de un nombre (para no tomar "Si correcto" o "Marvisur podría ser" como nombre).
+const NOT_NAME = /\b(si|sí|no|ok|okey|correcto|perfecto|gracias|hola|buenas|buenos|tardes|d[ií]as|noches|porfa+|por|favor|podr[ií]a|ser|env[ií]a|env[ií]alo|m[aá]nd(?:a|ame|alo)|entonces|quiero|necesito|cu[aá]nto|precio|ya|listo|pagu[eé]|yape[eé]?|plin|me|lo|te|mi|su|est[aá]|bien|aqu[ií]|mis|datos|misma|oficina|agencia|sede|referencia|nota)\b/i;
+const ADDRESS_START = /^(jr\.?|jir[oó]n|av\.?|avenida|calle|ca\.|psje\.?|pasaje|mz\.?|manzana|lote|lt\.?|urb\.?|urbanizaci[oó]n|asoc\.?|asociaci[oó]n|prolong|carretera|km|sector|aa\.?\s?hh|a\.?h\.?|pueblo joven|block|edificio)\b/i;
+
+// Una línea sin título: ¿qué dato es? Usa el orden en que el cliente suele escribir (nombre, DNI, celular, ...).
+function classifyLine(line, found, carrier) {
+  const compact = line.replace(/[\s.-]/g, '');
+  if (/^\d{8}$/.test(compact) && !found.dni) return 'dni';
+  if (/^(\+?51)?9\d{8}$/.test(compact) && !found.phone) return 'phone';
+  if (/^\d+$/.test(compact)) return null;
+  if (ADDRESS_START.test(line) && !found.address) return 'address';
+  if (/\b(oficina|agencia|sede|counter|terminal)\b/i.test(line) && !found.agent) return 'agent';
+  const words = line.split(/\s+/).filter(Boolean);
+  if (!found.name && words.length >= 2 && words.length <= 6 && /^[\p{L}\s.'-]+$/u.test(line) && !NOT_NAME.test(line)) return 'name';
+  // Lugar: "QUILLABAMBA, LA CONVENCIÓN, CUSCO" o "Lima / Lima / Surco".
+  if (/[,/]/.test(line) && !found.destination && /^[\p{L}\s,./-]+$/u.test(line)) return 'destination';
+  if (NOT_NAME.test(line) && line.split(/\s+/).length <= 4 && !/\d/.test(line)) return null; // "Si correcto", "Marvisur podría ser"
+  if (carrier === 'Shalom' && !found.agent) return 'agent';
+  if (carrier === 'Olva' && !found.address) return 'address';
+  if (!found.destination && /^[\p{L}\s,./-]+$/u.test(line)) return 'destination';
+  return null;
+}
+
 // Saca los datos del envío del texto que el usuario seleccionó en el chat (la respuesta del cliente).
 // `base` trae lo que detectó el registro de ventas (nombre, DNI, celular) para textos sin títulos.
-function parseSelection(raw, base = {}) {
-  const t = String(raw || '').slice(0, 3000).replace(/[*_~]/g, '');
+// `carrier`: Shalom u Olva si se sabe qué formulario se envió (ayuda a ubicar las líneas sin título).
+function parseSelection(raw, base = {}, carrier = '') {
+  const t = String(raw || '').slice(0, 4000).replace(/[*_~]/g, '');
   const found = {};
   if (/shalom/i.test(t)) found.carrier = 'Shalom';
   else if (/olva/i.test(t)) found.carrier = 'Olva';
@@ -173,31 +197,65 @@ function parseSelection(raw, base = {}) {
   }
 
   // 1) Líneas con título: "Título: valor" (el valor también puede venir en la línea siguiente).
-  const lines = t.split(/\r?\n/).map((l) => l.trim());
+  const lines = t.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !/^(datos para tu env[ií]o|por favor completa)/i.test(l))
+    // "DNI. 44581929", "Cel. 993998874" → con dos puntos, para leerlos como título y valor.
+    .map((l) => l.replace(/^(dni|cel|celular|tel[eé]fono|telf|ruc)\s*[.]\s*/i, '$1: '));
+  const untitled = [];
   lines.forEach((line, i) => {
     const m = line.match(/^([^:]{2,60}?)\s*:\s*(.*)$/);
-    if (!m) return;
-    const field = fieldForLabel(m[1]);
-    if (!field || found[field]) return;
+    const field = m ? fieldForLabel(m[1]) : null;
+    if (!m || !field) {
+      untitled.push(line);
+      return;
+    }
+    if (found[field]) return;
     let value = m[2].trim();
     if (!value && lines[i + 1] && !/^[^:]{2,60}:/.test(lines[i + 1])) value = lines[i + 1];
     if (value) found[field] = value.replace(/\s+/g, ' ').slice(0, 220);
   });
+
+  // 2) Líneas sin título (como responden casi todos los clientes): se reconocen por su forma.
+  for (const line of untitled) {
+    const field = classifyLine(line, found, carrier || found.carrier);
+    if (field && !found[field]) found[field] = line.replace(/\s+/g, ' ').slice(0, 220);
+  }
   if (found.dni) found.dni = found.dni.replace(/\D/g, '');
   if (found.phone) found.phone = found.phone.replace(/[^\d+ ]/g, '').trim();
 
-  // 2) Textos sin títulos: lo detectado por el registro de ventas y una línea "LIMA / LIMA / SURCO".
+  // 3) Lo que detectó el registro de ventas, si faltaba algo.
   if (!found.name && base.customer) found.name = base.customer;
   if (!found.phone && base.phone) found.phone = base.phone;
   if (!found.dni && base.dni) found.dni = base.dni;
-  if (!found.destination) {
-    const line = lines.find((l) => /\S\s*\/\s*\S/.test(l) && !/https?:/i.test(l) && !/:/.test(l));
-    if (line) found.destination = line;
-  }
   for (const key of Object.keys(found)) if (!found[key]) delete found[key];
   return found;
 }
 
+// Datos oficiales de una agencia Shalom que el vendedor copia de la página de Shalom y le manda al cliente:
+//   HUANTA / Ayacucho / Huanta / Huanta / Huanta / Jr. Gervasio Santillana N°976 - Huanta - Ayacucho. Ref, Cruce ... /
+//   a km / Grande / Co / Cómo llegar / LUNES A SÁBADOS 08:00 AM A 08:00 PM ...
+// Devuelve { agent, destination, address, reference } o null si el texto no parece una ficha de agencia.
+function parseShalomAgency(raw) {
+  const lines = String(raw || '').replace(/[*_~]/g, '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const placeIndex = lines.findIndex((l) => (l.match(/\//g) || []).length >= 2 && /^[\p{L}\s/.-]+$/u.test(l));
+  const looksOfficial = placeIndex >= 0 && (lines.some((l) => /c[oó]mo llegar|lunes a|domingos?\b|\b\d{1,2}:\d{2}\s*(am|pm)/i.test(l)) || placeIndex <= 2);
+  if (!looksOfficial) return null;
+  const agent = placeIndex > 0 ? lines[placeIndex - 1] : '';
+  const destination = lines[placeIndex].replace(/\s*\/\s*/g, ' / ');
+  const after = lines.slice(placeIndex + 1).find((l) => l.length > 8 && !/^(a km|c[oó]mo llegar|lunes|domingo|grande|\d)/i.test(l)) || '';
+  const [address, ...refParts] = after.split(/\.?\s*\bref(?:erencia)?\b\.?\s*[,:]?\s*/i);
+  const result = { agent, destination, address: address.replace(/[.\s]+$/, ''), reference: refParts.join(' ').trim() };
+  for (const key of Object.keys(result)) if (!result[key]) delete result[key];
+  return result.destination ? result : null;
+}
+
+// Datos que faltan para imprimir el ticket según la empresa de envío.
+function missingFields(data, carrier) {
+  const need = carrier === 'Olva'
+    ? [['name', 'nombre'], ['dni', 'DNI'], ['phone', 'celular'], ['address', 'dirección']]
+    : [['name', 'nombre'], ['dni', 'DNI'], ['phone', 'celular'], ['agent', 'agencia']];
+  return need.filter(([key]) => !data[key]).map(([, label]) => label);
+}
+
 module.exports = {
-  CARRIERS, CHANNELS, PAGE_MM, DEFAULT_FORMS, seedProfiles, sanitizeProfile, sanitizeTicket, parseSelection,
+  CARRIERS, CHANNELS, PAGE_MM, DEFAULT_FORMS, seedProfiles, sanitizeProfile, sanitizeTicket, parseSelection, parseShalomAgency, missingFields,
 };

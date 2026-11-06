@@ -142,6 +142,11 @@ function renderTab(acc) {
   }
   if (acc.unread) tab.append(badgeFor(acc));
   if (acc.unread && acc.waitingSince && !acc.muted) tab.append(waitChip(acc.waitingSince));
+  if (acc.waitingData && acc.waitingData.length) {
+    const chip = Object.assign(document.createElement('span'), { className: 'ship-chip', textContent: `📦${acc.waitingData.length > 1 ? acc.waitingData.length : ''}` });
+    chip.title = `Esperando datos de envío: ${acc.waitingData.map((w) => `${w.chat} (${w.carrier}${w.stage === 'confirmar' ? ', por confirmar' : ''})`).join(' · ')}`;
+    tab.append(chip);
+  }
 
   const close = document.createElement('span');
   close.className = 'close';

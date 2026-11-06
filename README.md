@@ -40,6 +40,21 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.10.0 — datos de envío automáticos
+
+1. Mandas el formulario con **📝 Pedir datos de envío** (Shalom u Olva): ese chat queda *esperando datos* (📦 en la pestaña).
+2. Cuando el cliente responde —aunque sea **sin títulos** (nombre, 8 dígitos = DNI, 9 dígitos = celular, "Jr./Av." =
+   dirección, "oficina/agencia", "Ciudad, Provincia, Región") y en **varios mensajes**— aparece
+   **"📦 Fulano envió sus datos"** con lo que falta (por ejemplo, "Falta: DNI") y el botón **Abrir ticket** (ya lleno).
+3. **Shalom**: si le mandas la ficha oficial de la agencia (copiada de la página de Shalom: agencia, "Ayacucho / Huanta /
+   …", dirección, "Ref, …", horario), el ticket usa esos datos oficiales.
+4. Mandas **📋 Enviar datos al cliente para confirmar**; cuando responde **"sí, correcto"** aparece
+   **"✅ Confirmó: Imprimir ticket"**. Al imprimir, el chat deja de esperar.
+
+Cómo se leen las respuestas: por el aviso de mensaje nuevo de ese chat y, si ese chat está abierto, solo los mensajes
+escritos después del formulario. Solo en chats donde mandaste el formulario, solo en memoria, se olvida al imprimir o a
+las 12 horas. Nada se envía solo. *Imprimir con lo seleccionado* también entiende ahora las respuestas sin títulos.
+
 ## Novedades v1.9.3 — todo del día
 
 - El **día de trabajo empieza a las 7:00 a. m.** (lo de la madrugada cuenta para el día anterior).

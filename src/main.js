@@ -15,6 +15,7 @@ const payments = require('./payments');
 const paylog = require('./paylog');
 const verify = require('./verify');
 const assistant = require('./assistant');
+const shipwatch = require('./shipwatch');
 const bubble = require('./bubble');
 const updater = require('./updater');
 const CHANGELOG = require('./changelog');
@@ -744,6 +745,7 @@ function openFromNotification(data) {
   showWindow();
   if (data.kind === 'payment') return showTodayPayments();
   if (data.kind === 'update') return win.webContents.send('ui:update-ready', { version: data.version, items: changesFor(data.version) });
+  if (data.kind === 'shipdata') return openShipTicket(shipwatch.byId(data.shipId));
   if (data.kind === 'updated') return win.webContents.send('ui:about');
   if (!data.accountId || !findAccount(data.accountId)) return;
   setActive(data.accountId);
@@ -936,12 +938,123 @@ function shippingForms() {
 }
 
 // Pega el formulario de Shalom u Olva en el chat abierto; el usuario lo revisa y presiona Enter.
+// Ese chat queda "esperando datos de envío": cuando el cliente responda, se avisa para abrir el ticket ya lleno.
 async function pasteShippingForm(carrier) {
   const view = views.get(activeId);
   const text = shippingForms()[carrier];
   if (!view || locked || !text) return;
   view.webContents.focus();
   await pasteText(view.webContents, text);
+  const chat = await openChatTitle(view.webContents);
+  if (chat && shipwatch.start(activeId, chat, carrier)) pushState();
+}
+
+// ---------- Esperando datos de envío (ver shipwatch.js) ----------
+
+// Nombre del chat abierto en WhatsApp (el del encabezado).
+async function openChatTitle(wc) {
+  try {
+    return String(await wc.executeJavaScript(`(() => {
+      const head = document.querySelector('#main header');
+      if (!head) return '';
+      const el = head.querySelector('span[title]') || head.querySelector('[dir="auto"]');
+      return el ? (el.getAttribute('title') || el.textContent || '') : '';
+    })()`, true) || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+// Primeras líneas de los formularios (para encontrar en el chat el último formulario enviado).
+function formMarkers() {
+  return Object.values(shippingForms())
+    .map((f) => String(f).split('\n')[0].replace(/[*_~]/g, '').replace(/[^\p{L}\p{N} ]/gu, '').trim())
+    .filter((line) => line.length > 6);
+}
+
+// Lee del chat abierto SOLO los mensajes del cliente escritos después del último formulario enviado.
+// Se usa únicamente en cuentas con un chat esperando datos.
+function pageTextsScript(markers) {
+  return `(() => {
+    const head = document.querySelector('#main header');
+    if (!head) return null;
+    const el = head.querySelector('span[title]') || head.querySelector('[dir="auto"]');
+    const title = el ? (el.getAttribute('title') || el.textContent || '') : '';
+    const markers = ${JSON.stringify(markers)}.map((m) => m.toLowerCase());
+    const clean = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const rows = [...document.querySelectorAll('#main [role="row"]')];
+    let start = -1;
+    rows.forEach((row, i) => {
+      const out = row.querySelector('.message-out');
+      if (!out) return;
+      const text = clean(out.innerText || '');
+      if (/datos para tu envio|por favor completa y envianos/.test(text) || markers.some((m) => text.includes(clean(m)))) start = i;
+    });
+    if (start < 0) return { title, texts: null };
+    const bodyOf = (m) => {
+      const body = m.querySelector('[data-pre-plain-text] .selectable-text') || m.querySelector('.selectable-text');
+      return body ? body.innerText : '';
+    };
+    const after = rows.slice(start + 1);
+    const texts = after.map((row) => row.querySelector('.message-in')).filter(Boolean).map(bodyOf).filter(Boolean);
+    const outTexts = after.map((row) => row.querySelector('.message-out')).filter(Boolean).map(bodyOf).filter(Boolean);
+    return { title, texts, outTexts };
+  })()`;
+}
+
+async function pollShipChats() {
+  if (locked) return;
+  for (const acc of openAccounts()) {
+    if (!shipwatch.forAccount(acc.id).length) continue;
+    const view = views.get(acc.id);
+    if (!view) continue;
+    let result = null;
+    try {
+      result = await view.webContents.executeJavaScript(pageTextsScript(formMarkers()), true);
+    } catch {
+      result = null;
+    }
+    if (!result || !result.texts) continue;
+    const entry = shipwatch.find(acc.id, result.title);
+    if (entry) announceShip(shipwatch.setPageTexts(entry, result.texts, result.outTexts));
+  }
+}
+
+function announceShip(event) {
+  if (!event || locked) return;
+  const { entry, missing } = event;
+  const acc = findAccount(entry.accountId);
+  const name = entry.data.name || entry.chat;
+  const carrier = entry.data.carrier || entry.carrier;
+  const confirmed = event.kind === 'confirmed';
+  notifier.show({
+    kind: 'shipdata',
+    shipId: entry.id,
+    confirmed,
+    accountId: entry.accountId,
+    accountName: acc ? acc.name : 'MultiChat Pro',
+    title: confirmed ? `✅ ${name} confirmó sus datos · ${carrier}` : `📦 ${name} envió sus datos · ${carrier}`,
+    body: missing.length
+      ? `Falta: ${missing.join(', ')}. Abre el ticket para revisar.`
+      : confirmed ? 'Listo para imprimir.'
+        : entry.official ? 'Con los datos oficiales de la agencia Shalom. Revisa, mándale para confirmar e imprime.'
+          : 'Datos completos: revisa, mándale para confirmar e imprime.',
+    canReply: false,
+  });
+  pushState();
+}
+
+// Abre el ticket con los datos que mandó el cliente, en su cuenta.
+function openShipTicket(entry) {
+  if (!entry || locked) return;
+  showWindow();
+  const acc = findAccount(entry.accountId);
+  if (acc) setActive(acc.id);
+  win.webContents.send('ticket:new', {
+    accountId: acc ? acc.id : null,
+    channel: acc ? CHANNEL_BY_SERVICE[acc.service] || 'WhatsApp' : 'WhatsApp',
+    prefill: { ...entry.data, carrier: entry.data.carrier || entry.carrier },
+  });
 }
 
 function shippingFormItems() {
@@ -1041,6 +1154,8 @@ async function printTicket(input, { pdf = false, printer = '', reprint = false }
   if (result.ok && !reprint) {
     paylog.addPrint(ticket, { pdf });
     pushPayments();
+    shipwatch.doneFor(ticket);
+    pushState();
   }
   return result;
 }
@@ -1382,6 +1497,7 @@ function pushState() {
     color: SERVICES[a.service].color,
     unread: unread.get(a.id) || 0,
     waitingSince: waitingSince.get(a.id) || 0,
+    waitingData: shipwatch.forAccount(a.id).map((e) => ({ chat: e.chat, carrier: e.carrier, stage: e.stage })),
     favicon: favicons.get(a.id) || null,
     loaded: views.has(a.id),
   }));
@@ -2188,7 +2304,10 @@ function registerIpc() {
   });
   ipcMain.on('svc:notify', (event, payload) => {
     const id = idForWebContents(event.sender);
-    if (id && payload && Number.isInteger(payload.id)) showServiceNotification(id, payload);
+    if (!id || !payload || !Number.isInteger(payload.id)) return;
+    // ¿Es la respuesta de un chat que espera datos de envío?
+    if (!locked) announceShip(shipwatch.addNotification(id, payload.title, payload.body));
+    showServiceNotification(id, payload);
   });
   ipcMain.handle('ticket:profiles', () => (locked ? [] : store.get().ticketProfiles.map(ticketProfileView)));
   ipcMain.handle('ticket:save-profiles', (_e, list) => (locked ? { ok: false } : saveTicketProfiles(list)));
@@ -2207,6 +2326,9 @@ function registerIpc() {
     }
     view.webContents.focus();
     await pasteText(view.webContents, message);
+    // Se mandaron los datos para que el cliente confirme: su "sí, correcto" avisará que ya se puede imprimir.
+    const entry = shipwatch.find(activeId, await openChatTitle(view.webContents));
+    if (entry) shipwatch.markConfirming(entry);
     return { ok: true };
   });
   ipcMain.on('forms:menu', () => {
@@ -2567,6 +2689,7 @@ function init() {
   try { paylog.recover(payments.parsePayment); } catch { /* registro dañado: se ignora */ }
   syncPaymentWatcher();
   syncKeepAwake();
+  setInterval(pollShipChats, 3000);
   setTimeout(announceUpdated, 4000);
   setTimeout(maybeWelcome, 3500);
   updater.start({

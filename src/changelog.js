@@ -3,6 +3,15 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.10.0',
+    items: [
+      'Datos de envío automáticos: después de mandar el formulario, cuando el cliente responde te avisa "📦 envió sus datos" y abre el ticket ya lleno.',
+      'Entiende respuestas sin títulos y en varios mensajes, y te dice qué falta (por ejemplo, el DNI).',
+      'Shalom: usa la ficha oficial de la agencia que le mandas al cliente (agencia, destino, dirección y referencia).',
+      'Cuando el cliente responde "sí, correcto" a tus datos de confirmación, avisa "✅ listo para imprimir".',
+    ],
+  },
+  {
     version: '1.9.3',
     items: [
       'Pagos solo del día de trabajo (desde las 7:00 a. m.): al día siguiente se borran solos y empieza en S/ 0.00.',
