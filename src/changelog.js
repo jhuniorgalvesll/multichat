@@ -3,6 +3,14 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.10.3',
+    items: [
+      'Olva: después de la dirección de la casa, las líneas sin título van a Referencia 1, Referencia 2 y Nota.',
+      'Shalom: avisa si el destinatario no tiene nombre y apellidos completos ("Falta: apellidos").',
+      'Las frases como "En un momento le envío los datos" ya no se toman como datos.',
+    ],
+  },
+  {
     version: '1.10.2',
     items: ['Shalom con ficha oficial: DESTINO = "Lima / Cañete / Mala / Mala" y DIRECCIÓN = la línea completa con su referencia (Olva sigue igual).'],
   },

@@ -1115,6 +1115,7 @@ function openShipTicket(entry) {
     accountId: acc ? acc.id : null,
     channel: acc ? CHANNEL_BY_SERVICE[acc.service] || 'WhatsApp' : 'WhatsApp',
     prefill: { ...entry.data, carrier: entry.data.carrier || entry.carrier },
+    missing: tickets.missingFields(entry.data, entry.data.carrier || entry.carrier),
   });
 }
 

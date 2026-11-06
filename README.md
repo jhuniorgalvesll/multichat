@@ -40,6 +40,14 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.10.3
+
+- **Olva** (a domicilio): el cliente da la dirección de su casa y referencias; las líneas sin título después de la
+  dirección van a **Referencia 1 → Referencia 2 → Nota** (nunca a "Destino").
+- **Shalom**: el destinatario debe ir con **nombre y apellidos completos**; si el cliente pone solo "Melisa", el aviso y el
+  ticket dicen **"⚠ Falta: apellidos (nombre completo)"** para pedírselos antes de imprimir.
+- Frases sueltas ("En un momento le envío los datos", "Si correcto") ya no se toman como agencia o destino.
+
 ## Novedades v1.10.2
 
 - Ticket de **Shalom** con la ficha oficial de la agencia: **DESTINO** = solo "Lima / Cañete / Mala / Mala" y

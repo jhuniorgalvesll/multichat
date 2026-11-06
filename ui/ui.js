@@ -1137,7 +1137,7 @@ async function loadTicketProfiles(selected) {
   profileBeforeNew = $('ticket-profileId').value;
 }
 
-async function openTicketPanel({ accountId = null, channel = 'WhatsApp', prefill = {} } = {}) {
+async function openTicketPanel({ accountId = null, channel = 'WhatsApp', prefill = {}, missing = [] } = {}) {
   if (state.locked || passwordMode) return;
   closeCoffee();
   closeSalesList();
@@ -1154,8 +1154,10 @@ async function openTicketPanel({ accountId = null, channel = 'WhatsApp', prefill
   }
   $('ticket-channel').value = channel;
   const detected = Object.keys(prefill).filter((k) => TICKET_LABELS[k] && prefill[k]).map((k) => TICKET_LABELS[k]);
-  $('ticket-detected').hidden = !detected.length;
-  $('ticket-detected').textContent = `Detectado en el mensaje: ${detected.join(', ')}. Revisa que esté bien.`;
+  $('ticket-detected').hidden = !detected.length && !missing.length;
+  $('ticket-detected').textContent = `Detectado en el mensaje: ${detected.join(', ')}. Revisa que esté bien.`
+    + (missing.length ? ` ⚠ Falta: ${missing.join(', ')}.` : '');
+  $('ticket-detected').classList.toggle('has-missing', missing.length > 0);
   $('ticket-error').textContent = '';
   if (prefill.carrier && !['Shalom', 'Olva'].includes(prefill.carrier)) {
     $('ticket-carrierName').value = prefill.carrier;

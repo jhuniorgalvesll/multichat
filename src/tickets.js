@@ -165,7 +165,7 @@ const NOT_NAME = /\b(si|sí|no|ok|okey|correcto|perfecto|gracias|hola|buenas|bue
 const ADDRESS_START = /^(jr\.?|jir[oó]n|av\.?|avenida|calle|ca\.|psje\.?|pasaje|mz\.?|manzana|lote|lt\.?|urb\.?|urbanizaci[oó]n|asoc\.?|asociaci[oó]n|prolong|carretera|km|sector|aa\.?\s?hh|a\.?h\.?|pueblo joven|block|edificio)\b/i;
 
 // Una línea sin título: ¿qué dato es? Usa el orden en que el cliente suele escribir (nombre, DNI, celular, ...).
-function classifyLine(line, found, carrier) {
+function classifyLine(line, found, carrier, first = false) {
   const compact = line.replace(/[\s.-]/g, '');
   if (/^\d{8}$/.test(compact) && !found.dni) return 'dni';
   if (/^(\+?51)?9\d{8}$/.test(compact) && !found.phone) return 'phone';
@@ -174,12 +174,21 @@ function classifyLine(line, found, carrier) {
   if (/\b(oficina|agencia|sede|counter|terminal)\b/i.test(line) && !found.agent) return 'agent';
   const words = line.split(/\s+/).filter(Boolean);
   if (!found.name && words.length >= 2 && words.length <= 6 && /^[\p{L}\s.'-]+$/u.test(line) && !NOT_NAME.test(line)) return 'name';
-  // Lugar: "QUILLABAMBA, LA CONVENCIÓN, CUSCO" o "Lima / Lima / Surco".
-  if (/[,/]/.test(line) && !found.destination && /^[\p{L}\s,./-]+$/u.test(line)) return 'destination';
+  // La primera línea con una sola palabra ("Melisa") también es el nombre: luego se avisa que faltan los apellidos.
+  if (!found.name && first && words.length === 1 && /^[\p{L}'-]{3,}$/u.test(line) && !NOT_NAME.test(line)) return 'name';
+  // Lugar: "QUILLABAMBA, LA CONVENCIÓN, CUSCO" o "Lima / Lima / Surco" (en Olva va a domicilio: no hay destino).
+  if (carrier !== 'Olva' && /[,/]/.test(line) && !found.destination && /^[\p{L}\s,./-]+$/u.test(line)) return 'destination';
+  // Olva: el cliente da la dirección de su casa y luego sus referencias (y a veces una nota).
+  if (carrier === 'Olva' && found.address && !/^(s[ií]|ok|correcto|gracias|perfecto|listo)\b/i.test(line)) {
+    if (!found.reference) return 'reference';
+    if (!found.reference2) return 'reference2';
+    if (!found.note) return 'note';
+    return null;
+  }
   if (NOT_NAME.test(line) && line.split(/\s+/).length <= 4 && !/\d/.test(line)) return null; // "Si correcto", "Marvisur podría ser"
-  if (carrier === 'Shalom' && !found.agent) return 'agent';
-  if (carrier === 'Olva' && !found.address) return 'address';
-  if (!found.destination && /^[\p{L}\s,./-]+$/u.test(line)) return 'destination';
+  // Shalom: una línea corta que no es una frase ("Mala", "Huancayo El Tambo") es el nombre de la agencia.
+  if (carrier === 'Shalom' && !found.agent && !NOT_NAME.test(line) && line.split(/\s+/).length <= 6) return 'agent';
+  if (carrier !== 'Olva' && !found.destination && !NOT_NAME.test(line) && /^[\p{L}\s,./-]+$/u.test(line)) return 'destination';
   return null;
 }
 
@@ -215,10 +224,10 @@ function parseSelection(raw, base = {}, carrier = '') {
   });
 
   // 2) Líneas sin título (como responden casi todos los clientes): se reconocen por su forma.
-  for (const line of untitled) {
-    const field = classifyLine(line, found, carrier || found.carrier);
+  untitled.forEach((line, i) => {
+    const field = classifyLine(line, found, carrier || found.carrier, i === 0);
     if (field && !found[field]) found[field] = line.replace(/\s+/g, ' ').slice(0, 220);
-  }
+  });
   if (found.dni) found.dni = found.dni.replace(/\D/g, '');
   if (found.phone) found.phone = found.phone.replace(/[^\d+ ]/g, '').trim();
 
@@ -255,7 +264,10 @@ function missingFields(data, carrier) {
     ? [['name', 'nombre'], ['dni', 'DNI'], ['phone', 'celular'], ['address', 'dirección']]
     : [['name', 'nombre'], ['dni', 'DNI'], ['phone', 'celular'], ['agent', 'agencia o destino']];
   // Shalom: con el destino de la ficha oficial ("Lima / Cañete / Mala / Mala") no hace falta el nombre de la agencia.
-  return need.filter(([key]) => !data[key] && !(key === 'agent' && data.destination)).map(([, label]) => label);
+  const missing = need.filter(([key]) => !data[key] && !(key === 'agent' && data.destination)).map(([, label]) => label);
+  // Shalom entrega solo con nombre y apellidos completos (como en el DNI): "Melisa" sola no alcanza.
+  if (carrier !== 'Olva' && data.name && data.name.trim().split(/\s+/).length < 2) missing.unshift('apellidos (nombre completo)');
+  return missing;
 }
 
 module.exports = {

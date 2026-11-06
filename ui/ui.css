@@ -1523,3 +1523,6 @@ tbody tr:hover { background: var(--tab-hover); }
 /* Chat esperando datos de envío */
 .ship-chip { flex-shrink: 0; font-size: 13px; line-height: 1; }
 .tabs-mini .tab .ship-chip { position: absolute; bottom: 0; left: 2px; font-size: 11px; }
+
+/* Ticket: aviso de datos que faltan (por ejemplo, los apellidos para Shalom) */
+#ticket-detected.has-missing { border-color: var(--danger); color: var(--danger); font-weight: 600; }
