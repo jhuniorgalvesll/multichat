@@ -40,6 +40,12 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.10.5
+
+- Formulario del ticket con **Shalom**: debajo del destinatario (nombre, DNI, celular, sin cambios) solo aparecen
+  **Destino** ("Lima / Cañete / Mala / Mala") y **Dirección de la agencia** (con su referencia). Agencia, distrito,
+  referencias y nota se ocultan y quedan vacíos; si traían algo, se pasa a Destino o Dirección. Olva sigue igual.
+
 ## Novedades v1.10.4
 
 - El aviso **"⚠ Falta: apellidos (nombre completo)"** vale para **todas las empresas** (Shalom, Olva, Marvisur…).

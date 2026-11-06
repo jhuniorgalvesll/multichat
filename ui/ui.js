@@ -1082,10 +1082,30 @@ function updateTicketPreview() {
   $('ticket-fit').hidden = !root.dataset.fit;
 }
 
+// Shalom solo usa Destino ("Lima / Cañete / Mala / Mala") y Dirección (la de la agencia, con su referencia), como
+// en sus tickets: los demás campos de destino se ocultan y quedan vacíos. Lo que tenían se pasa a esos dos campos.
+const SHALOM_HIDDEN = ['agent', 'district', 'reference', 'reference2', 'note'];
+
+function shapeForShalom() {
+  const val = (id) => $(`ticket-${id}`).value.trim();
+  const agent = val('agent');
+  if (agent && !val('destination')) $('ticket-destination').value = agent;
+  else if (agent && !val('address')) $('ticket-address').value = agent;
+  const extras = [val('district'), val('reference') && `Referencia: ${val('reference')}`, val('reference2'), val('note')].filter(Boolean);
+  if (extras.length) $('ticket-address').value = [val('address'), ...extras].filter(Boolean).join(' . ').slice(0, 220);
+  for (const id of SHALOM_HIDDEN) $(`ticket-${id}`).value = '';
+}
+
 function setTicketCarrier(carrier) {
   ticketCarrier = ['Shalom', 'Olva', 'Otra'].includes(carrier) ? carrier : 'Shalom';
   for (const btn of document.querySelectorAll('#ticket-carrier button')) btn.classList.toggle('on', btn.dataset.carrier === ticketCarrier);
   $('ticket-carrierName-label').hidden = ticketCarrier !== 'Otra';
+  const shalom = ticketCarrier === 'Shalom';
+  if (shalom) shapeForShalom();
+  for (const id of SHALOM_HIDDEN) $(`ticket-${id}`).closest('label').hidden = shalom;
+  $('ticket-address').closest('label').firstChild.textContent = shalom ? 'Dirección de la agencia (con su referencia) ' : 'Dirección (de la agencia o de la casa) ';
+  $('ticket-destination').closest('label').firstChild.textContent = shalom ? 'Destino ' : 'Destino (opcional) ';
+  $('ticket-destination').placeholder = shalom ? 'Lima / Cañete / Mala / Mala' : 'LIMA / LIMA / SANTIAGO DE SURCO';
   updateTicketPreview();
   if (ticketCarrier === 'Otra' && ticketPanelOpen) $('ticket-carrierName').focus();
 }
