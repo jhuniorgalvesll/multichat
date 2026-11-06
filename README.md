@@ -40,6 +40,12 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.10.2
+
+- Ticket de **Shalom** con la ficha oficial de la agencia: **DESTINO** = solo "Lima / Cañete / Mala / Mala" y
+  **DIRECCIÓN** = la línea completa con su referencia ("Av. Marchand # 250, Distrito De Mala . Referencia: …"); ya no se
+  separa la referencia ni se repite la agencia. **Olva** sigue con dirección, distrito, referencias y nota por separado.
+
 ## Novedades v1.10.1
 
 - El chat queda *esperando datos* apenas aparece en pantalla el formulario de envío que mandaste **hoy**, aunque lo

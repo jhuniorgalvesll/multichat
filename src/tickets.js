@@ -233,7 +233,7 @@ function parseSelection(raw, base = {}, carrier = '') {
 // Datos oficiales de una agencia Shalom que el vendedor copia de la página de Shalom y le manda al cliente:
 //   HUANTA / Ayacucho / Huanta / Huanta / Huanta / Jr. Gervasio Santillana N°976 - Huanta - Ayacucho. Ref, Cruce ... /
 //   a km / Grande / Co / Cómo llegar / LUNES A SÁBADOS 08:00 AM A 08:00 PM ...
-// Devuelve { agent, destination, address, reference } o null si el texto no parece una ficha de agencia.
+// Devuelve { agent, destination, address } o null si el texto no parece una ficha de agencia.
 function parseShalomAgency(raw) {
   const lines = String(raw || '').replace(/[*_~]/g, '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const placeIndex = lines.findIndex((l) => (l.match(/\//g) || []).length >= 2 && /^[\p{L}\s/.-]+$/u.test(l));
@@ -241,9 +241,10 @@ function parseShalomAgency(raw) {
   if (!looksOfficial) return null;
   const agent = placeIndex > 0 ? lines[placeIndex - 1] : '';
   const destination = lines[placeIndex].replace(/\s*\/\s*/g, ' / ');
-  const after = lines.slice(placeIndex + 1).find((l) => l.length > 8 && !/^(a km|c[oó]mo llegar|lunes|domingo|grande|\d)/i.test(l)) || '';
-  const [address, ...refParts] = after.split(/\.?\s*\bref(?:erencia)?\b\.?\s*[,:]?\s*/i);
-  const result = { agent, destination, address: address.replace(/[.\s]+$/, ''), reference: refParts.join(' ').trim() };
+  // La dirección va completa, con su referencia ("Av. Marchand # 250, Distrito De Mala . Referencia: …"), como en los
+  // tickets de Shalom; no se separa en otro campo.
+  const address = lines.slice(placeIndex + 1).find((l) => l.length > 8 && !/^(a km|c[oó]mo llegar|lunes|domingo|grande|mediana|peque|\d)/i.test(l)) || '';
+  const result = { agent, destination, address: address.trim() };
   for (const key of Object.keys(result)) if (!result[key]) delete result[key];
   return result.destination ? result : null;
 }
@@ -252,8 +253,9 @@ function parseShalomAgency(raw) {
 function missingFields(data, carrier) {
   const need = carrier === 'Olva'
     ? [['name', 'nombre'], ['dni', 'DNI'], ['phone', 'celular'], ['address', 'dirección']]
-    : [['name', 'nombre'], ['dni', 'DNI'], ['phone', 'celular'], ['agent', 'agencia']];
-  return need.filter(([key]) => !data[key]).map(([, label]) => label);
+    : [['name', 'nombre'], ['dni', 'DNI'], ['phone', 'celular'], ['agent', 'agencia o destino']];
+  // Shalom: con el destino de la ficha oficial ("Lima / Cañete / Mala / Mala") no hace falta el nombre de la agencia.
+  return need.filter(([key]) => !data[key] && !(key === 'agent' && data.destination)).map(([, label]) => label);
 }
 
 module.exports = {

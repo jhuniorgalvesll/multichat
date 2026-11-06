@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.10.2',
+    items: ['Shalom con ficha oficial: DESTINO = "Lima / Cañete / Mala / Mala" y DIRECCIÓN = la línea completa con su referencia (Olva sigue igual).'],
+  },
+  {
     version: '1.10.1',
     items: [
       'Los datos de envío se detectan aunque el formulario no se haya mandado con el botón 📝 (basta con que esté en el chat abierto, enviado hoy).',

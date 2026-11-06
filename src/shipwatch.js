@@ -73,9 +73,12 @@ function update(entry) {
   if (!data.carrier) data.carrier = entry.carrier;
   // La ficha oficial de Shalom que mandó el vendedor manda sobre lo que escribió el cliente (agencia, destino,
   // dirección); la referencia del cliente se respeta si ya había una.
+  // Ticket de Shalom: DESTINO = "Lima / Cañete / Mala / Mala" y DIRECCIÓN = la línea completa de la ficha (con su
+  // referencia). Lo que el cliente escribió como agencia ("Mala") deja de ir, para no repetir.
   if (entry.official && data.carrier === 'Shalom') {
-    Object.assign(data, { agent: entry.official.agent || data.agent, destination: entry.official.destination || data.destination, address: entry.official.address || data.address });
-    if (entry.official.reference && !data.reference) data.reference = entry.official.reference;
+    data.destination = entry.official.destination || data.destination;
+    if (entry.official.address) data.address = entry.official.address;
+    delete data.agent;
   }
   entry.data = data;
   const fields = Object.keys(data).filter((k) => k !== 'carrier').length;
