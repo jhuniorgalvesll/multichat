@@ -40,6 +40,12 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.10.8
+
+- **Voz de los pagos más confiable**: ahora la dice el motor de voz de Windows (el de Narrador), fuera de la ventana, así
+  suena aunque haya música o YouTube, con la ventana oculta o la pantalla apagada. Voz de mujer en español, volumen al
+  máximo y "ding" antes. Si Windows no tiene voces en español, la dice la ventana como antes.
+
 ## Novedades v1.10.7
 
 - Ficha de agencia copiada de **shalom.pe → Agencias** (nombre, "Departamento / Provincia / Distrito / Localidad",

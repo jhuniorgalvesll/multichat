@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.10.8',
+    items: ['La voz de los pagos ahora usa el motor de voz de Windows: suena siempre, aunque estés escuchando música o YouTube, con voz de mujer y al volumen máximo.'],
+  },
+  {
     version: '1.10.7',
     items: ['Ficha de agencia copiada de la página de Shalom: se lee bien aunque venga en otro orden ("a km", "Grande / Co") o con el lugar partido en dos líneas.'],
   },

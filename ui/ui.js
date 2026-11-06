@@ -2286,6 +2286,8 @@ function speak(text) {
     utterance.rate = 1;
     utterance.pitch = 1.05;
     chime();
+    // Chrome a veces deja la voz "trabada" (en pausa) cuando la ventana está en segundo plano: se destraba antes.
+    if (speechSynthesis.paused) speechSynthesis.resume();
     setTimeout(() => speechSynthesis.speak(utterance), 550); // si llegan varios pagos, se dicen uno tras otro
   };
   if (speechSynthesis.getVoices().length) return say();

@@ -16,6 +16,7 @@ const paylog = require('./paylog');
 const verify = require('./verify');
 const assistant = require('./assistant');
 const shipwatch = require('./shipwatch');
+const voice = require('./voice');
 const bubble = require('./bubble');
 const updater = require('./updater');
 const CHANGELOG = require('./changelog');
@@ -2493,10 +2494,16 @@ function announcePayment(payment) {
   const text = locked
     ? `Recibiste un ${payment.app}`
     : `${payment.name.replace(/\*/g, '')} ${PAY_VERB[payment.app]} ${spokenMoney(payment.amount)}`;
-  win.webContents.send('ui:speak', text);
+  sayAloud(text);
 }
 
 const todayPayments = () => paylog.read().payments;
+
+// Voz en voz alta con el motor de Windows (suena aunque haya música, la ventana esté oculta o la pantalla apagada);
+// si Windows no tiene voz en español, la dice la ventana.
+function sayAloud(text) {
+  voice.speak(text, (t) => { if (win && !win.isDestroyed()) win.webContents.send('ui:speak', t); });
+}
 
 // payment.catchUp: llegó mientras MultiChat estaba cerrado; solo se registra, sin aviso ni voz.
 function onPayment(payment) {
@@ -2531,7 +2538,7 @@ function onPhoneNotification(item) {
   const { settings } = store.get();
   if (!item.catchUp && settings.readAllPhone && !item.payment && !locked && !dndActive() && win && !win.isDestroyed()) {
     const [app, ...rest] = item.texts;
-    win.webContents.send('ui:speak', `${rest.length ? `${app}. ${rest.join('. ')}` : app}`.slice(0, 220));
+    sayAloud(`${rest.length ? `${app}. ${rest.join('. ')}` : app}`.slice(0, 220));
   }
   pushPayments();
 }
