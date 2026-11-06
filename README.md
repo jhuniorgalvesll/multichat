@@ -40,6 +40,12 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.10.7
+
+- Ficha de agencia copiada de **shalom.pe → Agencias** (nombre, "Departamento / Provincia / Distrito / Localidad",
+  dirección con "Ref.", "a km", "Grande / Co", horario, teléfono): se lee aunque los textos lleguen en otro orden o con
+  el lugar partido en dos líneas. Destino = el lugar; Dirección = la línea completa con su referencia.
+
 ## Novedades v1.10.6
 
 - Corregido *Imprimir con lo seleccionado* en Shalom: si lo seleccionado incluye la ficha oficial de la agencia (aunque no

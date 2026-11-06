@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.10.7',
+    items: ['Ficha de agencia copiada de la página de Shalom: se lee bien aunque venga en otro orden ("a km", "Grande / Co") o con el lugar partido en dos líneas.'],
+  },
+  {
     version: '1.10.6',
     items: ['Corregido: al seleccionar el mensaje del cliente junto con la ficha de Shalom, el Destino ahora es "Lima / Cañete / Mala / Mala" (no "MALA") y la Dirección es la completa.'],
   },

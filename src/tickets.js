@@ -253,18 +253,23 @@ function parseSelection(raw, base = {}, carrier = '') {
 //   a km / Grande / Co / Cómo llegar / LUNES A SÁBADOS 08:00 AM A 08:00 PM ...
 // Devuelve { agent, destination, address } o null si el texto no parece una ficha de agencia.
 function parseShalomAgency(raw) {
-  const lines = String(raw || '').replace(/[*_~]/g, '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const lines = String(raw || '').replace(/[*_~]/g, '')
+    // Al copiar de la página de Shalom, el lugar puede venir partido: "Cajamarca / Cajabamba / Cajabamba /" + "Cajabamba".
+    .replace(/\/\s*\r?\n\s*(?=\S)/g, '/ ').replace(/\r?\n\s*\/\s*/g, ' / ')
+    .split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const NOISE = /^(a\s*km|\d+([.,]\d+)?\s*km|grande|mediana|peque[nñ]a|c[oó]mo llegar|ver tarifas|agencias|puntos pro)\b/i;
   const placeIndex = lines.findIndex((l) => (l.match(/\//g) || []).length >= 2 && /^[\p{L}\s/.-]+$/u.test(l));
   // Es ficha oficial si trae horario / "Cómo llegar", si la línea de lugar está al comienzo, o si el lugar tiene
   // 4 partes como las fichas de Shalom ("Lima / Cañete / Mala / Mala"), aunque no se haya seleccionado el horario.
   const looksOfficial = placeIndex >= 0 && (lines.some((l) => /c[oó]mo llegar|lunes a|domingos?\b|\b\d{1,2}:\d{2}\s*(am|pm)/i.test(l))
     || placeIndex <= 2 || (lines[placeIndex].match(/\//g) || []).length >= 3);
   if (!looksOfficial) return null;
-  const agent = placeIndex > 0 ? lines[placeIndex - 1] : '';
+  // Nombre de la agencia: la línea anterior al lugar que no sea "a km", "Grande / Co", etc.
+  const agent = lines.slice(0, placeIndex).reverse().find((l) => !NOISE.test(l) && !/^\(?\d/.test(l)) || '';
   const destination = lines[placeIndex].replace(/\s*\/\s*/g, ' / ');
   // La dirección va completa, con su referencia ("Av. Marchand # 250, Distrito De Mala . Referencia: …"), como en los
   // tickets de Shalom; no se separa en otro campo.
-  const address = lines.slice(placeIndex + 1).find((l) => l.length > 8 && !/^(a km|c[oó]mo llegar|lunes|domingo|grande|mediana|peque|\d)/i.test(l)) || '';
+  const address = lines.slice(placeIndex + 1).find((l) => l.length > 8 && !NOISE.test(l) && !/^(lunes|domingo|\(?\d)/i.test(l)) || '';
   const result = { agent, destination, address: address.trim() };
   for (const key of Object.keys(result)) if (!result[key]) delete result[key];
   return result.destination ? result : null;
