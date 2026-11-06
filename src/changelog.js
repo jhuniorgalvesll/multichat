@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.10.4',
+    items: ['El aviso "Falta: apellidos (nombre completo)" ahora también vale para Olva y cualquier otra empresa.'],
+  },
+  {
     version: '1.10.3',
     items: [
       'Olva: después de la dirección de la casa, las líneas sin título van a Referencia 1, Referencia 2 y Nota.',

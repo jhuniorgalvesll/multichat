@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.10.4
+
+- El aviso **"⚠ Falta: apellidos (nombre completo)"** vale para **todas las empresas** (Shalom, Olva, Marvisur…).
+
 ## Novedades v1.10.3
 
 - **Olva** (a domicilio): el cliente da la dirección de su casa y referencias; las líneas sin título después de la

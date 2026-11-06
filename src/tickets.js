@@ -265,8 +265,8 @@ function missingFields(data, carrier) {
     : [['name', 'nombre'], ['dni', 'DNI'], ['phone', 'celular'], ['agent', 'agencia o destino']];
   // Shalom: con el destino de la ficha oficial ("Lima / Cañete / Mala / Mala") no hace falta el nombre de la agencia.
   const missing = need.filter(([key]) => !data[key] && !(key === 'agent' && data.destination)).map(([, label]) => label);
-  // Shalom entrega solo con nombre y apellidos completos (como en el DNI): "Melisa" sola no alcanza.
-  if (carrier !== 'Olva' && data.name && data.name.trim().split(/\s+/).length < 2) missing.unshift('apellidos (nombre completo)');
+  // Shalom, Olva y cualquier empresa entregan solo con nombre y apellidos completos (como en el DNI): "Melisa" sola no alcanza.
+  if (data.name && data.name.trim().split(/\s+/).length < 2) missing.unshift('apellidos (nombre completo)');
   return missing;
 }
 
