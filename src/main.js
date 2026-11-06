@@ -17,6 +17,7 @@ const verify = require('./verify');
 const assistant = require('./assistant');
 const shipwatch = require('./shipwatch');
 const voice = require('./voice');
+const screensaver = require('./screensaver');
 const bubble = require('./bubble');
 const updater = require('./updater');
 const CHANGELOG = require('./changelog');
@@ -1171,7 +1172,7 @@ async function renderTicketWindow(ticket) {
 // Imprime (con el diálogo de Windows para elegir la ticketera) o guarda el ticket en PDF.
 // `printer`: nombre de la ticketera para imprimir directo (sin diálogo); vacío = mostrar el diálogo de Windows.
 // No se guarda ningún dato del destinatario: solo se imprime.
-async function printTicket(input, { pdf = false, printer = '', reprint = false } = {}) {
+async function printTicket(input, { pdf = false, printer = '', reprint = false, editId = '' } = {}) {
   const ticket = tickets.sanitizeTicket(input || {});
   if (!ticket.name) return { ok: false, error: 'Escribe el nombre del destinatario.' };
   const { page, heightMm } = await renderTicketWindow(ticket);
@@ -1215,7 +1216,7 @@ async function printTicket(input, { pdf = false, printer = '', reprint = false }
   store.save();
   // Historial de impresiones del día (se borra solo al día siguiente); una reimpresión no se anota de nuevo.
   if (result.ok && !reprint) {
-    paylog.addPrint(ticket, { pdf });
+    if (!editId || !paylog.updatePrint(String(editId), ticket, { pdf })) paylog.addPrint(ticket, { pdf });
     pushPayments();
     for (const e of shipwatch.doneFor(ticket)) if (e.formId) finishedForms.add(e.formId);
     pushState();
@@ -1232,10 +1233,11 @@ function printsState() {
     shalom: count((p) => p.ticket.carrier === 'Shalom'),
     olva: count((p) => p.ticket.carrier === 'Olva'),
     others: count((p) => p.ticket.carrier !== 'Shalom' && p.ticket.carrier !== 'Olva'),
-    list: prints.map(({ id, at, pdf, ticket }) => ({
+    list: prints.map(({ id, at, pdf, ticket, editedAt }) => ({
       id,
       at,
       pdf,
+      edited: Boolean(editedAt),
       carrier: ticket.carrier,
       name: ticket.name,
       place: [ticket.destination, ticket.agent, ticket.district].filter(Boolean).join(' · ') || ticket.address || '',
@@ -1884,7 +1886,8 @@ function settingsPanel() {
           toggle('paymentAlerts', 'Avisar cuando llegue un pago', s.paymentAlerts),
           toggle('paymentVoice', 'Decir los pagos en voz alta', s.paymentVoice),
           toggle('readAllPhone', 'Leer en voz alta todas las notificaciones del celular', s.readAllPhone),
-          toggle('keepAwake', 'Seguir avisando con la pantalla apagada', s.keepAwake),
+          toggle('keepAwake', 'Seguir avisando con la pantalla apagada', s.keepAwake, 'MultiChat pone la pantalla en negro sin dejar que la laptop se duerma'),
+          { id: 'blackScreenMinutes', type: 'choice', label: 'Poner la pantalla en negro después de', value: s.blackScreenMinutes || 5, options: [2, 5, 10, 15, 30].map((v) => ({ value: v, label: `${v} minutos sin usar la PC` })) },
           action('testPayment', '🔊 Probar aviso y voz'),
           action('verifyPayment', '🛡️ Verificar la captura de un cliente'),
           action('phoneLinkCheck', 'Revisar notificaciones de Enlace Móvil'),
@@ -1989,6 +1992,7 @@ function settingsDo(id, value) {
     theme: () => setTheme(String(value)),
     autoLockMinutes: () => { settings.autoLockMinutes = Number(value) || 0; store.save(); },
     hibernateMinutes: () => { settings.hibernateMinutes = Number(value) || 0; store.save(); },
+    blackScreenMinutes: () => { settings.blackScreenMinutes = Math.max(1, Number(value) || 5); store.save(); screensaver.sync(); },
     themeToggle: () => setTheme(nativeTheme.shouldUseDarkColors ? 'light' : 'dark'),
     dndToggle: () => updateDnd({ enabled: !settings.dnd.enabled }),
     layoutToggle: () => setLayout(isGrid() ? 'single' : 'grid'),
@@ -2377,7 +2381,12 @@ function registerIpc() {
   ipcMain.handle('ticket:profiles', () => (locked ? [] : store.get().ticketProfiles.map(ticketProfileView)));
   ipcMain.handle('ticket:save-profiles', (_e, list) => (locked ? { ok: false } : saveTicketProfiles(list)));
   ipcMain.handle('ticket:pick-image', (_e, kind) => (locked ? null : pickTicketImage(kind)));
-  ipcMain.handle('ticket:print', (_e, ticket, options) => (locked ? { ok: false } : printTicket(ticket, { pdf: Boolean(options && options.pdf), printer: options && options.printer })));
+  ipcMain.handle('ticket:print', (_e, ticket, options) => (locked ? { ok: false } : printTicket(ticket, { pdf: Boolean(options && options.pdf), printer: options && options.printer, editId: options && options.editId })));
+  ipcMain.handle('prints:get', (_e, id) => {
+    if (locked) return null;
+    const saved = paylog.findPrint(String(id));
+    return saved ? { id: saved.id, at: saved.at, ticket: saved.ticket } : null;
+  });
   ipcMain.handle('prints:state', () => printsState());
   ipcMain.handle('prints:reprint', (_e, id) => (locked ? { ok: false } : reprintTicket(id)));
   ipcMain.handle('ticket:last-profile', () => store.get().settings.lastTicketProfile || '');
@@ -2581,16 +2590,9 @@ function setBubbleEnabled(enabled) {
   pushState();
 }
 
-// "Mantener la laptop despierta": la pantalla se puede apagar, pero Windows no suspende la PC, así
-// MultiChat sigue escuchando y diciendo los pagos con la tapa abierta y la pantalla apagada.
-let awakeBlocker = null;
+// "Seguir avisando con la pantalla apagada": ver screensaver.js (pantalla negra de MultiChat, la laptop sigue despierta).
 function syncKeepAwake() {
-  const want = Boolean(store.get().settings.keepAwake);
-  if (want && awakeBlocker === null) awakeBlocker = powerSaveBlocker.start('prevent-app-suspension');
-  if (!want && awakeBlocker !== null) {
-    powerSaveBlocker.stop(awakeBlocker);
-    awakeBlocker = null;
-  }
+  screensaver.sync();
 }
 
 function syncPaymentWatcher() {
@@ -2759,7 +2761,7 @@ function init() {
   // Pagos de hoy que una versión anterior no reconoció (quedaron como notificación): se suman ahora.
   try { paylog.recover(payments.parsePayment); } catch { /* registro dañado: se ignora */ }
   syncPaymentWatcher();
-  syncKeepAwake();
+  screensaver.init(() => store.get().settings);
   setInterval(pollShipChats, 3000);
   setTimeout(announceUpdated, 4000);
   setTimeout(maybeWelcome, 3500);

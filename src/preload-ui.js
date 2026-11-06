@@ -75,6 +75,7 @@ contextBridge.exposeInMainWorld('multichat', {
   paymentsState: () => ipcRenderer.invoke('payments:state'),
   printsState: () => ipcRenderer.invoke('prints:state'),
   reprint: (id) => ipcRenderer.invoke('prints:reprint', id),
+  getPrint: (id) => ipcRenderer.invoke('prints:get', id),
   onPaymentsPanel: (fn) => ipcRenderer.on('ui:payments-panel', () => fn()),
   onPrintsPanel: (fn) => ipcRenderer.on('ui:prints-panel', () => fn()),
   onVerify: (fn) => ipcRenderer.on('ui:verify', (_e, result) => fn(result)),

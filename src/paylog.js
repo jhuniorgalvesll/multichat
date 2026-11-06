@@ -88,6 +88,18 @@ function addPrint(ticket, { pdf = false } = {}) {
   write(day, data);
 }
 
+// Ticket corregido desde "Impresiones de hoy": reemplaza al anterior en el historial (misma fila).
+function updatePrint(id, ticket, { pdf = false } = {}) {
+  const data = read();
+  const entry = data.prints.find((p) => p.id === id);
+  if (!entry) return false;
+  entry.ticket = ticket;
+  entry.pdf = Boolean(pdf);
+  entry.editedAt = Date.now();
+  write(dayKey(), data);
+  return true;
+}
+
 function findPrint(id) {
   return read().prints.find((p) => p.id === id) || null;
 }
@@ -115,4 +127,4 @@ function recover(parse, day = dayKey()) {
   return added;
 }
 
-module.exports = { dayKey, read, addPayment, addNotification, addPrint, findPrint, recover, purgeOldDays };
+module.exports = { dayKey, read, addPayment, addNotification, addPrint, updatePrint, findPrint, recover, purgeOldDays };

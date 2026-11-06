@@ -40,6 +40,16 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.11.0
+
+- **Pantalla apagada de verdad sin perder pagos**: en muchas laptops, cuando Windows apaga la pantalla entra en "reposo
+  moderno" y congela los programas hasta tocar el mouse. Con *Seguir avisando con la pantalla apagada* (activado),
+  MultiChat no deja que Windows apague la pantalla: tras unos minutos sin uso (⚙ → Pagos → *Poner la pantalla en negro
+  después de*, 5 min) la pone en negro y baja el brillo al mínimo; la laptop sigue despierta y los Yape/Plin se dicen y
+  se registran al instante. Al mover el mouse o tocar una tecla vuelve el brillo.
+- **Impresiones de hoy → ✏️ Editar**: abre el ticket con sus datos para corregirlo; al imprimir (o guardar PDF)
+  reemplaza al anterior en el historial (marcado "corregido"). Se sigue borrando al día siguiente.
+
 ## Novedades v1.10.8
 
 - **Voz de los pagos más confiable**: ahora la dice el motor de voz de Windows (el de Narrador), fuera de la ventana, así

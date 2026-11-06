@@ -1526,3 +1526,5 @@ tbody tr:hover { background: var(--tab-hover); }
 
 /* Ticket: aviso de datos que faltan (por ejemplo, los apellidos para Shalom) */
 #ticket-detected.has-missing { border-color: var(--danger); color: var(--danger); font-weight: 600; }
+
+.print-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }

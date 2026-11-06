@@ -1157,7 +1157,10 @@ async function loadTicketProfiles(selected) {
   profileBeforeNew = $('ticket-profileId').value;
 }
 
-async function openTicketPanel({ accountId = null, channel = 'WhatsApp', prefill = {}, missing = [] } = {}) {
+// Ticket abierto para corregir uno de "Impresiones de hoy": al imprimir, reemplaza a ese en el historial.
+let editingPrint = null; // { id, at } o null
+
+async function openTicketPanel({ accountId = null, channel = 'WhatsApp', prefill = {}, missing = [], editPrint = null } = {}) {
   if (state.locked || passwordMode) return;
   closeCoffee();
   closeSalesList();
@@ -1165,18 +1168,23 @@ async function openTicketPanel({ accountId = null, channel = 'WhatsApp', prefill
   closeTemplatesDialog();
   closeReminderDialog();
   closeSalePanel();
-  await Promise.all([loadTicketProfiles(), loadTicketPrinters()]);
+  editingPrint = editPrint;
+  await Promise.all([loadTicketProfiles(prefill.profileId || undefined), loadTicketPrinters()]);
   fillSenderFields();
   for (const field of TICKET_FIELDS.filter((f) => f !== 'profileId')) {
     const el = $(`ticket-${field}`);
     el.value = prefill[field] || '';
-    el.classList.toggle('auto', Boolean(prefill[field]));
+    el.classList.toggle('auto', Boolean(prefill[field]) && !editPrint);
   }
+  // Al corregir un ticket ya impreso se respetan también los datos del remitente que tenía.
+  if (editPrint) for (const field of Object.keys(TICKET_SENDER_FIELDS)) if (typeof prefill[field] === 'string') $(`ticket-${field}`).value = prefill[field];
   $('ticket-channel').value = channel;
   const detected = Object.keys(prefill).filter((k) => TICKET_LABELS[k] && prefill[k]).map((k) => TICKET_LABELS[k]);
-  $('ticket-detected').hidden = !detected.length && !missing.length;
-  $('ticket-detected').textContent = `Detectado en el mensaje: ${detected.join(', ')}. Revisa que esté bien.`
-    + (missing.length ? ` ⚠ Falta: ${missing.join(', ')}.` : '');
+  $('ticket-detected').hidden = !detected.length && !missing.length && !editPrint;
+  $('ticket-detected').textContent = editPrint
+    ? `✏️ Corrigiendo el ticket de las ${hhmm(editPrint.at)}: al imprimir (o guardar PDF) reemplaza al anterior en "Impresiones de hoy".`
+    : `Detectado en el mensaje: ${detected.join(', ')}. Revisa que esté bien.`
+      + (missing.length ? ` ⚠ Falta: ${missing.join(', ')}.` : '');
   $('ticket-detected').classList.toggle('has-missing', missing.length > 0);
   $('ticket-error').textContent = '';
   if (prefill.carrier && !['Shalom', 'Olva'].includes(prefill.carrier)) {
@@ -1204,7 +1212,7 @@ async function submitTicket(pdf) {
   const form = $('ticket-form');
   await withBusy(form, async () => {
     $('ticket-error').textContent = '';
-    const result = await api.printTicket(ticketData(), { pdf, printer: $('ticket-printer').value });
+    const result = await api.printTicket(ticketData(), { pdf, printer: $('ticket-printer').value, editId: editingPrint ? editingPrint.id : '' });
     if (result.ok) closeTicketPanel();
     else if (!result.canceled) $('ticket-error').textContent = result.error || 'No se pudo imprimir.';
   });
@@ -1639,8 +1647,15 @@ async function loadPrints() {
     const badge = Object.assign(document.createElement('span'), { className: `print-carrier ${String(p.carrier).toLowerCase()}`, textContent: p.carrier });
     const info = Object.assign(document.createElement('div'), { className: 'pay-who', textContent: p.name });
     info.append(Object.assign(document.createElement('small'), {
-      textContent: `${hhmm(p.at)}${p.pdf ? ' · PDF' : ''}${p.place ? ` · ${p.place}` : ''}${p.orderNumber ? ` · N° ${p.orderNumber}` : ''}`,
+      textContent: `${hhmm(p.at)}${p.edited ? ' · corregido' : ''}${p.pdf ? ' · PDF' : ''}${p.place ? ` · ${p.place}` : ''}${p.orderNumber ? ` · N° ${p.orderNumber}` : ''}`,
     }));
+    const edit = Object.assign(document.createElement('button'), { type: 'button', className: 'drawer-btn small', textContent: '✏️ Editar', title: 'Corregir algún dato y volver a imprimir' });
+    edit.addEventListener('click', async () => {
+      const saved = await api.getPrint(p.id);
+      if (!saved) return;
+      closeDrawer();
+      openTicketPanel({ channel: saved.ticket.channel || 'WhatsApp', prefill: saved.ticket, editPrint: { id: saved.id, at: saved.at } });
+    });
     const again = Object.assign(document.createElement('button'), { type: 'button', className: 'drawer-btn small', textContent: '🖨 Reimprimir' });
     again.addEventListener('click', async () => {
       again.disabled = true;
@@ -1650,7 +1665,9 @@ async function loadPrints() {
       if (!result.ok && result.error) again.title = result.error;
       setTimeout(() => { again.disabled = false; again.textContent = '🖨 Reimprimir'; }, 2500);
     });
-    row.append(badge, info, again);
+    const actions = Object.assign(document.createElement('div'), { className: 'print-actions' });
+    actions.append(edit, again);
+    row.append(badge, info, actions);
     return row;
   }) : [Object.assign(document.createElement('p'), { className: 'drawer-empty', textContent: 'Todavía no imprimiste tickets hoy.' })]));
 }

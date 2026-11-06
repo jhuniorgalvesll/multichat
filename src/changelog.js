@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.11.0',
+    items: [
+      'Pantalla apagada: MultiChat pone la pantalla en negro sin dejar que la laptop se duerma, así los Yape se dicen y se registran al instante.',
+      'Impresiones de hoy: botón ✏️ Editar para corregir un ticket y volver a imprimirlo (reemplaza al anterior).',
+    ],
+  },
+  {
     version: '1.10.8',
     items: ['La voz de los pagos ahora usa el motor de voz de Windows: suena siempre, aunque estés escuchando música o YouTube, con voz de mujer y al volumen máximo.'],
   },

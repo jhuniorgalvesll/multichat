@@ -29,7 +29,8 @@ const DEFAULTS = {
     accent: 'violeta', // color de la app: violeta, azul, verde, naranja, rosa
     animations: true,
     welcome: true, // bienvenida del día al abrir
-    keepAwake: true, // que la laptop no se suspenda (la pantalla sí se apaga): así sigue diciendo los pagos
+    keepAwake: true,
+    blackScreenMinutes: 5, // sin uso por estos minutos, MultiChat pone la pantalla en negro (la laptop sigue despierta) // que la laptop no se suspenda (la pantalla sí se apaga): así sigue diciendo los pagos
     bubble: false, // burbuja flotante: aparece 2 minutos al llegar un mensaje o pago con MultiChat en segundo plano
     replyAlertMinutes: 10, // semáforo de respuesta: rojo después de estos minutos sin contestar
   },
