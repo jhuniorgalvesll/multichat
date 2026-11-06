@@ -40,6 +40,12 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.10.6
+
+- Corregido *Imprimir con lo seleccionado* en Shalom: si lo seleccionado incluye la ficha oficial de la agencia (aunque no
+  se seleccione el horario), **Destino** = "Lima / Cañete / Mala / Mala" y **Dirección** = la línea completa con su
+  referencia; ya no se toma "MALA" como destino ni "Marchand" como dirección.
+
 ## Novedades v1.10.5
 
 - Formulario del ticket con **Shalom**: debajo del destinatario (nombre, DNI, celular, sin cambios) solo aparecen

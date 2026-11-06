@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.10.6',
+    items: ['Corregido: al seleccionar el mensaje del cliente junto con la ficha de Shalom, el Destino ahora es "Lima / Cañete / Mala / Mala" (no "MALA") y la Dirección es la completa.'],
+  },
+  {
     version: '1.10.5',
     items: ['Ticket con Shalom: solo se ven Destino y Dirección de la agencia (los demás campos se ocultan y quedan vacíos).'],
   },

@@ -231,7 +231,16 @@ function parseSelection(raw, base = {}, carrier = '') {
   if (found.dni) found.dni = found.dni.replace(/\D/g, '');
   if (found.phone) found.phone = found.phone.replace(/[^\d+ ]/g, '').trim();
 
-  // 3) Lo que detectó el registro de ventas, si faltaba algo.
+  // 3) Si en lo seleccionado está la ficha oficial de la agencia Shalom (la que el vendedor le mandó al cliente), manda
+  // ella: DESTINO = "Lima / Cañete / Mala / Mala" y DIRECCIÓN = la línea completa con su referencia.
+  const official = (carrier || found.carrier) === 'Olva' ? null : parseShalomAgency(t);
+  if (official) {
+    found.destination = official.destination;
+    if (official.address) found.address = official.address;
+    for (const key of ['agent', 'district', 'reference', 'reference2', 'note']) delete found[key];
+  }
+
+  // 4) Lo que detectó el registro de ventas, si faltaba algo.
   if (!found.name && base.customer) found.name = base.customer;
   if (!found.phone && base.phone) found.phone = base.phone;
   if (!found.dni && base.dni) found.dni = base.dni;
@@ -246,7 +255,10 @@ function parseSelection(raw, base = {}, carrier = '') {
 function parseShalomAgency(raw) {
   const lines = String(raw || '').replace(/[*_~]/g, '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const placeIndex = lines.findIndex((l) => (l.match(/\//g) || []).length >= 2 && /^[\p{L}\s/.-]+$/u.test(l));
-  const looksOfficial = placeIndex >= 0 && (lines.some((l) => /c[oó]mo llegar|lunes a|domingos?\b|\b\d{1,2}:\d{2}\s*(am|pm)/i.test(l)) || placeIndex <= 2);
+  // Es ficha oficial si trae horario / "Cómo llegar", si la línea de lugar está al comienzo, o si el lugar tiene
+  // 4 partes como las fichas de Shalom ("Lima / Cañete / Mala / Mala"), aunque no se haya seleccionado el horario.
+  const looksOfficial = placeIndex >= 0 && (lines.some((l) => /c[oó]mo llegar|lunes a|domingos?\b|\b\d{1,2}:\d{2}\s*(am|pm)/i.test(l))
+    || placeIndex <= 2 || (lines[placeIndex].match(/\//g) || []).length >= 3);
   if (!looksOfficial) return null;
   const agent = placeIndex > 0 ? lines[placeIndex - 1] : '';
   const destination = lines[placeIndex].replace(/\s*\/\s*/g, ' / ');
