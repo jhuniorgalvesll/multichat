@@ -972,52 +972,113 @@ function formMarkers() {
     .filter((line) => line.length > 6);
 }
 
-// Lee del chat abierto SOLO los mensajes del cliente escritos después del último formulario enviado.
-// Se usa únicamente en cuentas con un chat esperando datos.
+// Lee del chat abierto SOLO lo escrito después del último formulario de envío que mandaste en ese chat.
+// Cada mensaje de WhatsApp Web lleva data-id "true_…" (tuyo) o "false_…" (del cliente) y data-pre-plain-text
+// ("[10:03 p. m., 6/11/2026] Melisa: "); si eso cambiara, se usan las clases message-out / message-in.
 function pageTextsScript(markers) {
   return `(() => {
-    const head = document.querySelector('#main header');
-    if (!head) return null;
-    const el = head.querySelector('span[title]') || head.querySelector('[dir="auto"]');
-    const title = el ? (el.getAttribute('title') || el.textContent || '') : '';
-    const markers = ${JSON.stringify(markers)}.map((m) => m.toLowerCase());
-    const clean = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const rows = [...document.querySelectorAll('#main [role="row"]')];
+    const main = document.querySelector('#main');
+    if (!main) return null;
+    const head = main.querySelector('header');
+    const el = head && (head.querySelector('span[title]') || head.querySelector('span[dir="auto"]') || head.querySelector('[dir="auto"]'));
+    const title = el ? (el.getAttribute('title') || el.textContent || '').trim() : '';
+    const clean = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
+    const markers = ${JSON.stringify(markers)}.map(clean);
+    let nodes = [...main.querySelectorAll('div[data-id]')].filter((n) => !n.parentElement || !n.parentElement.closest('div[data-id]'));
+    if (!nodes.length) nodes = [...main.querySelectorAll('.message-in, .message-out')];
+    const msgs = nodes.map((n) => {
+      const id = n.getAttribute('data-id') || '';
+      const out = id.startsWith('true_') || (!id.startsWith('false_') && Boolean(n.matches('.message-out') || n.querySelector('.message-out')));
+      const copy = n.querySelector('[data-pre-plain-text]');
+      const sel = (copy && copy.querySelector('.selectable-text')) || n.querySelector('.selectable-text');
+      const text = (sel && sel.innerText) || (copy && copy.innerText) || '';
+      return { id, out, text, pre: copy ? copy.getAttribute('data-pre-plain-text') || '' : '' };
+    }).filter((m) => m.text);
     let start = -1;
-    rows.forEach((row, i) => {
-      const out = row.querySelector('.message-out');
-      if (!out) return;
-      const text = clean(out.innerText || '');
-      if (/datos para tu envio|por favor completa y envianos/.test(text) || markers.some((m) => text.includes(clean(m)))) start = i;
+    msgs.forEach((m, i) => {
+      if (!m.out) return;
+      const t = clean(m.text);
+      if (/datos para tu envio|por favor completa y envianos/.test(t) || markers.some((k) => k && t.includes(k))) start = i;
     });
-    if (start < 0) return { title, texts: null };
-    const bodyOf = (m) => {
-      const body = m.querySelector('[data-pre-plain-text] .selectable-text') || m.querySelector('.selectable-text');
-      return body ? body.innerText : '';
+    const debug = { title, messages: msgs.length, mine: msgs.filter((m) => m.out).length, theirs: msgs.filter((m) => !m.out).length, formFound: start >= 0 };
+    if (start < 0) return { title, texts: null, debug };
+    const form = msgs[start];
+    const after = msgs.slice(start + 1);
+    return {
+      title,
+      formId: form.id || form.pre + form.text.slice(0, 40),
+      formCarrier: /olva/.test(clean(form.text)) ? 'Olva' : 'Shalom',
+      formPre: form.pre,
+      texts: after.filter((m) => !m.out).map((m) => m.text),
+      outTexts: after.filter((m) => m.out).map((m) => m.text),
+      debug,
     };
-    const after = rows.slice(start + 1);
-    const texts = after.map((row) => row.querySelector('.message-in')).filter(Boolean).map(bodyOf).filter(Boolean);
-    const outTexts = after.map((row) => row.querySelector('.message-out')).filter(Boolean).map(bodyOf).filter(Boolean);
-    return { title, texts, outTexts };
   })()`;
 }
 
+// Formularios ya atendidos (impresos), para no volver a avisar al abrir otra vez ese chat. Solo en memoria.
+const finishedForms = new Set();
+
+// ¿El formulario se mandó hoy? Por la fecha de data-pre-plain-text ("[10:01 p. m., 6/11/2026] Yo: ").
+function formIsRecent(pre) {
+  const m = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(pre || ''));
+  if (!m) return true;
+  const now = new Date();
+  const [a, b, y] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const sameDay = (day, month) => y === now.getFullYear() && month === now.getMonth() + 1 && Math.abs(day - now.getDate()) <= 1;
+  return sameDay(a, b) || sameDay(b, a);
+}
+
+async function readShipChat(view) {
+  try {
+    return await view.webContents.executeJavaScript(pageTextsScript(formMarkers()), true);
+  } catch {
+    return null;
+  }
+}
+
+// Cada 3 segundos: en las cuentas de WhatsApp cargadas, el chat abierto. Si ahí está el formulario de envío que
+// mandaste hoy, ese chat queda esperando datos (aunque el formulario no se haya pegado con el botón 📝).
 async function pollShipChats() {
   if (locked) return;
   for (const acc of openAccounts()) {
-    if (!shipwatch.forAccount(acc.id).length) continue;
+    if (acc.service !== 'whatsapp') continue;
     const view = views.get(acc.id);
     if (!view) continue;
-    let result = null;
-    try {
-      result = await view.webContents.executeJavaScript(pageTextsScript(formMarkers()), true);
-    } catch {
-      result = null;
+    const result = await readShipChat(view);
+    if (!result || !result.texts || !result.title) continue;
+    let entry = shipwatch.find(acc.id, result.title);
+    if (!entry && !finishedForms.has(result.formId) && formIsRecent(result.formPre)) {
+      entry = shipwatch.start(acc.id, result.title, result.formCarrier);
+      if (entry) entry.formId = result.formId;
+      pushState();
     }
-    if (!result || !result.texts) continue;
-    const entry = shipwatch.find(acc.id, result.title);
     if (entry) announceShip(shipwatch.setPageTexts(entry, result.texts, result.outTexts));
   }
+}
+
+// ⚙ → Ventas y envíos → "Revisar lectura de datos de envío": muestra qué lee la app del chat abierto.
+async function showShipDebug() {
+  const view = views.get(activeId);
+  const result = view ? await readShipChat(view) : null;
+  const d = result && result.debug;
+  const data = result && result.texts ? tickets.parseSelection(result.texts.join('\n'), {}, result.formCarrier) : null;
+  const official = result && result.outTexts ? result.outTexts.map((t) => tickets.parseShalomAgency(t)).filter(Boolean).pop() : null;
+  const entry = result && result.title ? shipwatch.find(activeId, result.title) : null;
+  dialog.showMessageBox(win, {
+    type: 'info',
+    title: 'Lectura de datos de envío',
+    message: !d ? 'No se encontró un chat abierto en esta cuenta.' : `Chat: ${d.title || '(sin nombre)'}`,
+    detail: d ? [
+      `Mensajes en pantalla: ${d.messages} (tuyos ${d.mine}, del cliente ${d.theirs})`,
+      `Formulario de envío encontrado: ${d.formFound ? `sí (${result.formCarrier})` : 'no'}`,
+      `Esperando datos: ${entry ? `sí (${entry.stage === 'confirmar' ? 'por confirmar' : 'esperando'})` : 'no'}`,
+      data ? `Datos leídos: ${Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(' · ') || '(ninguno todavía)'}` : '',
+      official ? `Ficha oficial Shalom: ${Object.values(official).join(' · ')}` : '',
+      '',
+      'Si algo no se lee bien, envía una captura de esta ventana al creador.',
+    ].filter((l) => l !== '').join('\n') : '',
+  });
 }
 
 function announceShip(event) {
@@ -1154,7 +1215,7 @@ async function printTicket(input, { pdf = false, printer = '', reprint = false }
   if (result.ok && !reprint) {
     paylog.addPrint(ticket, { pdf });
     pushPayments();
-    shipwatch.doneFor(ticket);
+    for (const e of shipwatch.doneFor(ticket)) if (e.formId) finishedForms.add(e.formId);
     pushState();
   }
   return result;
@@ -1832,6 +1893,7 @@ function settingsPanel() {
         items: [
           action('sales', 'Registro de ventas'),
           action('printsPanel', '🖨 Impresiones de hoy (reimprimir)'),
+          action('shipDebug', 'Revisar lectura de datos de envío (chat abierto)'),
           action('shipments', 'Envíos pendientes'),
           action('ticketProfiles', 'Remitentes de tickets (logo, QR, datos)'),
           action('forms', 'Formularios de envío (Shalom / Olva)'),
@@ -1941,6 +2003,7 @@ function settingsDo(id, value) {
     sales: () => send('ui:sales'),
     shipments: () => send('ui:shipments'),
     printsPanel: () => send('ui:prints-panel'),
+    shipDebug: showShipDebug,
     ticketProfiles: () => send('ui:ticket-profiles'),
     forms: () => send('ui:forms'),
     trackShalom: () => send('ui:tracking-url', { carrier: 'Shalom', url: settings.trackingUrls.Shalom }),

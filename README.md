@@ -40,6 +40,13 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.10.1
+
+- El chat queda *esperando datos* apenas aparece en pantalla el formulario de envío que mandaste **hoy**, aunque lo
+  hayas pegado a mano (antes solo con el botón 📝). Un formulario ya impreso no vuelve a avisar.
+- Lectura de WhatsApp Web más robusta (por el data-id "true_/false_" de cada mensaje).
+- ⚙ → Ventas y envíos → **Revisar lectura de datos de envío**: muestra qué lee la app del chat abierto.
+
 ## Novedades v1.10.0 — datos de envío automáticos
 
 1. Mandas el formulario con **📝 Pedir datos de envío** (Shalom u Olva): ese chat queda *esperando datos* (📦 en la pestaña).

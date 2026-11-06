@@ -3,6 +3,14 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.10.1',
+    items: [
+      'Los datos de envío se detectan aunque el formulario no se haya mandado con el botón 📝 (basta con que esté en el chat abierto, enviado hoy).',
+      'Lectura más segura de los mensajes de WhatsApp Web.',
+      'Nuevo en ⚙ → Ventas y envíos: "Revisar lectura de datos de envío" para ver qué está leyendo la app.',
+    ],
+  },
+  {
     version: '1.10.0',
     items: [
       'Datos de envío automáticos: después de mandar el formulario, cuando el cliente responde te avisa "📦 envió sus datos" y abre el ticket ya lleno.',

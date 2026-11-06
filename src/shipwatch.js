@@ -122,9 +122,14 @@ function remove(entry) {
 
 // Al imprimir: se deja de esperar el chat de ese cliente.
 function doneFor(ticket) {
+  const done = [];
   for (const [key, e] of waiting) {
-    if ((ticket.dni && e.data.dni === ticket.dni) || (ticket.name && norm(e.data.name) === norm(ticket.name))) waiting.delete(key);
+    if ((ticket.dni && e.data.dni === ticket.dni) || (ticket.name && norm(e.data.name) === norm(ticket.name))) {
+      waiting.delete(key);
+      done.push(e);
+    }
   }
+  return done;
 }
 
 function byId(id) {
