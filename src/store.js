@@ -12,7 +12,7 @@ const DEFAULTS = {
   reminders: [], // recordatorios: { id, accountId, note, at }
   ticketProfiles: [], // remitentes de los tickets de envío (logo, QR, datos fijos)
   settings: {
-    hibernateMinutes: 30, // 0 = nunca suspender
+    hibernateMinutes: 15, // 0 = nunca suspender (cuentas sin uso se suspenden para ahorrar memoria)
     autoLockMinutes: 0, // 0 = nunca bloquear por inactividad
     layout: 'single', // 'single' = una cuenta a la vez, 'grid' = varias a la vez
     dnd: { enabled: false, schedule: false, hours: '19:00-07:00' }, // silencio fuera de 07:00-19:00

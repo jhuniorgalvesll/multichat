@@ -1528,3 +1528,10 @@ tbody tr:hover { background: var(--tab-hover); }
 #ticket-detected.has-missing { border-color: var(--danger); color: var(--danger); font-weight: 600; }
 
 .print-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+
+/* ---- Conectar el celular ---- */
+.phone-card { width: 520px; max-height: calc(100vh - 100px); overflow-y: auto; }
+.phone-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.card .phone-tabs button { padding: 12px; font-size: 15px; font-weight: 700; }
+.card .phone-tabs button.on { border-color: transparent; background: linear-gradient(135deg, var(--acc1), var(--acc2)); color: #fff; }
+.phone-steps { margin: 4px 0; padding-left: 22px; text-align: left; display: flex; flex-direction: column; gap: 7px; font-size: 13.5px; }

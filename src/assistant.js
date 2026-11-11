@@ -4,7 +4,10 @@
 // el usuario seleccionó en el chat. Nunca envía nada: la respuesta elegida se pega en el chat y tú presionas Enter.
 // Usa la clave de API de Anthropic del usuario (se guarda cifrada en esta PC) y cobra por uso en su cuenta.
 const { safeStorage } = require('electron');
-const Anthropic = require('@anthropic-ai/sdk');
+
+// La librería de Anthropic se carga recién al usar el asistente (la app abre más rápido y usa menos memoria).
+let sdk = null;
+const loadSdk = () => (sdk = sdk || require('@anthropic-ai/sdk'));
 
 const MODEL = 'claude-opus-5-5';
 
@@ -59,6 +62,7 @@ function getClient(stored) {
   const key = decryptKey(stored);
   if (!key) return null;
   if (!client || clientKey !== key) {
+    const Anthropic = loadSdk();
     client = new Anthropic({ apiKey: key, maxRetries: 2, timeout: 60_000 });
     clientKey = key;
   }
@@ -96,6 +100,7 @@ async function suggest({ storedKey, businessContext, customerMessage, accountNam
     if (!replies.length) return { ok: false, error: 'La IA no devolvió respuestas. Inténtalo otra vez.' };
     return { ok: true, replies };
   } catch (err) {
+    const Anthropic = loadSdk();
     if (err instanceof Anthropic.AuthenticationError) return { ok: false, error: 'La clave de Anthropic no es válida. Revísala en "Configurar".', needsKey: true };
     if (err instanceof Anthropic.PermissionDeniedError) return { ok: false, error: 'Tu cuenta de Anthropic no tiene permiso para usar este modelo.' };
     if (err instanceof Anthropic.RateLimitError) return { ok: false, error: 'Demasiadas consultas seguidas o sin saldo en tu cuenta de Anthropic. Espera un momento o revisa tu saldo.' };

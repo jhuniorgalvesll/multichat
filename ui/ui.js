@@ -1575,6 +1575,7 @@ function closeCoffee() {
   if (typeof closeFlyer === 'function' && flyer.open) closeFlyer();
   if (typeof closeAssistantPanel === 'function' && aiOpen) closeAssistantPanel();
   if (welcomeOpen) closeWelcome();
+  if (typeof closePhoneGuide === 'function' && phoneOpen) closePhoneGuide();
   if (!coffeeOpen) return;
   coffeeOpen = false;
   $('coffee-modal').hidden = true;
@@ -1671,6 +1672,41 @@ async function loadPrints() {
     return row;
   }) : [Object.assign(document.createElement('p'), { className: 'drawer-empty', textContent: 'Todavía no imprimiste tickets hoy.' })]));
 }
+
+// -- Conectar el celular (Android o iPhone) --
+
+let phoneOpen = false;
+function showPhoneSteps(type) {
+  for (const b of document.querySelectorAll('#phone-tabs button')) b.classList.toggle('on', b.dataset.phone === type);
+  $('phone-steps-android').hidden = type !== 'android';
+  $('phone-steps-iphone').hidden = type !== 'iphone';
+}
+async function openPhoneGuide() {
+  if (state.locked || passwordMode) return;
+  closeCoffee();
+  const panel = await api.settingsPanel();
+  showPhoneSteps((panel && panel.phoneType) || 'android');
+  $('phone-modal').hidden = false;
+  if (!phoneOpen) api.setOverlay(true);
+  phoneOpen = true;
+}
+function closePhoneGuide() {
+  if (!phoneOpen) return;
+  phoneOpen = false;
+  $('phone-modal').hidden = true;
+  api.setOverlay(false);
+}
+for (const b of document.querySelectorAll('#phone-tabs button')) {
+  b.addEventListener('click', () => {
+    showPhoneSteps(b.dataset.phone);
+    api.settingsDo('phoneType', b.dataset.phone);
+  });
+}
+$('phone-close').addEventListener('click', closePhoneGuide);
+$('phone-open-link').addEventListener('click', () => api.openPhoneLink());
+$('phone-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closePhoneGuide(); });
+$('pay-phone').addEventListener('click', () => openPhoneGuide());
+api.onPhoneGuide(openPhoneGuide);
 
 // -- Configuración --
 

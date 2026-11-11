@@ -1039,14 +1039,19 @@ async function readShipChat(view) {
   }
 }
 
-// Cada 3 segundos: en las cuentas de WhatsApp cargadas, el chat abierto. Si ahí está el formulario de envío que
-// mandaste hoy, ese chat queda esperando datos (aunque el formulario no se haya pegado con el botón 📝).
+// En las cuentas de WhatsApp cargadas, el chat abierto: si ahí está el formulario de envío que mandaste hoy, ese chat
+// queda esperando datos (aunque el formulario no se haya pegado con el botón 📝).
+// Para ahorrar: la cuenta que se está viendo se revisa cada 3 s; las demás solo si esperan datos, cada 9 s.
+let shipTick = 0;
 async function pollShipChats() {
   if (locked) return;
+  shipTick += 1;
   for (const acc of openAccounts()) {
     if (acc.service !== 'whatsapp') continue;
     const view = views.get(acc.id);
     if (!view) continue;
+    const visible = acc.id === activeId && win && win.isVisible() && !win.isMinimized();
+    if (!visible && (shipTick % 3 !== 0 || !shipwatch.forAccount(acc.id).length)) continue;
     const result = await readShipChat(view);
     if (!result || !result.texts || !result.title) continue;
     let entry = shipwatch.find(acc.id, result.title);
@@ -1863,6 +1868,7 @@ function settingsPanel() {
   const action = (id, label, hint) => ({ id, type: 'action', label, hint });
   const minutes = (values, never, fmt) => values.map((v) => ({ value: v, label: v ? fmt(v) : never }));
   return {
+    phoneType: s.phoneType || '',
     quick: [
       { id: hasLock ? 'lockNow' : 'passwordSetup', icon: '🔒', label: hasLock ? 'Bloquear' : 'Contraseña' },
       { id: 'themeToggle', icon: nativeTheme.shouldUseDarkColors ? '☀️' : '🌙', label: nativeTheme.shouldUseDarkColors ? 'Modo claro' : 'Modo oscuro' },
@@ -1883,6 +1889,7 @@ function settingsPanel() {
         id: 'pagos', icon: '💳', title: 'Pagos (Yape, Plin, BBVA)', color: '#16a34a',
         items: [
           action('paymentsPanel', 'Ver pagos de hoy y notificaciones del celular'),
+          action('phoneGuide', '📱 Conectar mi celular (Android o iPhone)', s.phoneType === 'iphone' ? 'iPhone' : s.phoneType === 'android' ? 'Android' : 'Elige tu celular'),
           toggle('paymentAlerts', 'Avisar cuando llegue un pago', s.paymentAlerts),
           toggle('paymentVoice', 'Decir los pagos en voz alta', s.paymentVoice),
           toggle('readAllPhone', 'Leer en voz alta todas las notificaciones del celular', s.readAllPhone),
@@ -1992,6 +1999,7 @@ function settingsDo(id, value) {
     theme: () => setTheme(String(value)),
     autoLockMinutes: () => { settings.autoLockMinutes = Number(value) || 0; store.save(); },
     hibernateMinutes: () => { settings.hibernateMinutes = Number(value) || 0; store.save(); },
+    phoneType: () => { if (['android', 'iphone'].includes(value)) { settings.phoneType = value; store.save(); } },
     blackScreenMinutes: () => { settings.blackScreenMinutes = Math.max(1, Number(value) || 5); store.save(); screensaver.sync(); },
     themeToggle: () => setTheme(nativeTheme.shouldUseDarkColors ? 'light' : 'dark'),
     dndToggle: () => updateDnd({ enabled: !settings.dnd.enabled }),
@@ -2003,6 +2011,7 @@ function settingsDo(id, value) {
     passwordChange: () => send('ui:password', 'change'),
     passwordRemove: () => send('ui:password', 'remove'),
     paymentsPanel: () => send('ui:payments-panel'),
+    phoneGuide: () => send('ui:phone-guide'),
     testPayment: () => onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }),
     verifyPayment: () => send('ui:verify', { status: 'ask' }),
     phoneLinkCheck: showPhoneLinkCheck,

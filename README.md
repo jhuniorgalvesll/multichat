@@ -40,6 +40,11 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.12.0
+
+- **Más liviana**: instalador y app más pequeños, abre más rápido y usa menos memoria.
+- **📱 Conectar mi celular**: guía para **Android** o **iPhone** (en Pagos de hoy y en ⚙ Configuración) con los pasos de Enlace Móvil para recibir los avisos de Yape, Plin y del banco.
+
 ## Novedades v1.11.0
 
 - **Pantalla apagada de verdad sin perder pagos**: en muchas laptops, cuando Windows apaga la pantalla entra en "reposo

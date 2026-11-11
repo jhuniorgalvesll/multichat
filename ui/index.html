@@ -510,6 +510,7 @@
       <label class="switch-row"><span>Decir los pagos en voz alta</span><input type="checkbox" id="opt-voice"></label>
       <label class="switch-row"><span>Leer en voz alta todas las notificaciones del celular</span><input type="checkbox" id="opt-readall"></label>
       <label class="switch-row"><span>Seguir avisando con la pantalla apagada (MultiChat la pone en negro y la laptop no se duerme)</span><input type="checkbox" id="opt-awake"></label>
+      <button type="button" class="drawer-btn" id="pay-phone">📱 Conectar mi celular (Android o iPhone)</button>
       <button type="button" class="drawer-btn" id="pay-prints">🖨 Impresiones de hoy</button>
       <button type="button" class="drawer-btn" id="pay-test">🔊 Probar aviso y voz</button>
       <button type="button" class="drawer-btn primary" id="pay-verify">🛡️ Verificar la captura de un cliente</button>
@@ -616,6 +617,41 @@
         </div>
       </div>
       <div class="flyer-preview"><canvas id="fly-canvas"></canvas></div>
+    </div>
+  </section>
+
+  <!-- Conectar el celular (Android o iPhone) con Enlace Móvil de Windows, para los avisos de Yape y Plin -->
+  <section class="backdrop" id="phone-modal" hidden>
+    <div class="card modal phone-card">
+      <h2>📱 Conectar mi celular</h2>
+      <p class="note">Los avisos de Yape, Plin y tu banco llegan del celular a la PC con <b>Enlace Móvil</b> de Windows. ¿Qué celular usas?</p>
+      <div class="phone-tabs" id="phone-tabs">
+        <button type="button" data-phone="android">🤖 Android</button>
+        <button type="button" data-phone="iphone">📱 iPhone</button>
+      </div>
+      <ol class="phone-steps" id="phone-steps-android" hidden>
+        <li>En la PC abre <b>Enlace Móvil</b> (búscalo en Inicio) y elige <b>Android</b>.</li>
+        <li>En el celular instala <b>"Enlace a Windows"</b> desde Play Store. En Samsung ya viene: Ajustes → Dispositivos conectados → <b>Enlace a Windows</b>.</li>
+        <li>Escanea con el celular el código QR que muestra la PC y entra con la <b>misma cuenta Microsoft</b>.</li>
+        <li>En el celular dale permiso de <b>notificaciones</b> a Enlace a Windows (te lo pide al conectar; si no: Ajustes → Notificaciones → Acceso a notificaciones → Enlace a Windows).</li>
+        <li>Para que no se corte: Ajustes → Aplicaciones → Enlace a Windows → Batería → <b>Sin restricciones</b>.</li>
+        <li>En la PC: Enlace Móvil → ⚙ → <b>Notificaciones</b> activadas, y que Yape y tu banco no estén bloqueados.</li>
+        <li>Pide un Yape de S/ 0.10 o pulsa <b>🔊 Probar aviso y voz</b>.</li>
+      </ol>
+      <ol class="phone-steps" id="phone-steps-iphone" hidden>
+        <li>En la PC abre <b>Enlace Móvil</b> (búscalo en Inicio) y elige <b>iPhone</b>.</li>
+        <li>Escanea el código QR con la <b>cámara del iPhone</b> y acepta emparejar por <b>Bluetooth</b>.</li>
+        <li>En el iPhone: Ajustes → Bluetooth → toca la <b>ⓘ</b> de tu PC → activa <b>Compartir notificaciones del sistema</b> y <b>Mostrar notificaciones</b>.</li>
+        <li>En el iPhone: Ajustes → Notificaciones → <b>Yape</b> y tu banco (<b>BBVA</b>, BCP…) → Permitir notificaciones.</li>
+        <li>Deja el <b>Bluetooth encendido</b> y el iPhone cerca de la PC (unos 10 metros).</li>
+        <li>En la PC: Configuración → Sistema → Notificaciones → <b>Enlace Móvil</b> activado.</li>
+        <li>Pide un Yape de S/ 0.10 o pulsa <b>🔊 Probar aviso y voz</b>.</li>
+      </ol>
+      <p class="note">Enlace Móvil viene con Windows 10 y 11. MultiChat solo lee los avisos de pagos que llegan a tu PC; no toca tu celular, Yape ni tu banco.</p>
+      <div class="actions">
+        <button type="button" id="phone-open-link">Abrir Enlace Móvil</button>
+        <button type="button" class="primary" id="phone-close">Listo</button>
+      </div>
     </div>
   </section>
 

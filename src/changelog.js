@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.12.0',
+    items: [
+      'Más liviana: el instalador y la app pesan menos, abre más rápido y usa menos memoria (las cuentas sin usar se duermen a los 15 minutos y los chats se revisan con menos frecuencia).',
+      'Nuevo "📱 Conectar mi celular": eliges Android o iPhone y te muestra solo los pasos de tu celular para que lleguen los avisos de Yape, Plin y tu banco.',
+    ],
+  },
+  {
     version: '1.11.0',
     items: [
       'Pantalla apagada: MultiChat pone la pantalla en negro sin dejar que la laptop se duerma, así los Yape se dicen y se registran al instante.',

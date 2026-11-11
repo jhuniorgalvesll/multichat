@@ -78,6 +78,7 @@ contextBridge.exposeInMainWorld('multichat', {
   getPrint: (id) => ipcRenderer.invoke('prints:get', id),
   onPaymentsPanel: (fn) => ipcRenderer.on('ui:payments-panel', () => fn()),
   onPrintsPanel: (fn) => ipcRenderer.on('ui:prints-panel', () => fn()),
+  onPhoneGuide: (fn) => ipcRenderer.on('ui:phone-guide', () => fn()),
   onVerify: (fn) => ipcRenderer.on('ui:verify', (_e, result) => fn(result)),
   pickFlyerImage: () => ipcRenderer.invoke('flyer:pick-image'),
   saveFlyer: (dataUrl) => ipcRenderer.invoke('flyer:save', dataUrl),
