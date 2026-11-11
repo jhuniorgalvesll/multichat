@@ -85,7 +85,7 @@ const SENDER_OVERRIDES = {
 };
 
 // Todos los logos se ven del mismo tamaño, sea cual sea la forma de la imagen: ocupan la misma superficie
-// que el logo de Fertisem (42 × 13 mm). Un logo alargado sale de 42 mm de ancho; uno cuadrado, de 20 × 20 mm.
+// que un logo horizontal típico (42 × 13 mm). Un logo alargado sale de 42 mm de ancho; uno cuadrado, de 20 × 20 mm.
 const LOGO = { area: 42 * 13, maxWidth: 42, maxHeight: 20 };
 
 function sizeLogo(node) {

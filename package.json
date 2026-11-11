@@ -1,7 +1,7 @@
 {
   "name": "multichat",
   "productName": "MultiChat",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "description": "MultiChat Pro — varias cuentas de WhatsApp, Telegram y más en una sola app. Creado por lliuya.pe.",
   "main": "src/main.js",
   "author": "lliuya.pe",
@@ -23,8 +23,7 @@
       "src/**",
       "ui/**",
       "build/icon.png",
-      "build/ticket/**",
-      "!**/node_modules/**/*.{map,d.ts,d.mts,d.cts,md,markdown}",
+            "!**/node_modules/**/*.{map,d.ts,d.mts,d.cts,md,markdown}",
       "!**/node_modules/**/*.mjs",
       "!**/node_modules/@anthropic-ai/sdk/src/**",
       "!**/node_modules/**/{test,tests,__tests__,docs,example,examples}/**"

@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.12.1',
+    items: ['Remitentes de tickets: en una PC nueva la app empieza sin remitentes y pide agregar los datos de tu propia empresa la primera vez. Si ya tenías remitentes, se quedan igual.'],
+  },
+  {
     version: '1.12.0',
     items: [
       'Más liviana: el instalador y la app pesan menos, abre más rápido y usa menos memoria (las cuentas sin usar se duermen a los 15 minutos y los chats se revisan con menos frecuencia).',

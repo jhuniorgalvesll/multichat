@@ -1,7 +1,7 @@
 'use strict';
 
 // Tickets de envío para ticketera (72 × 297 mm), con el formato de Shalom y Olva.
-// Los "remitentes" (Fertisem, Agroandina, ...) guardan el logo, el QR y los datos fijos del ticket.
+// Los "remitentes" (las empresas o marcas del negocio) guardan el logo, el QR y los datos fijos del ticket.
 const fs = require('fs');
 const path = require('path');
 
@@ -16,55 +16,8 @@ const CHANNELS = ['WhatsApp', 'Facebook', 'Instagram', 'TikTok', 'Tienda Online'
 const PAGE_MM = { width: 72.2, height: 296.9 }; // medida de los PDF de ejemplo
 
 // **texto** sale en negrita en el ticket.
-const NOTE = '**Importante:** Fertisem es el vendedor del pedido. Antes del despacho se embala, se verifica y se '
-  + 'envían al cliente fotos y video como constancia del estado y contenido.\n'
-  + 'Desde la entrega al courier afiliado, el **CLIENTE asume la responsabilidad exclusiva** del traslado y de '
-  + 'cualquier incidencia en ruta, la cual se gestiona directamente con el courier usando la guía de envío.\n'
-  + 'Al recibir, el CLIENTE debe revisar antes de firmar. Si hay daño o faltante, exigir anotación en la guía, '
-  + 'tomar fotos/video y reportar de inmediato. **La firma implica conformidad.**';
-
-// Remitentes iniciales, tomados de los tickets de ejemplo. Los logos y el QR vienen en build/ticket/.
-const DEFAULT_PROFILES = [
-  {
-    id: 'fertisem',
-    name: 'FERTISEM',
-    logoFile: 'fertisem-logo.png',
-    qrFile: 'qr-whatsapp.png',
-    slogan: '',
-    origin: 'MALA',
-    sender: 'FERTISEM E.I.R.L',
-    address: 'JIRON REAL N° 125 MALA - LIMA',
-    email: 'VENTAS@FERTISEM.PE',
-    website: 'www.fertisem.pe',
-    phone: '950 233 689',
-    note: NOTE,
-  },
-  {
-    id: 'agroandina',
-    name: 'AGROANDINA',
-    logoFile: 'agroandina-logo.png',
-    qrFile: 'qr-whatsapp.png',
-    slogan: 'Tu tienda Agricola online',
-    origin: 'Tienda Online',
-    sender: 'AGROANDINA',
-    address: '',
-    email: '',
-    website: 'www.fertisem.pe',
-    phone: '967 867 089',
-    note: NOTE,
-  },
-];
 
 const text = (value, max) => String(value ?? '').trim().slice(0, max);
-
-// Crea los remitentes de ejemplo la primera vez, copiando sus imágenes a la carpeta de la app.
-function seedProfiles(images, defaultsDir) {
-  return DEFAULT_PROFILES.map(({ logoFile, qrFile, ...profile }) => ({
-    ...profile,
-    logo: fs.existsSync(path.join(defaultsDir, logoFile)) ? images.importImage(path.join(defaultsDir, logoFile)) || '' : '',
-    qr: fs.existsSync(path.join(defaultsDir, qrFile)) ? images.importImage(path.join(defaultsDir, qrFile)) || '' : '',
-  }));
-}
 
 function sanitizeProfile(input, images) {
   const image = (name) => (typeof name === 'string' && images.exists(name) ? name : '');
@@ -288,5 +241,5 @@ function missingFields(data, carrier) {
 }
 
 module.exports = {
-  CARRIERS, CHANNELS, PAGE_MM, DEFAULT_FORMS, seedProfiles, sanitizeProfile, sanitizeTicket, parseSelection, parseShalomAgency, missingFields,
+  CARRIERS, CHANNELS, PAGE_MM, DEFAULT_FORMS, sanitizeProfile, sanitizeTicket, parseSelection, parseShalomAgency, missingFields,
 };

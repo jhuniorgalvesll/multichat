@@ -901,11 +901,10 @@ const CHANNEL_BY_SERVICE = { whatsapp: 'WhatsApp', messenger: 'Facebook', metabu
 
 function seedTicketProfiles() {
   const data = store.get();
+  // Las PCs nuevas empiezan sin remitentes: cada negocio agrega el suyo (nombre, logo, QR, datos) la primera vez que
+  // hace un ticket. Las PCs que ya tenían remitentes los conservan tal cual.
   if (!data.ticketProfilesSeeded) {
     data.ticketProfilesSeeded = true;
-    if (!data.ticketProfiles.length) {
-      data.ticketProfiles = tickets.seedProfiles(ticketImages, path.join(__dirname, '..', 'build', 'ticket'));
-    }
     store.save();
   }
   // Una vez: recorta los bordes en blanco de los logos subidos antes de la v1.2.2, para que salgan a su tamaño.
@@ -1296,7 +1295,7 @@ async function pickTicketImage(kind) {
 }
 
 function saveTicketProfiles(list) {
-  if (!Array.isArray(list) || !list.length) return { ok: false, error: 'Debe haber al menos un remitente.' };
+  if (!Array.isArray(list) || !list.length) return { ok: false, error: 'Agrega al menos un remitente (tu empresa).' };
   const clean = list.slice(0, 20).map((p) => tickets.sanitizeProfile(p || {}, ticketImages));
   store.get().ticketProfiles = clean;
   store.save();

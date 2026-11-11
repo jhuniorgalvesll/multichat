@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.12.1
+
+- **Remitentes de tickets**: las PCs nuevas empiezan sin remitentes; al hacer el primer ticket se pide agregar los datos de la propia empresa (nombre, logo, QR, dirección). Quien ya tenía remitentes los conserva.
+
 ## Novedades v1.12.0
 
 - **Más liviana**: instalador y app más pequeños, abre más rápido y usa menos memoria.

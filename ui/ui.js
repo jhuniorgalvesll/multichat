@@ -1151,6 +1151,7 @@ async function loadTicketProfiles(selected) {
   if (selectNewestProfile && ticketProfiles.length) current = ticketProfiles[ticketProfiles.length - 1].id;
   selectNewestProfile = false;
   $('ticket-profileId').replaceChildren(
+    ...(ticketProfiles.length ? [] : [new Option('— Agrega tu empresa —', '', true, true)]),
     ...ticketProfiles.map((p) => new Option(p.name, p.id, false, p.id === current)),
     new Option('+ Agregar empresa…', NEW_PROFILE),
   );
@@ -1198,6 +1199,11 @@ async function openTicketPanel({ accountId = null, channel = 'WhatsApp', prefill
   ticketPanelOpen = true;
   layoutTicketPanel();
   $(['ticket-name', 'ticket-phone', 'ticket-destination'].find((id) => !$(id).value) || 'ticket-orderNumber').focus();
+  // Primera vez (PC nueva): todavía no hay remitente; se pide agregar los datos de la empresa.
+  if (!ticketProfiles.length) {
+    await openProfiles({ addNew: true });
+    $('prof-error').textContent = 'Primero agrega los datos de tu empresa (remitente): nombre, logo, QR y dirección. Se guardan para todos tus tickets.';
+  }
 }
 
 function closeTicketPanel() {
@@ -1212,6 +1218,10 @@ async function submitTicket(pdf) {
   const form = $('ticket-form');
   await withBusy(form, async () => {
     $('ticket-error').textContent = '';
+    if (!ticketProfiles.length) {
+      $('ticket-error').textContent = 'Agrega primero tu empresa (remitente) en "+ Agregar empresa…".';
+      return;
+    }
     const result = await api.printTicket(ticketData(), { pdf, printer: $('ticket-printer').value, editId: editingPrint ? editingPrint.id : '' });
     if (result.ok) closeTicketPanel();
     else if (!result.canceled) $('ticket-error').textContent = result.error || 'No se pudo imprimir.';
