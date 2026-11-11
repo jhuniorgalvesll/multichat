@@ -899,6 +899,53 @@ function showRemindersMenu() {
 
 const CHANNEL_BY_SERVICE = { whatsapp: 'WhatsApp', messenger: 'Facebook', metabusiness: 'Facebook', instagram: 'Instagram' };
 
+// ---------- Recordatorio de actualización pendiente ----------
+// La versión nueva se descarga sola y se instala al abrir MultiChat. Quien nunca cierra la app se queda con la versión
+// vieja, así que se le recuerda con suavidad: a los 2 días, luego cada 3 días, y desde la semana se pide actualizar
+// (cada 4 horas, con "Actualizar ahora"). Nunca se cierra la app sin que la persona pulse el botón.
+const DAY_MS = 24 * 60 * 60 * 1000;
+const REMIND_FIRST = 2 * DAY_MS;
+const REMIND_EVERY = 3 * DAY_MS;
+const REQUIRED_AFTER = 7 * DAY_MS;
+const REQUIRED_EVERY = 4 * 60 * 60 * 1000;
+
+function updateReminder() {
+  const data = store.get();
+  const pending = data.updatePending;
+  if (pending && !updater.isNewer(pending.version)) {
+    delete data.updatePending; // ya se actualizó
+    store.save();
+    return;
+  }
+  const st = updater.state;
+  if (st.status !== 'ready' || !st.version) return;
+  if (!pending) {
+    data.updatePending = { version: st.version, since: Date.now(), lastNag: Date.now(), nags: 0 };
+    store.save();
+    return;
+  }
+  if (pending.version !== st.version) {
+    pending.version = st.version; // salió otra más nueva: se cuenta desde la primera que quedó pendiente
+    store.save();
+  }
+  if (!win || win.isDestroyed() || !win.isVisible() || locked) return;
+  const now = Date.now();
+  const age = now - pending.since;
+  const sinceNag = now - pending.lastNag;
+  let mode = null;
+  if (age >= REQUIRED_AFTER) {
+    if (sinceNag >= REQUIRED_EVERY || pending.nags === 0 || !pending.required) mode = 'required';
+  } else if (age >= REMIND_FIRST && (pending.nags === 0 || sinceNag >= REMIND_EVERY)) {
+    mode = 'reminder';
+  }
+  if (!mode) return;
+  pending.lastNag = now;
+  pending.nags = (pending.nags || 0) + 1;
+  if (mode === 'required') pending.required = true;
+  store.save();
+  win.webContents.send('ui:update-ready', { version: st.version, items: changesFor(st.version), mode, days: Math.floor(age / DAY_MS) });
+}
+
 function seedTicketProfiles() {
   const data = store.get();
   // Las PCs nuevas empiezan sin remitentes: cada negocio agrega el suyo (nombre, logo, QR, datos) la primera vez que
@@ -2438,6 +2485,10 @@ function registerIpc() {
     changelog: CHANGELOG,
   }));
   ipcMain.handle('update:check', () => updater.check());
+  ipcMain.handle('update:install-now', () => {
+    if (updater.state.status !== 'ready') return { ok: false, error: 'La actualización todavía se está descargando. Inténtalo en unos minutos.' };
+    return updater.installNow() ? { ok: true } : { ok: false, error: 'No se pudo iniciar la actualización. Cierra y vuelve a abrir MultiChat.' };
+  });
   ipcMain.handle('payments:state', () => paymentsState());
   ipcMain.handle('flyer:pick-image', () => (locked ? null : pickFlyerImage()));
   ipcMain.on('ai:open', () => { if (!locked) openAssistantFromSelection(); });
@@ -2773,6 +2824,8 @@ function init() {
   setInterval(pollShipChats, 3000);
   setTimeout(announceUpdated, 4000);
   setTimeout(maybeWelcome, 3500);
+  setTimeout(updateReminder, 60_000);
+  setInterval(updateReminder, 10 * 60_000);
   updater.start({
     getWindow: () => win,
     onChange: (state) => { if (win && !win.isDestroyed()) win.webContents.send('update:state', state); },

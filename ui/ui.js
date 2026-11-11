@@ -1965,16 +1965,43 @@ api.onAboutPanel(() => openDrawer('about'));
 
 // Aviso de versión nueva encima de la app: no cierra ni reinicia nada.
 let updatePopupOpen = false;
-api.onUpdateReady(({ version, items }) => {
+let updateMode = 'ready';
+api.onUpdateReady(({ version, items, mode = 'ready', days = 0 }) => {
   if (state.locked || passwordMode) return;
   closeCoffee();
+  updateMode = mode;
+  const card = $('update-modal').querySelector('.update-pop');
+  card.classList.toggle('required', mode === 'required');
+  $('upd-tag').classList.toggle('pending', mode === 'reminder');
+  $('upd-tag').textContent = { ready: 'Actualización lista', reminder: 'Actualización pendiente', required: 'Actualización necesaria' }[mode] || 'Actualización lista';
+  $('upd-hint').innerHTML = {
+    ready: 'Ya se descargó. <b>Se instalará sola la próxima vez que abras MultiChat</b> (por ejemplo, al prender la PC). No se cierra nada ahora: sigue trabajando.',
+    reminder: `Esta versión te espera hace <b>${days} días</b>. Actualiza cuando tengas un momento: MultiChat se cierra unos segundos y vuelve a abrirse solo. <b>Tus cuentas siguen conectadas.</b>`,
+    required: `Tienes una actualización pendiente hace <b>${days} días</b>. Para que todo siga funcionando bien, <b>actualiza ahora</b>: toma menos de un minuto y tus cuentas siguen conectadas.`,
+  }[mode];
+  $('upd-error').textContent = '';
+  $('upd-ok').hidden = mode !== 'ready';
+  $('upd-ok').previousElementSibling.hidden = mode === 'ready';
+  $('upd-later').textContent = mode === 'required' ? 'Recordarme en 4 horas' : 'Más tarde';
   $('upd-version').textContent = `Versión ${version}`;
   $('upd-items').replaceChildren(...(items || []).map((text) => Object.assign(document.createElement('li'), { textContent: text })));
   $('upd-items').hidden = !(items && items.length);
   $('update-modal').hidden = false;
   if (!updatePopupOpen) api.setOverlay(true);
   updatePopupOpen = true;
-  $('upd-ok').focus();
+  (mode === 'ready' ? $('upd-ok') : $('upd-now')).focus();
+});
+$('upd-later').addEventListener('click', () => closeUpdatePopup());
+$('upd-now').addEventListener('click', async () => {
+  const btn = $('upd-now');
+  btn.disabled = true;
+  btn.textContent = 'Actualizando…';
+  const result = await api.installUpdateNow();
+  if (!result || !result.ok) {
+    btn.disabled = false;
+    btn.textContent = 'Actualizar ahora';
+    $('upd-error').textContent = (result && result.error) || 'No se pudo actualizar ahora.';
+  }
 });
 function closeUpdatePopup() {
   if (!updatePopupOpen) return;
@@ -1984,7 +2011,7 @@ function closeUpdatePopup() {
 }
 $('upd-ok').addEventListener('click', closeUpdatePopup);
 $('update-modal').addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeUpdatePopup();
+  if (e.key === 'Escape' && updateMode !== 'required') closeUpdatePopup();
 });
 api.onUpdateState((update) => {
   if (drawerOpen === 'about') showUpdateState(update);

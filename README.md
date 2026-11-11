@@ -40,6 +40,11 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.13.0
+
+- **Recordatorio de actualización**: la versión nueva se descarga sola. Si nadie reinicia MultiChat, a los **2 días** sale un aviso suave ("Más tarde" / "Actualizar ahora"), se repite **cada 3 días** y desde la **semana** pasa a "Actualización necesaria" cada 4 horas hasta que se actualice.
+- **Actualizar ahora**: se cierra unos segundos, se instala y vuelve a abrirse sola; las cuentas siguen conectadas.
+
 ## Novedades v1.12.1
 
 - **Remitentes de tickets**: las PCs nuevas empiezan sin remitentes; al hacer el primer ticket se pide agregar los datos de la propia empresa (nombre, logo, QR, dirección). Quien ya tenía remitentes los conserva.

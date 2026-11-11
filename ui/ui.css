@@ -1535,3 +1535,10 @@ tbody tr:hover { background: var(--tab-hover); }
 .card .phone-tabs button { padding: 12px; font-size: 15px; font-weight: 700; }
 .card .phone-tabs button.on { border-color: transparent; background: linear-gradient(135deg, var(--acc1), var(--acc2)); color: #fff; }
 .phone-steps { margin: 4px 0; padding-left: 22px; text-align: left; display: flex; flex-direction: column; gap: 7px; font-size: 13.5px; }
+
+/* ---- Recordatorio de actualización ---- */
+.update-pop-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+.update-pop-actions[hidden] { display: none; }
+.update-pop.required .update-pop-tag { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; }
+.update-pop-tag.pending { background: rgb(245 158 11 / 0.16); color: #b45309; }
+.update-pop.required #upd-later { font-size: 12px; }

@@ -525,10 +525,15 @@
   <section class="backdrop update-backdrop" id="update-modal" hidden>
     <div class="card update-pop">
       <img class="update-pop-logo" src="../build/icon.png" alt="">
-      <div class="update-pop-tag">Actualización lista</div>
+      <div class="update-pop-tag" id="upd-tag">Actualización lista</div>
       <h2 id="upd-version"></h2>
       <ul class="update-pop-list" id="upd-items"></ul>
-      <p class="hint">Ya se descargó. <b>Se instalará sola la próxima vez que abras MultiChat</b> (por ejemplo, al prender la PC). No se cierra nada ahora: sigue trabajando.</p>
+      <p class="hint" id="upd-hint"></p>
+      <p class="error" id="upd-error"></p>
+      <div class="update-pop-actions">
+        <button type="button" id="upd-later">Más tarde</button>
+        <button type="button" class="primary" id="upd-now">Actualizar ahora</button>
+      </div>
       <button type="button" class="primary" id="upd-ok">Entendido</button>
     </div>
   </section>

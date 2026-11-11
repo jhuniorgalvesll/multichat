@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.13.0',
+    items: [
+      'Recordatorio de actualización: si una versión nueva espera más de 2 días sin instalarse, aparece un aviso suave (cada 3 días). Desde la semana se pide actualizar.',
+      'Botón "Actualizar ahora": MultiChat se cierra unos segundos, se actualiza y vuelve a abrirse solo, con tus cuentas conectadas.',
+    ],
+  },
+  {
     version: '1.12.1',
     items: ['Remitentes de tickets: en una PC nueva la app empieza sin remitentes y pide agregar los datos de tu propia empresa la primera vez. Si ya tenías remitentes, se quedan igual.'],
   },

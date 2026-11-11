@@ -163,4 +163,11 @@ async function checkNow() {
   }
 }
 
-module.exports = { start, check, checkNow, installPendingOnStart, get state() { return state; } };
+// Botón "Actualizar ahora": instala la versión descargada; MultiChat se cierra unos segundos y vuelve a abrirse solo.
+function installNow() {
+  return installPendingOnStart();
+}
+
+const isNewer = (version) => newer(version, app.getVersion());
+
+module.exports = { start, check, checkNow, installPendingOnStart, installNow, isNewer, get state() { return state; } };
