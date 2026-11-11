@@ -70,6 +70,7 @@ contextBridge.exposeInMainWorld('multichat', {
   onSpeak: (fn) => ipcRenderer.on('ui:speak', (_e, text) => fn(text)),
   about: () => ipcRenderer.invoke('app:about'),
   checkUpdate: () => ipcRenderer.invoke('update:check'),
+  platform: process.platform,
   installUpdateNow: (opts) => ipcRenderer.invoke('update:install-now', opts || {}),
   onUpdateReady: (fn) => ipcRenderer.on('ui:update-ready', (_e, data) => fn(data)),
   onUpdateState: (fn) => ipcRenderer.on('update:state', (_e, state) => fn(state)),

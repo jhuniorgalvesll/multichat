@@ -40,6 +40,15 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.15.0
+
+- **MultiChat para Mac** (chip Apple M1, M2, M3, M4 e Intel). Descarga en Releases:
+  - Mac con chip Apple: `MultiChat-<versión>-arm64.dmg`
+  - Mac con Intel: `MultiChat-<versión>-x64.dmg`
+- Cómo instalar en Mac: abre el `.dmg` y arrastra **MultiChat** a **Aplicaciones**. La primera vez, macOS avisa que no puede verificar al desarrollador (la app no está firmada con Apple): ve a **Ajustes del Sistema → Privacidad y seguridad** y pulsa **Abrir igualmente** (solo una vez).
+- En Mac: voz de Mac para los pagos, Cmd+C / Cmd+V en los chats, atajos con ⌘. Las actualizaciones avisan igual; "Descargar versión nueva" baja el `.dmg` para reemplazar la app.
+- Lo que es solo de Windows: avisos de Yape y Plin del celular (Enlace Móvil), lectura de capturas y bajar el brillo con la pantalla en negro.
+
 ## Novedades v1.14.0
 
 - **Actualización obligatoria**: si la PC está muy atrasada (3 versiones o más, p. ej. 1.10 → 1.14) o la actualización espera **10 días**, sale "Actualización obligatoria" con cuenta regresiva de 10 minutos y se instala sola, **directo a la última versión**. Si se está usando la PC, espera a que la dejen un minuto; con la app oculta, se instala cuando nadie usa la PC.

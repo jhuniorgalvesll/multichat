@@ -1,4 +1,4 @@
-# Arma el instalador de Windows y lo publica en Releases de este repositorio (jhuniorgalvesll/multichat).
+# Arma los instaladores de Windows y Mac y los publica en Releases de este repositorio (jhuniorgalvesll/multichat).
 # Las apps instaladas revisan ese repositorio y se actualizan solas.
 # Se ejecuta al subir cambios a la rama `main`. Solo publica cuando la versión de package.json es nueva.
 name: Publicar actualización
@@ -15,14 +15,16 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
-  windows:
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: bash
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # ¿Hay versión nueva? Si la hay, crea el borrador donde se suben los instaladores (sin carreras).
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      new: ${{ steps.version.outputs.new }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,26 +40,54 @@ jobs:
             echo "new=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/setup-node@v4
-        if: steps.version.outputs.new == 'true'
-        with:
-          node-version: 22
-          cache: npm
-
-      - if: steps.version.outputs.new == 'true'
-        run: npm ci
-
-      # El borrador se crea antes, así electron-builder sube todos los archivos al mismo (sin carreras).
       - name: Crear el borrador de la versión
         if: steps.version.outputs.new == 'true'
         run: |
           TAG=${{ steps.version.outputs.tag }}
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --target "$GITHUB_SHA" --title "MultiChat Pro $TAG" --notes "Se instala sola desde MultiChat (⚙ → Buscar actualizaciones). Para instalar desde cero: descarga MultiChat-Setup-${TAG#v}.exe."
+          V=${TAG#v}
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --target "$GITHUB_SHA" --title "MultiChat Pro $TAG" --notes "Se instala sola desde MultiChat. Para instalar desde cero:
+          - Windows: MultiChat-Setup-$V.exe
+          - Mac con chip Apple (M1, M2, M3, M4): MultiChat-$V-arm64.dmg
+          - Mac con Intel: MultiChat-$V-x64.dmg"
 
-      - name: Armar y subir el instalador
-        if: steps.version.outputs.new == 'true'
+  windows:
+    needs: prepare
+    if: needs.prepare.outputs.new == 'true'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Armar y subir el instalador de Windows
         run: npx electron-builder --win --publish always
 
+  mac:
+    needs: prepare
+    if: needs.prepare.outputs.new == 'true'
+    runs-on: macos-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Armar y subir el instalador de Mac (Apple e Intel)
+        run: npx electron-builder --mac --publish always
+
+  # Se publica cuando está el de Windows (si el de Mac falla, Windows igual recibe su actualización).
+  publish:
+    needs: [prepare, windows, mac]
+    if: always() && needs.prepare.outputs.new == 'true' && needs.windows.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
       - name: Publicar la versión
-        if: steps.version.outputs.new == 'true'
-        run: gh release edit "${{ steps.version.outputs.tag }}" --draft=false --latest
+        run: gh release edit "${{ needs.prepare.outputs.tag }}" --repo "$GITHUB_REPOSITORY" --draft=false --latest

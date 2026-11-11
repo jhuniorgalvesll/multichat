@@ -3,6 +3,7 @@
 // Voz de los pagos con el motor de voz de Windows (System.Speech, el mismo de Narrador), fuera de la ventana:
 // suena aunque haya música o YouTube, con la ventana oculta o la pantalla apagada. Voz de mujer en español, volumen al
 // máximo y un "ding" antes. Si Windows no tiene voces en español, avisa para usar la voz de la ventana.
+// En Mac se usa la voz del sistema (comando "say").
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -23,6 +24,24 @@ $s.SetOutputToDefaultAudioDevice()
 if ($env:MC_CHIME -and (Test-Path $env:MC_CHIME)) { (New-Object System.Media.SoundPlayer $env:MC_CHIME).PlaySync() }
 $s.Speak($env:MC_TEXT)
 `;
+
+// Mac: comando "say" con una voz de mujer en español (Paulina, Mónica, Marisol...) y el "ding" con afplay.
+const MAC_VOICES = ['Paulina', 'Mónica', 'Monica', 'Marisol', 'Soledad', 'Angélica', 'Angelica', 'Isabela'];
+let macVoice;
+function findMacVoice() {
+  if (macVoice !== undefined) return Promise.resolve(macVoice);
+  return new Promise((resolve) => {
+    require('child_process').execFile('say', ['-v', '?'], { timeout: 5000 }, (err, out) => {
+      // Cada línea: "Paulina             es_MX    # Hola, me llamo Paulina."
+      const names = (err ? '' : String(out)).split('\n')
+        .map((l) => l.match(/^(.+?)\s+(es[_-][A-Za-z]+)\s+#/))
+        .filter(Boolean)
+        .map((m) => m[1].trim());
+      macVoice = names.find((n) => MAC_VOICES.some((v) => n.startsWith(v))) || names[0] || '';
+      resolve(macVoice);
+    });
+  });
+}
 
 let files = null;
 const queue = [];
@@ -70,6 +89,40 @@ function prepare() {
   return files;
 }
 
+function nextMac() {
+  if (busy || !queue.length) return;
+  busy = true;
+  const { text, fallback } = queue.shift();
+  const done = (ok) => {
+    busy = false;
+    if (!ok) fallback(text);
+    nextMac();
+  };
+  findMacVoice().then((voice) => {
+    if (!voice) return done(false);
+    let chime = '';
+    try { chime = prepareChime(); } catch { /* sin ding */ }
+    const say = () => {
+      const child = spawn('say', ['-v', voice, text], { stdio: 'ignore' });
+      child.on('error', () => done(false));
+      child.on('exit', (code) => done(code === 0));
+    };
+    if (!chime) return say();
+    const ding = spawn('afplay', [chime], { stdio: 'ignore' });
+    ding.on('error', say);
+    ding.on('exit', say);
+  });
+}
+
+function prepareChime() {
+  if (files) return files.chime;
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'multichat-voz-'));
+  files = { script: path.join(dir, 'hablar.ps1'), chime: path.join(dir, 'ding.wav') };
+  fs.writeFileSync(files.script, `\ufeff${SCRIPT}`, 'utf8');
+  fs.writeFileSync(files.chime, chimeWav());
+  return files.chime;
+}
+
 function next() {
   if (busy || !queue.length) return;
   busy = true;
@@ -101,6 +154,11 @@ function next() {
 function speak(text, fallback) {
   const clean = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 300);
   if (!clean) return;
+  if (process.platform === 'darwin') {
+    queue.push({ text: clean, fallback });
+    nextMac();
+    return;
+  }
   if (process.platform !== 'win32') {
     fallback(clean);
     return;

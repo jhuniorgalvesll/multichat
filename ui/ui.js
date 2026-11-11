@@ -1695,7 +1695,7 @@ async function openPhoneGuide() {
   if (state.locked || passwordMode) return;
   closeCoffee();
   const panel = await api.settingsPanel();
-  showPhoneSteps((panel && panel.phoneType) || 'android');
+  if (api.platform !== 'darwin') showPhoneSteps((panel && panel.phoneType) || 'android');
   $('phone-modal').hidden = false;
   if (!phoneOpen) api.setOverlay(true);
   phoneOpen = true;
@@ -1984,7 +1984,7 @@ function startForcedCountdown(seconds) {
   tick();
   forcedTimer = setInterval(tick, 1000);
 }
-api.onUpdateReady(({ version, items, mode = 'ready', days = 0, behind = false, current = '', seconds = 600 }) => {
+api.onUpdateReady(({ version, items, mode = 'ready', days = 0, behind = false, current = '', seconds = 600, mac = false }) => {
   if (state.locked || passwordMode) return;
   closeCoffee();
   updateMode = mode;
@@ -1992,9 +1992,9 @@ api.onUpdateReady(({ version, items, mode = 'ready', days = 0, behind = false, c
   card.classList.toggle('required', mode === 'required');
   $('upd-tag').classList.toggle('pending', mode === 'reminder');
   card.classList.toggle('required', mode === 'required' || mode === 'forced');
-  $('upd-countdown').hidden = mode !== 'forced';
+  $('upd-countdown').hidden = mode !== 'forced' || mac;
   $('upd-later').hidden = mode === 'forced';
-  if (mode === 'forced') startForcedCountdown(seconds);
+  if (mode === 'forced' && !mac) startForcedCountdown(seconds);
   else clearInterval(forcedTimer);
   $('upd-tag').textContent = { ready: 'Actualización lista', reminder: 'Actualización pendiente', required: 'Actualización necesaria', forced: 'Actualización obligatoria' }[mode] || 'Actualización lista';
   $('upd-hint').innerHTML = {
@@ -2005,9 +2005,20 @@ api.onUpdateReady(({ version, items, mode = 'ready', days = 0, behind = false, c
       : `La actualización espera hace <b>${days} días</b>. Se instalará ahora para que todo funcione bien. Toma menos de un minuto y <b>tus cuentas siguen conectadas</b>.`,
     required: `Tienes una actualización pendiente hace <b>${days} días</b>. Para que todo siga funcionando bien, <b>actualiza ahora</b>: toma menos de un minuto y tus cuentas siguen conectadas.`,
   }[mode];
+  if (mac) {
+    // Mac: la versión nueva se descarga y se arrastra a Aplicaciones (reemplazar). Cuentas y ajustes se mantienen.
+    const how = 'Pulsa <b>Descargar</b>, abre el archivo y arrastra MultiChat a <b>Aplicaciones</b> (elige <b>Reemplazar</b>). Tus cuentas siguen conectadas.';
+    $('upd-hint').innerHTML = {
+      ready: `Hay una versión nueva de MultiChat. ${how}`,
+      reminder: `Esta versión te espera hace <b>${days} días</b>. ${how}`,
+      required: `Tienes una actualización pendiente hace <b>${days} días</b>. Para que todo siga funcionando bien, actualiza ahora. ${how}`,
+      forced: `Tu MultiChat${current ? ` (versión ${current})` : ''} está <b>muy desactualizado</b>: actualízalo para que todo funcione bien. ${how}`,
+    }[mode];
+  }
+  $('upd-now').textContent = mac ? 'Descargar versión nueva' : 'Actualizar ahora';
   $('upd-error').textContent = '';
-  $('upd-ok').hidden = mode !== 'ready';
-  $('upd-ok').previousElementSibling.hidden = mode === 'ready';
+  $('upd-ok').hidden = mode !== 'ready' || mac;
+  $('upd-ok').previousElementSibling.hidden = mode === 'ready' && !mac;
   $('upd-later').textContent = mode === 'required' ? 'Recordarme en 4 horas' : 'Más tarde';
   $('upd-version').textContent = `Versión ${version}`;
   $('upd-items').replaceChildren(...(items || []).map((text) => Object.assign(document.createElement('li'), { textContent: text })));
@@ -2023,9 +2034,16 @@ $('upd-now').addEventListener('click', async () => {
   btn.disabled = true;
   btn.textContent = 'Actualizando…';
   const result = await api.installUpdateNow();
+  if (api.platform === 'darwin' && result && result.ok) {
+    btn.disabled = false;
+    btn.textContent = 'Descargar versión nueva';
+    $('upd-countdown').hidden = false;
+    $('upd-countdown').textContent = 'Descargando… Al terminar, abre el archivo y arrastra MultiChat a Aplicaciones.';
+    return;
+  }
   if (!result || !result.ok) {
     btn.disabled = false;
-    btn.textContent = 'Actualizar ahora';
+    btn.textContent = api.platform === 'darwin' ? 'Descargar versión nueva' : 'Actualizar ahora';
     $('upd-error').textContent = (result && result.error) || 'No se pudo actualizar ahora.';
   }
 });
@@ -2416,3 +2434,19 @@ function speak(text) {
 
 api.onSpeak(speak);
 api.ready();
+
+// -- Mac: los atajos se muestran con ⌘ en vez de Ctrl, y los avisos del celular (Enlace Móvil) son solo de Windows --
+if (api.platform === 'darwin') {
+  document.body.classList.add('mac');
+  const swap = (t) => t.replace(/Ctrl\+/g, '⌘');
+  for (const el of document.querySelectorAll('[title]')) el.title = swap(el.title);
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.nodeValue.includes('Ctrl+')) n.nodeValue = swap(n.nodeValue);
+  new MutationObserver((list) => {
+    for (const m of list) if (m.type === 'attributes' && m.target.title && m.target.title.includes('Ctrl+')) m.target.title = swap(m.target.title);
+  }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['title'] });
+  $('pay-phone').textContent = '📱 Avisos del celular (solo en Windows)';
+  for (const id of ['phone-tabs', 'phone-steps-android', 'phone-steps-iphone', 'phone-open-link']) $(id).hidden = true;
+  const note = document.querySelector('#phone-modal .note');
+  note.innerHTML = 'Los avisos de Yape, Plin y del banco llegan a la PC con <b>Enlace Móvil</b>, que es una app de Windows. En Mac, MultiChat funciona igual con tus cuentas, respuestas rápidas y tickets; los avisos de pagos del celular se usan en una PC con Windows.';
+}

@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.15.0',
+    items: [
+      'MultiChat ahora también para Mac (chip Apple M1, M2, M3, M4 e Intel).',
+      'En Mac: los pagos se dicen con la voz de Mac, Cmd+C / Cmd+V funcionan en los chats y los atajos se muestran con ⌘.',
+    ],
+  },
+  {
     version: '1.14.0',
     items: [
       'Actualización obligatoria: si la PC está muy atrasada (3 versiones o más) o la actualización espera 10 días, aparece un aviso con cuenta regresiva de 10 minutos y se actualiza sola, directo a la última versión.',

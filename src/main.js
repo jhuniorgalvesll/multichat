@@ -930,6 +930,7 @@ function mustUpdate(version, pending) {
 
 // Instalación obligatoria: si la ventana está oculta o bloqueada, se hace sola cuando nadie usa la PC.
 function forceInstallWhenIdle() {
+  if (updater.MAC) return; // en Mac la descarga la hace la persona desde el aviso
   if (powerMonitor.getSystemIdleTime() >= 5 * 60) updater.installNow();
 }
 
@@ -962,7 +963,7 @@ function updateReminder() {
     forcedShown = true;
     win.webContents.send('ui:update-ready', {
       version: st.version, items: changesFor(st.version), mode: 'forced', days: Math.floor(age0 / DAY_MS),
-      behind: versionsBehind(st.version) >= 3, current: app.getVersion(), seconds: FORCE_COUNTDOWN,
+      behind: versionsBehind(st.version) >= 3, current: app.getVersion(), seconds: FORCE_COUNTDOWN, mac: updater.MAC,
     });
     return;
   }
@@ -981,7 +982,7 @@ function updateReminder() {
   pending.nags = (pending.nags || 0) + 1;
   if (mode === 'required') pending.required = true;
   store.save();
-  win.webContents.send('ui:update-ready', { version: st.version, items: changesFor(st.version), mode, days: Math.floor(age / DAY_MS) });
+  win.webContents.send('ui:update-ready', { version: st.version, items: changesFor(st.version), mode, days: Math.floor(age / DAY_MS), mac: updater.MAC });
 }
 
 function seedTicketProfiles() {
@@ -2525,6 +2526,7 @@ function registerIpc() {
   ipcMain.handle('update:check', () => updater.check());
   ipcMain.handle('update:install-now', (_e, opts = {}) => {
     // Al terminar la cuenta regresiva: si alguien está usando la PC, se espera a que la deje un minuto.
+    if (opts && opts.auto && updater.MAC) return { ok: false, wait: true };
     if (opts && opts.auto && powerMonitor.getSystemIdleTime() < FORCE_IDLE) return { ok: false, wait: true };
     if (updater.state.status !== 'ready') return { ok: false, error: 'La actualización todavía se está descargando. Inténtalo en unos minutos.' };
     return updater.installNow() ? { ok: true } : { ok: false, error: 'No se pudo iniciar la actualización. Cierra y vuelve a abrir MultiChat.' };
@@ -2814,6 +2816,7 @@ function init() {
   registerIpc();
   createWindow();
   createTray();
+  setMacMenu();
 
   const data = store.get();
   locked = Boolean(data.lock);
@@ -2873,14 +2876,14 @@ function init() {
     notify: (version) => {
       if (versionsBehind(version) >= 3) { updateReminder(); return; }
       if (win && !win.isDestroyed() && win.isVisible() && !locked) {
-        win.webContents.send('ui:update-ready', { version, items: changesFor(version) });
+        win.webContents.send('ui:update-ready', { version, items: changesFor(version), mac: updater.MAC });
       } else {
         notifier.show({
           kind: 'update',
           version,
           accountName: 'MultiChat Pro',
-          title: `Versión ${version} descargada`,
-          body: 'Se instalará sola la próxima vez que abras MultiChat. No se cierra nada ahora.',
+          title: updater.MAC ? `Versión ${version} disponible` : `Versión ${version} descargada`,
+          body: updater.MAC ? 'Abre MultiChat para descargarla.' : 'Se instalará sola la próxima vez que abras MultiChat. No se cierra nada ahora.',
           canReply: false,
         });
       }
@@ -2901,6 +2904,37 @@ app.on('before-quit', () => {
   notifier.closeAll();
   store.flush();
 });
+// Mac: menú de la app con Editar (Cmd+C / Cmd+V / Cmd+A funcionan en los chats). Sin "Recargar" para no
+// recargar WhatsApp por error. Los demás atajos (Cmd+W, Cmd+L, Cmd+P...) los maneja MultiChat.
+function setMacMenu() {
+  if (process.platform !== 'darwin') return;
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { label: 'MultiChat', submenu: [
+      { role: 'about', label: 'Acerca de MultiChat' },
+      { type: 'separator' },
+      { role: 'hide', label: 'Ocultar MultiChat' },
+      { role: 'hideOthers', label: 'Ocultar otros' },
+      { role: 'unhide', label: 'Mostrar todo' },
+      { type: 'separator' },
+      { label: 'Salir de MultiChat', accelerator: 'Cmd+Q', click: () => quit() },
+    ] },
+    { label: 'Editar', submenu: [
+      { role: 'undo', label: 'Deshacer' },
+      { role: 'redo', label: 'Rehacer' },
+      { type: 'separator' },
+      { role: 'cut', label: 'Cortar' },
+      { role: 'copy', label: 'Copiar' },
+      { role: 'paste', label: 'Pegar' },
+      { role: 'selectAll', label: 'Seleccionar todo' },
+    ] },
+    { label: 'Ventana', submenu: [
+      { role: 'minimize', label: 'Minimizar' },
+      { role: 'zoom', label: 'Zoom' },
+      { role: 'togglefullscreen', label: 'Pantalla completa' },
+    ] },
+  ]));
+}
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') quit();
 });

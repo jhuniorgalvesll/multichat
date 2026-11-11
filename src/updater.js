@@ -5,13 +5,19 @@
 // segundo plano y solo avisa con una ventanita encima de la app. La versión descargada se instala la próxima vez
 // que se abre MultiChat (por ejemplo, al prender la PC): antes de abrir las cuentas aparece una ventanita
 // "Actualizando MultiChat Pro…" unos segundos, como en otras apps. Las cuentas y ajustes no se tocan.
-const { app, dialog } = require('electron');
+const { app, dialog, shell } = require('electron');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
 
 const CHECK_EVERY = 60 * 60 * 1000; // cada hora
+// En Mac la app no está firmada por Apple, así que no puede reemplazarse sola: se avisa igual que en Windows y
+// "Actualizar ahora" descarga el instalador nuevo (.dmg) para arrastrarlo a Aplicaciones.
+const MAC = process.platform === 'darwin';
+const SUPPORTED = process.platform === 'win32' || MAC;
+const RELEASES = 'https://github.com/jhuniorgalvesll/multichat/releases';
+const macDownloadUrl = (version) => `${RELEASES}/download/v${version}/MultiChat-${version}-${process.arch === 'arm64' ? 'arm64' : 'x64'}.dmg`;
 const CACHE_DIR = 'multichat-updater'; // = updaterCacheDirName de electron-builder
 
 let updater = null;
@@ -36,10 +42,17 @@ const newer = (a, b) => {
 function load() {
   if (updater) return updater;
   ({ autoUpdater: updater } = require('electron-updater'));
-  updater.autoDownload = true;
+  updater.autoDownload = !MAC;
   updater.autoInstallOnAppQuit = false; // se instala al abrir, nunca al cerrar ni con la app abierta
   updater.on('checking-for-update', () => set({ status: 'checking' }));
-  updater.on('update-available', (info) => set({ status: 'downloading', version: info.version }));
+  updater.on('update-available', (info) => {
+    if (!MAC) return set({ status: 'downloading', version: info.version });
+    // Mac: lista para descargar desde el aviso.
+    set({ status: 'ready', version: info.version });
+    if (askedFor === info.version) return;
+    askedFor = info.version;
+    notify(info.version);
+  });
   updater.on('update-not-available', () => set({ status: 'latest' }));
   updater.on('error', () => set({ status: 'error' }));
   updater.on('update-downloaded', (info) => {
@@ -124,7 +137,7 @@ function start(options = {}) {
   getWindow = options.getWindow || getWindow;
   onChange = options.onChange || onChange;
   notify = options.notify || notify;
-  if (!app.isPackaged || process.platform !== 'win32') return;
+  if (!app.isPackaged || !SUPPORTED) return;
   const check = () => load().checkForUpdates().catch(() => set({ status: 'error' }));
   setTimeout(check, 15_000);
   setInterval(check, CHECK_EVERY);
@@ -132,7 +145,7 @@ function start(options = {}) {
 
 // Desde el panel de MultiChat Pro: revisa sin ventanas; el resultado llega por onChange (state).
 async function check() {
-  if (!app.isPackaged || process.platform !== 'win32') {
+  if (!app.isPackaged || !SUPPORTED) {
     set({ status: 'dev' });
     return state;
   }
@@ -157,6 +170,7 @@ async function checkNow() {
     const result = await load().checkForUpdates();
     const latest = result && result.updateInfo ? result.updateInfo.version : '';
     if (!latest || !newer(latest, app.getVersion())) return show(`Tienes la última versión (v${app.getVersion()}).`);
+    if (MAC) return notify(latest);
     return show(`Descargando la versión v${latest}…`, 'Te avisaremos cuando esté lista.');
   } catch {
     return show('No se pudo revisar si hay actualizaciones.', 'Revisa tu conexión a internet e inténtalo más tarde.');
@@ -165,9 +179,14 @@ async function checkNow() {
 
 // Botón "Actualizar ahora": instala la versión descargada; MultiChat se cierra unos segundos y vuelve a abrirse solo.
 function installNow() {
+  if (MAC) {
+    if (state.status !== 'ready' || !state.version) return false;
+    shell.openExternal(macDownloadUrl(state.version)).catch(() => {});
+    return true;
+  }
   return installPendingOnStart();
 }
 
 const isNewer = (version) => newer(version, app.getVersion());
 
-module.exports = { start, check, checkNow, installPendingOnStart, installNow, isNewer, get state() { return state; } };
+module.exports = { start, check, checkNow, installPendingOnStart, installNow, isNewer, MAC, get state() { return state; } };
