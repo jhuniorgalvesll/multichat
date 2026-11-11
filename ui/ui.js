@@ -1966,17 +1966,43 @@ api.onAboutPanel(() => openDrawer('about'));
 // Aviso de versión nueva encima de la app: no cierra ni reinicia nada.
 let updatePopupOpen = false;
 let updateMode = 'ready';
-api.onUpdateReady(({ version, items, mode = 'ready', days = 0 }) => {
+let forcedTimer = null;
+function startForcedCountdown(seconds) {
+  clearInterval(forcedTimer);
+  let left = seconds;
+  const tick = async () => {
+    if (left > 0) {
+      $('upd-countdown').textContent = `Se actualizará sola en ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+      left -= 1;
+      return;
+    }
+    const result = await api.installUpdateNow({ auto: true });
+    if (result && result.wait) $('upd-countdown').textContent = 'Se actualizará apenas dejes de usar la PC un minuto.';
+    else if (result && !result.ok) $('upd-error').textContent = result.error || '';
+    left = 30; // vuelve a intentar en 30 s
+  };
+  tick();
+  forcedTimer = setInterval(tick, 1000);
+}
+api.onUpdateReady(({ version, items, mode = 'ready', days = 0, behind = false, current = '', seconds = 600 }) => {
   if (state.locked || passwordMode) return;
   closeCoffee();
   updateMode = mode;
   const card = $('update-modal').querySelector('.update-pop');
   card.classList.toggle('required', mode === 'required');
   $('upd-tag').classList.toggle('pending', mode === 'reminder');
-  $('upd-tag').textContent = { ready: 'Actualización lista', reminder: 'Actualización pendiente', required: 'Actualización necesaria' }[mode] || 'Actualización lista';
+  card.classList.toggle('required', mode === 'required' || mode === 'forced');
+  $('upd-countdown').hidden = mode !== 'forced';
+  $('upd-later').hidden = mode === 'forced';
+  if (mode === 'forced') startForcedCountdown(seconds);
+  else clearInterval(forcedTimer);
+  $('upd-tag').textContent = { ready: 'Actualización lista', reminder: 'Actualización pendiente', required: 'Actualización necesaria', forced: 'Actualización obligatoria' }[mode] || 'Actualización lista';
   $('upd-hint').innerHTML = {
     ready: 'Ya se descargó. <b>Se instalará sola la próxima vez que abras MultiChat</b> (por ejemplo, al prender la PC). No se cierra nada ahora: sigue trabajando.',
     reminder: `Esta versión te espera hace <b>${days} días</b>. Actualiza cuando tengas un momento: MultiChat se cierra unos segundos y vuelve a abrirse solo. <b>Tus cuentas siguen conectadas.</b>`,
+    forced: behind
+      ? `Tu MultiChat (versión ${current}) está <b>muy desactualizado</b>. Se actualizará a la <b>última versión</b> para que todo funcione bien. Toma menos de un minuto y <b>tus cuentas siguen conectadas</b>.`
+      : `La actualización espera hace <b>${days} días</b>. Se instalará ahora para que todo funcione bien. Toma menos de un minuto y <b>tus cuentas siguen conectadas</b>.`,
     required: `Tienes una actualización pendiente hace <b>${days} días</b>. Para que todo siga funcionando bien, <b>actualiza ahora</b>: toma menos de un minuto y tus cuentas siguen conectadas.`,
   }[mode];
   $('upd-error').textContent = '';
@@ -2011,7 +2037,7 @@ function closeUpdatePopup() {
 }
 $('upd-ok').addEventListener('click', closeUpdatePopup);
 $('update-modal').addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && updateMode !== 'required') closeUpdatePopup();
+  if (e.key === 'Escape' && updateMode !== 'required' && updateMode !== 'forced') closeUpdatePopup();
 });
 api.onUpdateState((update) => {
   if (drawerOpen === 'about') showUpdateState(update);

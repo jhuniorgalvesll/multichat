@@ -908,6 +908,30 @@ const REMIND_FIRST = 2 * DAY_MS;
 const REMIND_EVERY = 3 * DAY_MS;
 const REQUIRED_AFTER = 7 * DAY_MS;
 const REQUIRED_EVERY = 4 * 60 * 60 * 1000;
+// Actualización obligatoria: la PC está muy atrasada (3 o más versiones de diferencia, p. ej. 1.10 → 1.13) o la
+// versión nueva espera hace 10 días. Se avisa con una cuenta regresiva y se instala sola (pasa directo a la última
+// versión). Si en ese momento se está usando la PC, espera a que deje de usarse un minuto.
+const FORCE_AFTER = 10 * DAY_MS;
+const FORCE_COUNTDOWN = 10 * 60; // segundos
+const FORCE_IDLE = 60; // segundos sin tocar mouse ni teclado
+let forcedShown = false;
+
+function versionsBehind(latest) {
+  const [a1, a2, a3] = String(latest).split('.').map(Number);
+  const [b1, b2, b3] = app.getVersion().split('.').map(Number);
+  if (a1 !== b1) return a1 > b1 ? 99 : 0;
+  if (a2 !== b2) return Math.max(0, a2 - b2);
+  return a3 > b3 ? 0.5 : 0; // solo arreglos pequeños
+}
+
+function mustUpdate(version, pending) {
+  return versionsBehind(version) >= 3 || (pending && Date.now() - pending.since >= FORCE_AFTER);
+}
+
+// Instalación obligatoria: si la ventana está oculta o bloqueada, se hace sola cuando nadie usa la PC.
+function forceInstallWhenIdle() {
+  if (powerMonitor.getSystemIdleTime() >= 5 * 60) updater.installNow();
+}
 
 function updateReminder() {
   const data = store.get();
@@ -922,11 +946,25 @@ function updateReminder() {
   if (!pending) {
     data.updatePending = { version: st.version, since: Date.now(), lastNag: Date.now(), nags: 0 };
     store.save();
-    return;
+    if (versionsBehind(st.version) < 3) return;
   }
   if (pending.version !== st.version) {
     pending.version = st.version; // salió otra más nueva: se cuenta desde la primera que quedó pendiente
     store.save();
+  }
+  const age0 = Date.now() - pending.since;
+  if (mustUpdate(st.version, pending)) {
+    if (!win || win.isDestroyed() || !win.isVisible() || locked) {
+      forceInstallWhenIdle();
+      return;
+    }
+    if (forcedShown) return;
+    forcedShown = true;
+    win.webContents.send('ui:update-ready', {
+      version: st.version, items: changesFor(st.version), mode: 'forced', days: Math.floor(age0 / DAY_MS),
+      behind: versionsBehind(st.version) >= 3, current: app.getVersion(), seconds: FORCE_COUNTDOWN,
+    });
+    return;
   }
   if (!win || win.isDestroyed() || !win.isVisible() || locked) return;
   const now = Date.now();
@@ -2485,7 +2523,9 @@ function registerIpc() {
     changelog: CHANGELOG,
   }));
   ipcMain.handle('update:check', () => updater.check());
-  ipcMain.handle('update:install-now', () => {
+  ipcMain.handle('update:install-now', (_e, opts = {}) => {
+    // Al terminar la cuenta regresiva: si alguien está usando la PC, se espera a que la deje un minuto.
+    if (opts && opts.auto && powerMonitor.getSystemIdleTime() < FORCE_IDLE) return { ok: false, wait: true };
     if (updater.state.status !== 'ready') return { ok: false, error: 'La actualización todavía se está descargando. Inténtalo en unos minutos.' };
     return updater.installNow() ? { ok: true } : { ok: false, error: 'No se pudo iniciar la actualización. Cierra y vuelve a abrir MultiChat.' };
   });
@@ -2831,6 +2871,7 @@ function init() {
     onChange: (state) => { if (win && !win.isDestroyed()) win.webContents.send('update:state', state); },
     // Aviso encima de la app (sin cerrarla). Si la app está oculta en la bandeja, una notificación chiquita.
     notify: (version) => {
+      if (versionsBehind(version) >= 3) { updateReminder(); return; }
       if (win && !win.isDestroyed() && win.isVisible() && !locked) {
         win.webContents.send('ui:update-ready', { version, items: changesFor(version) });
       } else {

@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.14.0
+
+- **Actualización obligatoria**: si la PC está muy atrasada (3 versiones o más, p. ej. 1.10 → 1.14) o la actualización espera **10 días**, sale "Actualización obligatoria" con cuenta regresiva de 10 minutos y se instala sola, **directo a la última versión**. Si se está usando la PC, espera a que la dejen un minuto; con la app oculta, se instala cuando nadie usa la PC.
+
 ## Novedades v1.13.0
 
 - **Recordatorio de actualización**: la versión nueva se descarga sola. Si nadie reinicia MultiChat, a los **2 días** sale un aviso suave ("Más tarde" / "Actualizar ahora"), se repite **cada 3 días** y desde la **semana** pasa a "Actualización necesaria" cada 4 horas hasta que se actualice.

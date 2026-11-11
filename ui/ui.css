@@ -1542,3 +1542,5 @@ tbody tr:hover { background: var(--tab-hover); }
 .update-pop.required .update-pop-tag { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; }
 .update-pop-tag.pending { background: rgb(245 158 11 / 0.16); color: #b45309; }
 .update-pop.required #upd-later { font-size: 12px; }
+.update-countdown { margin: 2px 0 8px; font-weight: 700; font-size: 14px; color: #dc2626; font-variant-numeric: tabular-nums; }
+.update-pop-actions:has(#upd-later[hidden]) { grid-template-columns: 1fr; }

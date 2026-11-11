@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.14.0',
+    items: [
+      'Actualización obligatoria: si la PC está muy atrasada (3 versiones o más) o la actualización espera 10 días, aparece un aviso con cuenta regresiva de 10 minutos y se actualiza sola, directo a la última versión.',
+      'Si estás usando la PC cuando termina la cuenta, espera a que la dejes un minuto. Tus cuentas siguen conectadas.',
+    ],
+  },
+  {
     version: '1.13.0',
     items: [
       'Recordatorio de actualización: si una versión nueva espera más de 2 días sin instalarse, aparece un aviso suave (cada 3 días). Desde la semana se pide actualizar.',
