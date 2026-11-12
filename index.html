@@ -70,6 +70,32 @@
   .review p { margin: 6px 0; font-size: 14.5px; line-height: 1.5; }
   .review small { display: block; margin-top: 6px; color: var(--muted); }
   .reviews-how { color: var(--muted); font-size: 13.5px; margin: 12px 0 0; }
+  .rate-toast { position: fixed; right: 18px; bottom: 18px; z-index: 50; width: 330px; max-width: calc(100vw - 32px); background: #fff; border-radius: 18px;
+    padding: 16px 18px; box-shadow: 0 20px 60px rgb(20 8 50 / .35); border: 1px solid var(--line); animation: rt-in .35s ease-out; }
+  .rate-toast[hidden] { display: none; }
+  @keyframes rt-in { from { transform: translateY(30px); opacity: 0; } }
+  @keyframes rt-nudge { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-12deg) scale(1.15); } 75% { transform: rotate(12deg) scale(1.15); } }
+  .rt-x { position: absolute; top: 6px; right: 10px; border: 0; background: none; font-size: 22px; color: var(--muted); cursor: pointer; }
+  .rt-head { display: flex; gap: 10px; align-items: center; padding-right: 18px; }
+  .rt-head img { border-radius: 10px; }
+  .rt-head b { display: block; font-size: 15.5px; }
+  .rt-head small { color: var(--muted); font-size: 13px; }
+  .rt-stars { display: flex; justify-content: center; gap: 4px; margin: 10px 0 4px; }
+  .rt-stars button { border: 0; background: none; font-size: 34px; line-height: 1; color: #d6d0e4; cursor: pointer; padding: 0 2px; transition: transform .12s, color .12s; }
+  .rt-stars button.on { color: #f59e0b; }
+  .rt-stars button:hover { transform: scale(1.15); }
+  .rate-toast.nudge .rt-stars button { animation: rt-nudge .6s ease-in-out; }
+  .rate-toast.nudge .rt-stars button:nth-child(2) { animation-delay: .08s; }
+  .rate-toast.nudge .rt-stars button:nth-child(3) { animation-delay: .16s; }
+  .rate-toast.nudge .rt-stars button:nth-child(4) { animation-delay: .24s; }
+  .rate-toast.nudge .rt-stars button:nth-child(5) { animation-delay: .32s; }
+  .rt-more { display: flex; flex-direction: column; gap: 8px; }
+  .rt-more[hidden] { display: none; }
+  .rt-more textarea, .rt-more input[type=text], .rt-more input:not([type]) { font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; resize: vertical; }
+  .rt-check { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+  .rt-send { border: 0; border-radius: 12px; padding: 11px; font-weight: 700; font-size: 15px; color: #fff; cursor: pointer; background: linear-gradient(135deg, var(--acc1), var(--acc2)); }
+  .rt-hint { color: var(--muted); font-size: 12px; text-align: center; }
+  .rate-cta { display: inline-block; margin-top: 8px; border: 0; border-radius: 12px; padding: 10px 16px; font-weight: 700; font-size: 14.5px; color: #fff; cursor: pointer; background: linear-gradient(135deg, var(--acc1), var(--acc2)); }
   .faq { margin-top: 30px; }
   .faq h2 { font-size: 22px; margin: 0 0 12px; }
   .faq details { border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin-bottom: 8px; }
@@ -153,7 +179,8 @@
       <h2 id="reviews-title">Opiniones de clientes</h2>
       <div class="reviews-summary" id="reviews-summary">Todavía no hay calificaciones publicadas.</div>
       <div class="reviews-list" id="reviews-list"></div>
-      <p class="reviews-how">¿Usas MultiChat? Califícalo desde la app: clic en el logo de <b>MultiChat Pro</b> → <b>⭐ Calificar MultiChat</b>.</p>
+      <p class="reviews-how">¿Usas MultiChat? Califícalo aquí o desde la app (clic en el logo de <b>MultiChat Pro</b> → <b>⭐ Calificar MultiChat</b>).</p>
+      <button type="button" class="rate-cta" id="rate-cta">⭐ Calificar MultiChat</button>
     </section>
 
     <section class="faq" aria-labelledby="faq-title">
@@ -167,6 +194,21 @@
       <details><summary>¿Cómo se actualiza?</summary><p>En Windows se actualiza sola: descarga la versión nueva y la instala la próxima vez que abres la app, sin cerrar tus chats. En Mac te avisa cuando hay una versión nueva para descargarla.</p></details>
     </section>
   </main>
+
+  <aside class="rate-toast" id="rate-toast" role="dialog" aria-labelledby="rt-title" hidden>
+    <button type="button" class="rt-x" id="rt-close" aria-label="Cerrar">×</button>
+    <div class="rt-head"><img src="build/icon.png" alt="" width="40" height="40"><div><b id="rt-title">¿Ya usas MultiChat Pro?</b><small>Califícalo: tu opinión ayuda a otros negocios.</small></div></div>
+    <div class="rt-stars" id="rt-stars" role="radiogroup" aria-label="Calificación">
+      <button type="button" data-v="1" aria-label="1 estrella">★</button><button type="button" data-v="2" aria-label="2 estrellas">★</button><button type="button" data-v="3" aria-label="3 estrellas">★</button><button type="button" data-v="4" aria-label="4 estrellas">★</button><button type="button" data-v="5" aria-label="5 estrellas">★</button>
+    </div>
+    <div class="rt-more" id="rt-more" hidden>
+      <textarea id="rt-text" rows="2" maxlength="300" placeholder="Tu comentario (opcional)"></textarea>
+      <input id="rt-name" maxlength="40" placeholder="¿Cómo quieres aparecer? Ej.: Rosa · Arequipa">
+      <label class="rt-check"><input type="checkbox" id="rt-public" checked> Autorizo publicar mi calificación</label>
+      <button type="button" class="rt-send" id="rt-send">Enviar por WhatsApp</button>
+      <small class="rt-hint">Se abre WhatsApp con tu calificación lista: solo presiona Enviar.</small>
+    </div>
+  </aside>
 
   <footer>MultiChat Pro · hecho en Perú por lliuya.pe · © todos los derechos reservados</footer>
 </div>
@@ -219,6 +261,60 @@
       ld.textContent = JSON.stringify(data);
     })
     .catch(() => {});
+
+  // Aviso para calificar: sale a los pocos segundos en cada visita hasta que la persona envíe su calificación.
+  // Al cerrarlo vuelve en la próxima visita (o a los 2 minutos si sigue en la página). Se envía por WhatsApp.
+  (() => {
+    const WA = '51925459643';
+    const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* sin memoria */ } } };
+    const toast = document.getElementById('rate-toast');
+    const label = ['', 'Mala', 'Regular', 'Buena', 'Muy buena', '¡Excelente!'];
+    let value = 0;
+    const paint = (v) => document.querySelectorAll('#rt-stars button').forEach((b) => b.classList.toggle('on', Number(b.dataset.v) <= v));
+    const show = () => {
+      if (store.get('mc-rated')) return;
+      toast.hidden = false;
+      toast.classList.remove('nudge');
+      setTimeout(() => toast.classList.add('nudge'), 900);
+    };
+    document.querySelectorAll('#rt-stars button').forEach((b) => {
+      b.addEventListener('mouseenter', () => paint(Number(b.dataset.v)));
+      b.addEventListener('click', () => {
+        value = Number(b.dataset.v);
+        paint(value);
+        document.getElementById('rt-title').textContent = label[value];
+        document.getElementById('rt-more').hidden = false;
+        document.getElementById('rt-text').focus();
+      });
+    });
+    document.getElementById('rt-stars').addEventListener('mouseleave', () => paint(value));
+    document.getElementById('rt-close').addEventListener('click', () => {
+      toast.hidden = true;
+      setTimeout(show, 2 * 60 * 1000); // insiste si sigue en la página
+    });
+    document.getElementById('rt-send').addEventListener('click', () => {
+      if (!value) return;
+      const clean = (id, n) => document.getElementById(id).value.replace(/\s+/g, ' ').trim().slice(0, n);
+      const text = [
+        `${'⭐'.repeat(value)} *Calificación de MultiChat Pro*`,
+        `Estrellas: ${value}/5`,
+        clean('rt-text', 300) && `Comentario: ${clean('rt-text', 300)}`,
+        clean('rt-name', 40) && `Nombre: ${clean('rt-name', 40)}`,
+        `Publicar en la página: ${document.getElementById('rt-public').checked ? 'Sí' : 'No'}`,
+        'Desde la página web',
+      ].filter(Boolean).join('\n');
+      store.set('mc-rated', '1');
+      window.open(`https://wa.me/${WA}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+      toast.innerHTML = '<b>¡Gracias por tu calificación! 💜</b><small style="display:block;color:#6b6480;margin-top:4px">Solo falta presionar Enviar en WhatsApp.</small>';
+      setTimeout(() => { toast.hidden = true; }, 6000);
+    });
+    document.getElementById('rate-cta').addEventListener('click', () => {
+      store.set('mc-rated', '');
+      toast.hidden = false;
+      document.getElementById('rt-stars').scrollIntoView({ block: 'nearest' });
+    });
+    setTimeout(show, 6000);
+  })();
 
   // Resalta la opción de esta computadora.
   const ua = navigator.userAgent;
