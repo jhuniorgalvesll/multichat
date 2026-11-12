@@ -1,0 +1,28 @@
+# MultiChat Pro
+
+> Aplicación de escritorio para Windows y Mac, hecha en Perú por lliuya.pe, que junta varias cuentas de WhatsApp, Telegram, Messenger, Instagram, Meta Business Suite, Discord y Slack en pestañas. Pensada para negocios que venden por WhatsApp: avisa en voz alta los pagos de Yape y Plin e imprime tickets de envío para Shalom y Olva.
+
+Descarga: https://jhuniorgalvesll.github.io/multichat/
+
+## Qué hace
+- Varias cuentas de WhatsApp en la misma computadora, cada una en su pestaña (sesiones independientes).
+- Avisos de pagos de Yape, Plin y BBVA en voz alta (Windows con Enlace Móvil y celular Android o iPhone); suma los pagos del día y sugiere el chat del cliente que pagó.
+- Tickets de envío para Shalom, Olva, Marvisur, Flores y Cruz del Sur, llenados con los datos que manda el cliente; con código de barras o QR del pedido.
+- Respuestas rápidas con textos y fotos, con el nombre del cliente y el número de pedido.
+- Nunca envía mensajes sola: el usuario presiona Enter (respeta las reglas de WhatsApp).
+- Se actualiza sola en Windows; en Mac avisa cuando hay versión nueva.
+
+## Sistemas
+- Windows 10 y 11: MultiChat-Setup-<versión>.exe
+- Mac con chip Apple (M1, M2, M3, M4): MultiChat-<versión>-arm64.dmg
+- Mac con Intel: MultiChat-<versión>-x64.dmg
+- Los avisos de Yape y Plin del celular son solo para Windows.
+
+## Preguntas frecuentes
+- **¿Qué es MultiChat Pro?** Es una aplicación de escritorio para Windows y Mac que junta varias cuentas de WhatsApp, Telegram, Messenger, Instagram, Meta Business Suite, Discord y Slack en pestañas, en una sola ventana. Está pensada para negocios que venden por WhatsApp en Perú.
+- **¿Puedo usar varias cuentas de WhatsApp en la misma computadora?** Sí. Cada pestaña es una sesión independiente: puedes tener WhatsApp de ventas, WhatsApp personal y otras cuentas abiertas al mismo tiempo, cada una con su código QR.
+- **¿Cómo avisa MultiChat los pagos de Yape y Plin?** En Windows, con Enlace Móvil (Phone Link) conectado a tu celular Android o iPhone, MultiChat lee el aviso del pago y te dice en voz alta quién te yapeó o plineó y cuánto. También suma los pagos del día.
+- **¿MultiChat envía mensajes solo?** No. MultiChat nunca envía mensajes por su cuenta: pega las respuestas rápidas, formularios o datos en el chat y tú decides cuándo presionar Enter. Así respetas las reglas de WhatsApp.
+- **¿Sirve para imprimir tickets de envío de Shalom u Olva?** Sí. Seleccionas el mensaje del cliente con sus datos y MultiChat llena el ticket de envío (nombre, DNI, celular, agencia o dirección) para Shalom, Olva, Marvisur, Flores, Cruz del Sur u otra empresa, con código de barras o QR del pedido.
+- **¿Funciona en Mac?** Sí, en Mac con chip Apple (M1, M2, M3, M4) y en Mac con Intel. Los avisos de Yape y Plin del celular son solo para Windows, porque Enlace Móvil es una app de Windows.
+- **¿Cómo se actualiza?** En Windows se actualiza sola: descarga la versión nueva y la instala la próxima vez que abres la app, sin cerrar tus chats. En Mac te avisa cuando hay una versión nueva para descargarla.

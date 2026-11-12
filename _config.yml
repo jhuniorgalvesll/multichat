@@ -1,0 +1,21 @@
+# Página de descarga (GitHub Pages): solo se publican index.html, llms.txt, sitemap.xml, el logo y la imagen.
+title: MultiChat Pro
+lang: es-PE
+include:
+  - llms.txt
+exclude:
+  - README.md
+  - SECURITY.md
+  - LEEME-encabezado-fertisem.md
+  - JESS
+  - fertisem-checkout-lite-public
+  - docs
+  - src
+  - ui
+  - scripts
+  - package.json
+  - package-lock.json
+  - node_modules
+  - dist
+  - build/ticket
+  - build/installer.nsh
