@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.17.0
+
+- **⭐ Calificar MultiChat** (logo de MultiChat Pro o ⚙): estrellas, comentario y nombre opcional; se envía por WhatsApp al creador (el cliente presiona Enviar). Se pide una sola vez a los 7 días de uso. Las calificaciones aprobadas salen en la página de descarga.
+
 ## Novedades v1.16.0
 
 - **Pago ↔ chat**: al llegar un Yape o Plin, sugiere el chat del cliente (nombre parecido o el único que mandó una foto) y con un clic lo abre.

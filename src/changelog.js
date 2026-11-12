@@ -3,6 +3,12 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.17.0',
+    items: [
+      'Nuevo "⭐ Calificar MultiChat" (clic en el logo o en ⚙): elige estrellas, escribe tu comentario y envíalo por WhatsApp.',
+    ],
+  },
+  {
     version: '1.16.0',
     items: [
       'Pago ↔ chat: al llegar un Yape te sugiere el chat del cliente y con un clic se abre.',
