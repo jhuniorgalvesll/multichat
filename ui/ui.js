@@ -260,6 +260,10 @@ function applyLook() {
   document.documentElement.style.setProperty('--acc1', a);
   document.documentElement.style.setProperty('--acc2', b);
   document.body.classList.toggle('no-anim', state.animations === false);
+  if (document.body.classList.contains('compact') !== Boolean(state.compact)) {
+    document.body.classList.toggle('compact', Boolean(state.compact));
+    if (typeof fitTabs === 'function') requestAnimationFrame(fitTabs);
+  }
 }
 
 function render() {
@@ -1096,10 +1100,18 @@ function shapeForShalom() {
   for (const id of SHALOM_HIDDEN) $(`ticket-${id}`).value = '';
 }
 
+for (const b of document.querySelectorAll('#ticket-carrier-quick button')) {
+  b.addEventListener('click', () => {
+    $('ticket-carrierName').value = b.dataset.name;
+    updateTicketPreview();
+  });
+}
+
 function setTicketCarrier(carrier) {
   ticketCarrier = ['Shalom', 'Olva', 'Otra'].includes(carrier) ? carrier : 'Shalom';
   for (const btn of document.querySelectorAll('#ticket-carrier button')) btn.classList.toggle('on', btn.dataset.carrier === ticketCarrier);
   $('ticket-carrierName-label').hidden = ticketCarrier !== 'Otra';
+  $('ticket-carrier-quick').hidden = ticketCarrier !== 'Otra';
   const shalom = ticketCarrier === 'Shalom';
   if (shalom) shapeForShalom();
   for (const id of SHALOM_HIDDEN) $(`ticket-${id}`).closest('label').hidden = shalom;
@@ -1401,7 +1413,13 @@ function profileRow(profile = { note: '' }) {
   webQrInput.dataset.key = 'webQr';
   webQrInput.checked = profile.webQr !== false;
   webQr.append(webQrInput, ' Imprimir también el QR de la tienda online (se crea solo con la dirección web)');
-  row.append(size, webQr);
+  const code = document.createElement('label');
+  const codeSelect = document.createElement('select');
+  codeSelect.dataset.key = 'orderCode';
+  codeSelect.append(new Option('Código de barras', 'barcode'), new Option('Código QR (al escanearlo con el celular se ven los datos)', 'qr'), new Option('Los dos', 'both'));
+  codeSelect.value = ['qr', 'both'].includes(profile.orderCode) ? profile.orderCode : 'barcode';
+  code.append('Código del N° de pedido', codeSelect);
+  row.append(size, code, webQr);
   const images = document.createElement('div');
   images.className = 'prof-images';
   images.append(profileImage(row, 'logo', 'logo', profile), profileImage(row, 'qr', 'QR', profile));
@@ -1480,6 +1498,7 @@ function closeProfiles(saved = false) {
   profilesOpen = false;
   $('prof-modal').hidden = true;
   api.setOverlay(false);
+  if (typeof onbResume === 'function') onbResume();
 }
 
 $('prof-add').addEventListener('click', () => {
@@ -1531,8 +1550,14 @@ async function openForms() {
   closeProfiles();
   const { forms, defaults } = await api.getForms();
   formDefaults = defaults;
-  $('forms-Shalom').value = forms.Shalom;
-  $('forms-Olva').value = forms.Olva;
+  const label = { Shalom: 'Shalom (agencia)', Olva: 'Olva (domicilio)' };
+  $('forms-list').replaceChildren(...Object.keys(defaults).map((carrier) => {
+    const wrap = document.createElement('label');
+    const area = Object.assign(document.createElement('textarea'), { rows: carrier === 'Olva' ? 11 : 9, value: forms[carrier] || defaults[carrier] });
+    area.dataset.carrier = carrier;
+    wrap.append(`${label[carrier] || `${carrier} (agencia)`} `, area);
+    return wrap;
+  }));
   $('forms-modal').hidden = false;
   if (!formsOpen) api.setOverlay(true);
   formsOpen = true;
@@ -1548,8 +1573,7 @@ function closeForms() {
 $('ask-data').addEventListener('click', () => api.formsMenu());
 $('forms-cancel').addEventListener('click', closeForms);
 $('forms-reset').addEventListener('click', () => {
-  $('forms-Shalom').value = formDefaults.Shalom;
-  $('forms-Olva').value = formDefaults.Olva;
+  for (const area of document.querySelectorAll('#forms-list textarea')) area.value = formDefaults[area.dataset.carrier] || '';
 });
 $('forms-modal').addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeForms();
@@ -1557,7 +1581,9 @@ $('forms-modal').addEventListener('keydown', (e) => {
 $('forms-form').addEventListener('submit', (e) => {
   e.preventDefault();
   withBusy(e.target, async () => {
-    const result = await api.saveForms({ Shalom: $('forms-Shalom').value, Olva: $('forms-Olva').value });
+    const forms = {};
+    for (const area of document.querySelectorAll('#forms-list textarea')) forms[area.dataset.carrier] = area.value;
+    const result = await api.saveForms(forms);
     if (result.ok) closeForms();
   });
 });
@@ -1705,6 +1731,7 @@ function closePhoneGuide() {
   phoneOpen = false;
   $('phone-modal').hidden = true;
   api.setOverlay(false);
+  if (typeof onbResume === 'function') onbResume();
 }
 for (const b of document.querySelectorAll('#phone-tabs button')) {
   b.addEventListener('click', () => {
@@ -2133,6 +2160,18 @@ async function loadPayments() {
     const when = document.createElement('small');
     when.textContent = `${p.label} · ${hhmm(p.at)}`;
     who.append(when);
+    if (p.repeated) {
+      const warn = Object.assign(document.createElement('span'), { className: 'pay-repeated', textContent: '⚠ repetido' });
+      warn.title = 'Mismo nombre y monto hace menos de 15 minutos: revisa que no sea la misma captura o un doble pago.';
+      who.append(warn);
+    }
+    if (p.chat) {
+      const open = Object.assign(document.createElement('button'), { type: 'button', className: 'pay-chat' });
+      open.textContent = `💬 ${p.chat.why === 'foto' ? '¿' : ''}${p.chat.title}${p.chat.why === 'foto' ? '?' : ''}`;
+      open.title = `Abrir el chat en ${p.chat.account}${p.chat.why === 'foto' ? ' (sugerido: mandó una foto justo antes del pago)' : ''}`;
+      open.addEventListener('click', () => { closeDrawer(); api.openPayChat(p.at); });
+      who.append(open);
+    }
     const amount = document.createElement('div');
     amount.className = 'pay-amount';
     amount.textContent = soles(p.amount);
@@ -2450,3 +2489,78 @@ if (api.platform === 'darwin') {
   const note = document.querySelector('#phone-modal .note');
   note.innerHTML = 'Los avisos de Yape, Plin y del banco llegan a la PC con <b>Enlace Móvil</b>, que es una app de Windows. En Mac, MultiChat funciona igual con tus cuentas, respuestas rápidas y tickets; los avisos de pagos del celular se usan en una PC con Windows.';
 }
+
+// -- Primer inicio guiado (4 pasos) --
+
+let onbOpen = false;
+async function refreshOnboarding() {
+  const st = await api.onboardingState();
+  const mark = (n, done, label) => {
+    $(`onb-${n}`).classList.toggle('done', done);
+    const btn = $(`onb-${n}`).querySelector('button');
+    btn.textContent = done ? '✓ Listo' : label;
+  };
+  mark(1, st.whatsapp, 'Agregar');
+  mark(2, st.company, 'Agregar');
+  mark(3, st.printer, 'Elegir');
+  if (st.printer) $('onb-3-sub').textContent = `Impresora: ${st.printerName}`;
+  mark(4, st.phone, 'Conectar');
+  $('onb-4').hidden = st.mac; // los avisos del celular son solo de Windows
+  return st;
+}
+async function openOnboarding() {
+  if (state.locked || passwordMode) return;
+  closeCoffee();
+  await refreshOnboarding();
+  $('onb-modal').hidden = false;
+  if (!onbOpen) api.setOverlay(true);
+  onbOpen = true;
+}
+function closeOnboarding(done) {
+  if (!onbOpen) return;
+  onbOpen = false;
+  $('onb-modal').hidden = true;
+  api.setOverlay(false);
+  if (done) api.onboardingDone();
+}
+// Al cerrar otra ventana (QR de WhatsApp, empresa, celular) se vuelve a la guía si quedó a medias.
+let onbReturn = false;
+function onbResume() {
+  if (!onbReturn) return;
+  onbReturn = false;
+  setTimeout(openOnboarding, 400);
+}
+$('onb-modal').addEventListener('click', async (e) => {
+  const step = e.target.closest('button[data-step]');
+  if (!step) return;
+  const n = step.dataset.step;
+  if (n === '1') {
+    closeOnboarding(false); // la guía vuelve a salir al abrir MultiChat o desde ⚙ → Guía de inicio
+    api.addService('whatsapp');
+  } else if (n === '2') {
+    closeOnboarding(false);
+    onbReturn = true;
+    await openProfiles({ addNew: true });
+  } else if (n === '3') {
+    const { printers, selected } = await api.ticketPrinters();
+    const sel = $('onb-printer');
+    sel.replaceChildren(new Option('— Elige tu impresora —', ''), ...printers.map((p) => new Option(p.label, p.name, false, p.name === selected)));
+    sel.hidden = false;
+    if (!printers.length) $('onb-3-sub').textContent = 'No se encontró ninguna impresora. Conéctala y vuelve a intentar (o elígela después al imprimir).';
+    sel.focus();
+  } else if (n === '4') {
+    closeOnboarding(false);
+    onbReturn = true;
+    await openPhoneGuide();
+  }
+});
+$('onb-printer').addEventListener('change', async (e) => {
+  if (!e.target.value) return;
+  api.onboardingPrinter(e.target.value);
+  e.target.hidden = true;
+  await refreshOnboarding();
+});
+$('onb-skip').addEventListener('click', () => closeOnboarding(false));
+$('onb-done').addEventListener('click', () => closeOnboarding(true));
+$('onb-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeOnboarding(false); });
+api.onOnboarding(openOnboarding);

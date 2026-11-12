@@ -16,6 +16,7 @@ const paylog = require('./paylog');
 const verify = require('./verify');
 const assistant = require('./assistant');
 const shipwatch = require('./shipwatch');
+const paymatch = require('./paymatch');
 const voice = require('./voice');
 const screensaver = require('./screensaver');
 const bubble = require('./bubble');
@@ -28,7 +29,8 @@ const tickets = require('./tickets');
 const APP_NAME = 'MultiChat Pro';
 const CREATOR = 'lliuya.pe';
 const CREATOR_YAPE = '925459643'; // "Invítale un cafecito al creador" (voluntario)
-const BAR_HEIGHT = 52;   // igual que --bar-h en ui.css
+// Alto de la barra superior: igual que --bar-h en ui.css (52 px; 40 px en modo compacto).
+const barHeight = () => (store.get().settings.compact ? 40 : 52);
 const TILE_HEADER = 26;  // igual que .tile-head en ui.css
 const TILE_GAP = 2;
 const MIN_PASSWORD = 4;
@@ -354,9 +356,9 @@ function computeTiles(ids) {
   const bounds = win.getContentBounds();
   const width = Math.max(0, bounds.width - panelWidth);
   const { height } = bounds;
-  const areaHeight = Math.max(0, height - BAR_HEIGHT);
+  const areaHeight = Math.max(0, height - barHeight());
   if (!isGrid()) {
-    return ids.map((id) => ({ id, x: 0, y: BAR_HEIGHT, width, height: areaHeight, header: false }));
+    return ids.map((id) => ({ id, x: 0, y: barHeight(), width, height: areaHeight, header: false }));
   }
   const n = ids.length;
   const cols = n <= 1 ? 1 : n <= 4 ? 2 : n <= 9 ? 3 : 4;
@@ -366,7 +368,7 @@ function computeTiles(ids) {
   return ids.map((id, i) => ({
     id,
     x: (i % cols) * (tileW + TILE_GAP),
-    y: BAR_HEIGHT + Math.floor(i / cols) * (tileH + TILE_GAP),
+    y: barHeight() + Math.floor(i / cols) * (tileH + TILE_GAP),
     width: tileW,
     height: tileH,
     header: true,
@@ -514,23 +516,49 @@ const copyImage = (image) => clipboard
   .write([new ClipboardItem({ 'image/png': new Blob([image.toPNG()], { type: 'image/png' }) })])
   .catch(() => {});
 
-// {saludo}, {cuenta} y {fecha} se reemplazan al momento de usar la respuesta.
-function fillVariables(text) {
+// Primer nombre del chat ("Rosa Díaz 🌱" → "Rosa"). Si el chat es un número sin nombre, queda vacío.
+function firstName(title) {
+  const word = String(title || '').replace(/[^\p{L}\s'-]/gu, ' ').trim().split(/\s+/)[0] || '';
+  return word.length >= 2 ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : '';
+}
+
+// N° de pedido del último ticket de hoy de este cliente: el que se imprimió con su chat abierto o a su nombre.
+function orderForChat(title) {
+  if (!title) return '';
+  const key = title.trim().toLowerCase();
+  const prints = paylog.read().prints.filter((p) => p.ticket && p.ticket.orderNumber);
+  const byChat = prints.find((p) => p.chat && p.chat.trim().toLowerCase() === key);
+  if (byChat) return byChat.ticket.orderNumber;
+  const byName = prints.find((p) => paymatch.score(p.ticket.name, title) >= 2 || paymatch.score(title, p.ticket.name) >= 2);
+  return byName ? byName.ticket.orderNumber : '';
+}
+
+// {saludo}, {cuenta}, {fecha}, {cliente} (nombre del chat abierto) y {pedido} (N° de orden de su ticket de hoy)
+// se reemplazan al momento de usar la respuesta. Si no hay dato, se quitan (con el espacio de más).
+function fillVariables(text, chatTitle = '') {
   const now = new Date();
   const hour = now.getHours();
   const greeting = hour >= 5 && hour < 12 ? 'Buenos días' : hour >= 12 && hour < 19 ? 'Buenas tardes' : 'Buenas noches';
   const acc = findAccount(activeId);
+  const EMPTY = '\u0000'; // variable sin dato: se quita junto con un espacio de más
+  const blank = (value) => () => value || EMPTY;
   return text
     .replace(/\{saludo\}/gi, greeting)
     .replace(/\{cuenta\}/gi, acc ? acc.name : '')
-    .replace(/\{fecha\}/gi, now.toLocaleDateString('es-PE'));
+    .replace(/\{fecha\}/gi, now.toLocaleDateString('es-PE'))
+    .replace(/\{cliente\}/gi, blank(firstName(chatTitle)))
+    .replace(/\{pedido\}/gi, blank(orderForChat(chatTitle)))
+    .replace(/ ?\u0000( ?[,.!?])?/g, (m, punct) => (punct ? punct.trim() : ''))
+    .replace(/\u0000/g, '');
 }
 
 // Pega las fotos (como Ctrl+V) y luego el texto en el chat abierto. WhatsApp muestra la vista
 // previa con el texto como descripción; el usuario revisa y presiona Enter. Nunca se envía solo.
 async function insertTemplate(template) {
-  const text = fillVariables(template.text);
   const view = views.get(activeId);
+  const needsChat = /\{(cliente|pedido)\}/i.test(template.text);
+  const chatTitle = needsChat && view && !locked ? await openChatTitle(view.webContents) : '';
+  const text = fillVariables(template.text, chatTitle);
   if (!view || locked) {
     await copyText(text);
     return;
@@ -743,8 +771,41 @@ function announceUpdated() {
   store.save();
 }
 
+// Abre el chat del cliente que pagó: primero como un clic en su aviso de mensaje; si ese aviso ya no existe,
+// busca el chat en la lista de chats de WhatsApp y lo abre. No escribe ni envía nada.
+async function openPayChat(data) {
+  const accountId = data.chatAccountId || data.accountId;
+  const title = String(data.chat || data.title || '');
+  if (!accountId || !findAccount(accountId) || !title || locked) return showTodayPayments();
+  showWindow();
+  setActive(accountId);
+  const view = views.get(accountId);
+  if (!view) return;
+  const wc = view.webContents;
+  const isOpen = async () => (await openChatTitle(wc)).toLowerCase() === title.toLowerCase();
+  if (await isOpen()) return;
+  const notifId = data.chatNotifId ?? data.notifId;
+  if (Number.isInteger(notifId)) {
+    wc.send('notify-open', notifId);
+    await sleep(900);
+    if (await isOpen()) return;
+  }
+  try {
+    await wc.executeJavaScript(`(() => {
+      const name = ${JSON.stringify(title)};
+      const side = document.querySelector('#pane-side') || document;
+      const span = [...side.querySelectorAll('span[title]')].find((s) => s.getAttribute('title') === name);
+      if (!span) return false;
+      const row = span.closest('[role="listitem"], [role="row"], [tabindex]') || span;
+      for (const type of ['mousedown', 'mouseup', 'click']) row.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
+      return true;
+    })()`, true);
+  } catch { /* la cuenta queda abierta igual */ }
+}
+
 function openFromNotification(data) {
   showWindow();
+  if (data.kind === 'payment' && data.chat) return openPayChat(data);
   if (data.kind === 'payment') return showTodayPayments();
   if (data.kind === 'update') return win.webContents.send('ui:update-ready', { version: data.version, items: changesFor(data.version) });
   if (data.kind === 'shipdata') return openShipTicket(shipwatch.byId(data.shipId));
@@ -1020,7 +1081,8 @@ function openTicketFor(id, selection = '') {
 
 function shippingForms() {
   const settings = store.get().settings;
-  if (!settings.shippingForms) settings.shippingForms = { ...tickets.DEFAULT_FORMS };
+  // Los formularios guardados se respetan; las empresas nuevas (Marvisur, Flores, Cruz del Sur) toman el original.
+  settings.shippingForms = { ...tickets.DEFAULT_FORMS, ...(settings.shippingForms || {}) };
   return settings.shippingForms;
 }
 
@@ -1215,6 +1277,7 @@ function shippingFormItems() {
   return [
     { label: 'Formulario Shalom (agencia)', click: () => pasteShippingForm('Shalom') },
     { label: 'Formulario Olva (domicilio)', click: () => pasteShippingForm('Olva') },
+    { label: 'Otras empresas', submenu: tickets.FORM_CARRIERS.filter((c) => !['Shalom', 'Olva'].includes(c)).map((c) => ({ label: `Formulario ${c} (agencia)`, click: () => pasteShippingForm(c) })) },
     { type: 'separator' },
     { label: 'Editar formularios…', click: () => win.webContents.send('ui:forms') },
   ];
@@ -1223,7 +1286,7 @@ function shippingFormItems() {
 function saveShippingForms(forms) {
   if (!forms || typeof forms !== 'object') return { ok: false, error: 'Datos no válidos.' };
   const clean = {};
-  for (const carrier of ['Shalom', 'Olva']) {
+  for (const carrier of tickets.FORM_CARRIERS) {
     clean[carrier] = String(forms[carrier] || '').slice(0, 2000).trim() || tickets.DEFAULT_FORMS[carrier];
   }
   store.get().settings.shippingForms = clean;
@@ -1306,7 +1369,11 @@ async function printTicket(input, { pdf = false, printer = '', reprint = false, 
   store.save();
   // Historial de impresiones del día (se borra solo al día siguiente); una reimpresión no se anota de nuevo.
   if (result.ok && !reprint) {
-    if (!editId || !paylog.updatePrint(String(editId), ticket, { pdf })) paylog.addPrint(ticket, { pdf });
+    // Se guarda también el chat abierto al imprimir, para {pedido} en las respuestas rápidas.
+    let chat = '';
+    const view = views.get(activeId);
+    if (view && !locked) chat = await openChatTitle(view.webContents);
+    if (!editId || !paylog.updatePrint(String(editId), ticket, { pdf })) paylog.addPrint(ticket, { pdf, chat });
     pushPayments();
     for (const e of shipwatch.doneFor(ticket)) if (e.formId) finishedForms.add(e.formId);
     pushState();
@@ -1681,6 +1748,7 @@ function pushState() {
     replyAlertMinutes: data.settings.replyAlertMinutes || 10,
     accent: data.settings.accent || 'violeta',
     animations: data.settings.animations !== false,
+    compact: Boolean(data.settings.compact),
   });
   bubble.update();
 }
@@ -1910,6 +1978,36 @@ function setLayout(layout) {
 
 // ---------- Bienvenida del día (una vez al día, al abrir o mostrar la ventana) ----------
 
+// Primer inicio guiado (solo PCs nuevas: sin cuentas ni remitentes). En las que ya se usan no aparece.
+function maybeOnboarding() {
+  const data = store.get();
+  if (data.settings.onboarded) return false;
+  // Ya se usaba antes de esta versión (tiene cuentas o remitentes): no se muestra. Si la guía quedó a medias, vuelve.
+  if (!data.settings.onboardingPending && (data.accounts.length || data.ticketProfiles.length)) {
+    data.settings.onboarded = true;
+    store.save();
+    return false;
+  }
+  data.settings.onboardingPending = true;
+  data.settings.lastWelcome = paylog.dayKey(); // hoy no hace falta la bienvenida del día
+  store.save();
+  if (win && !win.isDestroyed()) win.webContents.send('ui:onboarding');
+  return true;
+}
+
+function onboardingState() {
+  const data = store.get();
+  return {
+    whatsapp: data.accounts.some((a) => a.service === 'whatsapp'),
+    accounts: data.accounts.length,
+    company: data.ticketProfiles.length > 0,
+    printer: typeof data.settings.ticketPrinter === 'string' && data.settings.ticketPrinter !== '',
+    printerName: data.settings.ticketPrinter || '',
+    phone: Boolean(data.settings.phoneType),
+    mac: process.platform === 'darwin',
+  };
+}
+
 function maybeWelcome() {
   const { settings } = store.get();
   const today = paylog.dayKey();
@@ -1974,6 +2072,7 @@ function settingsPanel() {
         id: 'pagos', icon: '💳', title: 'Pagos (Yape, Plin, BBVA)', color: '#16a34a',
         items: [
           action('paymentsPanel', 'Ver pagos de hoy y notificaciones del celular'),
+          action('onboarding', '🚀 Guía de inicio (4 pasos)'),
           action('phoneGuide', '📱 Conectar mi celular (Android o iPhone)', s.phoneType === 'iphone' ? 'iPhone' : s.phoneType === 'android' ? 'Android' : 'Elige tu celular'),
           toggle('paymentAlerts', 'Avisar cuando llegue un pago', s.paymentAlerts),
           toggle('paymentVoice', 'Decir los pagos en voz alta', s.paymentVoice),
@@ -2012,6 +2111,7 @@ function settingsPanel() {
           { id: 'accent', type: 'accent', label: 'Color de la app', value: ACCENTS.includes(s.accent) ? s.accent : 'violeta', options: ACCENTS },
           { id: 'theme', type: 'choice', label: 'Modo', value: s.theme, options: [{ value: 'light', label: 'Claro' }, { value: 'dark', label: 'Oscuro' }, { value: 'system', label: 'Igual que Windows' }] },
           toggle('animations', 'Animaciones', s.animations !== false),
+          toggle('compact', 'Modo compacto (barra y pestañas más pequeñas, para laptops)', Boolean(s.compact)),
           toggle('welcome', 'Bienvenida del día al abrir', s.welcome !== false),
         ],
       },
@@ -2075,6 +2175,7 @@ function settingsDo(id, value) {
     closeToTray: () => flip('closeToTray'),
     alwaysOnTop: () => flip('alwaysOnTop', () => win.setAlwaysOnTop(settings.alwaysOnTop)),
     animations: () => flip('animations', pushState),
+    compact: () => flip('compact', () => { pushState(); applyLayout(); }),
     welcome: () => flip('welcome'),
     accent: () => {
       if (ACCENTS.includes(value)) settings.accent = value;
@@ -2097,6 +2198,7 @@ function settingsDo(id, value) {
     passwordRemove: () => send('ui:password', 'remove'),
     paymentsPanel: () => send('ui:payments-panel'),
     phoneGuide: () => send('ui:phone-guide'),
+    onboarding: () => send('ui:onboarding'),
     testPayment: () => onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }),
     verifyPayment: () => send('ui:verify', { status: 'ask' }),
     phoneLinkCheck: showPhoneLinkCheck,
@@ -2470,6 +2572,7 @@ function registerIpc() {
     if (!id || !payload || !Number.isInteger(payload.id)) return;
     // ¿Es la respuesta de un chat que espera datos de envío?
     if (!locked) announceShip(shipwatch.addNotification(id, payload.title, payload.body));
+    paymatch.noteMessage(id, payload.title, payload.body, payload.id);
     showServiceNotification(id, payload);
   });
   ipcMain.handle('ticket:profiles', () => (locked ? [] : store.get().ticketProfiles.map(ticketProfileView)));
@@ -2532,6 +2635,19 @@ function registerIpc() {
     return updater.installNow() ? { ok: true } : { ok: false, error: 'No se pudo iniciar la actualización. Cierra y vuelve a abrir MultiChat.' };
   });
   ipcMain.handle('payments:state', () => paymentsState());
+  ipcMain.handle('onboarding:state', () => onboardingState());
+  ipcMain.on('onboarding:done', () => {
+    store.get().settings.onboarded = true;
+    store.save();
+  });
+  ipcMain.on('onboarding:printer', (_e, name) => {
+    store.get().settings.ticketPrinter = String(name || '').slice(0, 200);
+    store.save();
+  });
+  ipcMain.on('payments:open-chat', (_e, at) => {
+    const p = paylog.read().payments.find((x) => x.at === Number(at));
+    if (p && p.chat) openPayChat({ chatAccountId: p.chat.accountId, chat: p.chat.title, chatNotifId: p.chat.notifId });
+  });
   ipcMain.handle('flyer:pick-image', () => (locked ? null : pickFlyerImage()));
   ipcMain.on('ai:open', () => { if (!locked) openAssistantFromSelection(); });
   ipcMain.handle('ai:config', () => (locked ? { hasKey: false, context: '' } : assistantConfig()));
@@ -2603,7 +2719,7 @@ function announcePayment(payment) {
   if (!store.get().settings.paymentVoice || !win || win.isDestroyed()) return;
   const text = locked
     ? `Recibiste un ${payment.app}`
-    : `${payment.name.replace(/\*/g, '')} ${PAY_VERB[payment.app]} ${spokenMoney(payment.amount)}`;
+    : `${payment.repeated ? 'Atención, pago repetido. ' : ''}${payment.name.replace(/\*/g, '')} ${PAY_VERB[payment.app]} ${spokenMoney(payment.amount)}`;
   sayAloud(text);
 }
 
@@ -2621,6 +2737,16 @@ function onPayment(payment) {
   // 5 minutos que vino por el otro camino, no se cuenta ni se avisa dos veces.
   if (!payment.test && paylog.read(paylog.dayKey(payment.at)).payments.some((p) => Math.abs(p.amount - payment.amount) < 0.005
     && Math.abs(p.at - payment.at) < 5 * 60000 && (p.source === 'mail') !== (payment.source === 'mail'))) return;
+  // ¿Pago repetido? Mismo nombre y mismo monto hace menos de 15 minutos (captura reenviada o doble pago).
+  const norm = (s) => paymatch.words(s).join(' ');
+  if (!payment.test && paylog.read(paylog.dayKey(payment.at)).payments.some((p) => Math.abs(p.amount - payment.amount) < 0.005
+    && norm(p.name) === norm(payment.name) && Math.abs(p.at - payment.at) < 15 * 60000 && (p.source === 'mail') === (payment.source === 'mail'))) {
+    payment.repeated = true;
+  }
+  // ¿De qué chat es? (sugerencia: nombre parecido o el único que mandó una foto hace poco)
+  const waitingChats = shipwatch.all ? shipwatch.all() : [];
+  const found = payment.catchUp ? null : paymatch.match(payment.name, waitingChats);
+  if (found && findAccount(found.accountId)) payment.chat = { accountId: found.accountId, title: found.chat, why: found.why, notifId: found.notifId };
   if (!payment.test) paylog.addPayment(payment);
   pushPayments();
   if (payment.catchUp || (!payment.test && !store.get().settings.paymentAlerts)) return;
@@ -2631,9 +2757,13 @@ function onPayment(payment) {
     kind: 'payment',
     payApp: payment.app,
     accountName: payLabel(payment),
-    title: locked ? `Pago recibido por ${payment.app}` : `${payment.name} ${verb} ${money(payment.amount)}`,
-    body: locked ? 'Desbloquea MultiChat Pro para ver el detalle' : payment.test ? 'Prueba: así llegarán los pagos de Yape y Plin' : `Hoy: ${list.length} pago${list.length === 1 ? '' : 's'} · ${money(list.reduce((t, p) => t + p.amount, 0))}`,
+    title: locked ? `Pago recibido por ${payment.app}` : `${payment.repeated ? '⚠ Pago repetido · ' : ''}${payment.name} ${verb} ${money(payment.amount)}`,
+    body: locked ? 'Desbloquea MultiChat Pro para ver el detalle'
+      : payment.test ? 'Prueba: así llegarán los pagos de Yape y Plin'
+        : payment.chat ? `💬 ${payment.chat.why === 'foto' ? '¿Es de' : 'Chat:'} ${payment.chat.title}${payment.chat.why === 'foto' ? '? (mandó una foto)' : ''} · ${findAccount(payment.chat.accountId).name} — clic para abrirlo`
+          : `Hoy: ${list.length} pago${list.length === 1 ? '' : 's'} · ${money(list.reduce((t, p) => t + p.amount, 0))}`,
     canReply: false,
+    ...(payment.chat && !locked ? { chatAccountId: payment.chat.accountId, chat: payment.chat.title, chatNotifId: payment.chat.notifId } : {}),
   });
   announcePayment(payment);
   if (!locked) bubble.showPayment(`${payment.app === 'Yape' ? '💜' : '💚'} + ${money(payment.amount)} · ${payment.name.split(' ')[0]}`);
@@ -2670,7 +2800,10 @@ async function paymentsState() {
     keepAwake: settings.keepAwake,
     windows: process.platform === 'win32',
     phoneLink: { running: await payments.phoneLinkRunning(), dbFound, lastAt: lastPhoneAt, watching: Boolean(paymentWatcher && paymentWatcher.running) },
-    today: log.payments.map((p) => ({ app: p.app, label: payLabel(p), name: p.name, amount: p.amount, at: p.at })),
+    today: log.payments.map((p) => ({
+      app: p.app, label: payLabel(p), name: p.name, amount: p.amount, at: p.at, repeated: Boolean(p.repeated),
+      chat: p.chat && findAccount(p.chat.accountId) ? { title: p.chat.title, account: findAccount(p.chat.accountId).name, why: p.chat.why } : null,
+    })),
     total: log.payments.reduce((t, p) => t + p.amount, 0),
     recent: log.notifications.slice(0, 60),
   };
@@ -2866,7 +2999,7 @@ function init() {
   screensaver.init(() => store.get().settings);
   setInterval(pollShipChats, 3000);
   setTimeout(announceUpdated, 4000);
-  setTimeout(maybeWelcome, 3500);
+  setTimeout(() => { if (!maybeOnboarding()) maybeWelcome(); }, 2500);
   setTimeout(updateReminder, 60_000);
   setInterval(updateReminder, 10 * 60_000);
   updater.start({

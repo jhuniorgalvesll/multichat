@@ -132,6 +132,42 @@ function barcodeBlock(ticket, className) {
   return box;
 }
 
+// QR del pedido: al escanearlo con la cámara del celular se leen el N° de pedido y los datos del envío.
+function orderQrBlock(ticket) {
+  const order = String(ticket.orderNumber || '').trim();
+  if (!order || typeof qrcode !== 'function') return null;
+  const lines = [
+    `Pedido: ${order}`,
+    ticket.name && `Cliente: ${ticket.name}`,
+    ticket.phone && `Cel: ${ticket.phone}`,
+    ticket.carrier && `Envío: ${ticket.carrier}`,
+    ticket.destination && `Destino: ${ticket.destination}`,
+  ].filter(Boolean).join('\n');
+  const qr = qrcode(0, 'L');
+  qr.addData(unescape(encodeURIComponent(lines)));
+  qr.make();
+  const n = qr.getModuleCount();
+  let d = '';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += `M${c + 2} ${r + 2}h1v1h-1z`;
+  const box = el('div', 't-order-qr');
+  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n + 4} ${n + 4}" shape-rendering="crispEdges"><path d="${d}"/></svg>`;
+  box.append(el('div', 't-barcode-code', `PEDIDO ${order}`));
+  return box;
+}
+
+function orderCodeBlock(ticket, profile) {
+  const mode = profile.orderCode || 'barcode';
+  const bar = mode !== 'qr' ? barcodeBlock(ticket, 't-barcode') : null;
+  const qr = mode !== 'barcode' ? orderQrBlock(ticket) : null;
+  if (bar && qr) {
+    bar.querySelector('.t-barcode-code').remove();
+    const both = el('div', 't-order-both');
+    both.append(bar, qr);
+    return both;
+  }
+  return bar || qr;
+}
+
 // Recuadro con su título en una franja negra (DESTINATARIO, DESTINO) y un ícono a la izquierda.
 function section(title, icon, body) {
   const card = el('div', 't-card');
@@ -231,7 +267,7 @@ function renderTicket(container, ticket, baseProfile = {}) {
   );
   if (where.childElementCount) root.append(section('DESTINO', ICONS.pin, where));
 
-  root.append(barcodeBlock(ticket, 't-barcode') || el('div', 't-spacer'));
+  root.append(orderCodeBlock(ticket, profile) || el('div', 't-spacer'));
 
   const foot = el('div', footQr ? 't-foot t-foot-qr' : 't-foot');
   const footText = el('div', 't-foot-text');

@@ -40,6 +40,8 @@ function sanitizeProfile(input, images) {
     textSize: input.textSize === 'small' ? 'small' : 'normal',
     // Segundo QR, creado con la tienda online, junto al de WhatsApp.
     webQr: input.webQr !== false,
+    // Código del N° de pedido en el ticket: de barras, QR (con los datos del envío) o los dos.
+    orderCode: ['qr', 'both'].includes(input.orderCode) ? input.orderCode : 'barcode',
   };
 }
 
@@ -95,7 +97,39 @@ const DEFAULT_FORMS = {
     '*Referencia 2:* ',
     '*Nota (por si no te encuentran):* ',
   ].join('\n'),
+  'Marvisur': [
+    '*DATOS PARA TU ENVÍO POR MARVISUR* 📦',
+    'Por favor completa y envíanos:',
+    '',
+    '*Nombre y apellidos completos:* ',
+    '*DNI:* ',
+    '*Celular:* ',
+    '*Ciudad de destino:* ',
+    '*Agencia Marvisur donde recoges:* ',
+  ].join('\n'),
+  'Flores': [
+    '*DATOS PARA TU ENVÍO POR FLORES* 📦',
+    'Por favor completa y envíanos:',
+    '',
+    '*Nombre y apellidos completos:* ',
+    '*DNI:* ',
+    '*Celular:* ',
+    '*Ciudad de destino:* ',
+    '*Agencia Flores donde recoges:* ',
+  ].join('\n'),
+  'Cruz del Sur': [
+    '*DATOS PARA TU ENVÍO POR CRUZ DEL SUR* 📦',
+    'Por favor completa y envíanos:',
+    '',
+    '*Nombre y apellidos completos:* ',
+    '*DNI:* ',
+    '*Celular:* ',
+    '*Ciudad de destino:* ',
+    '*Agencia Cruz del Sur donde recoges:* ',
+  ].join('\n'),
 };
+// Empresas con formulario propio (el orden es el del menú 📝).
+const FORM_CARRIERS = Object.keys(DEFAULT_FORMS);
 
 // Campo del ticket según el título de la línea ("DNI:", "Distrito:", "Referencia 2:", ...).
 function fieldForLabel(label) {
@@ -241,5 +275,5 @@ function missingFields(data, carrier) {
 }
 
 module.exports = {
-  CARRIERS, CHANNELS, PAGE_MM, DEFAULT_FORMS, sanitizeProfile, sanitizeTicket, parseSelection, parseShalomAgency, missingFields,
+  CARRIERS, CHANNELS, PAGE_MM, DEFAULT_FORMS, FORM_CARRIERS, sanitizeProfile, sanitizeTicket, parseSelection, parseShalomAgency, missingFields,
 };

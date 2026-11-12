@@ -1544,3 +1544,42 @@ tbody tr:hover { background: var(--tab-hover); }
 .update-pop.required #upd-later { font-size: 12px; }
 .update-countdown { margin: 2px 0 8px; font-weight: 700; font-size: 14px; color: #dc2626; font-variant-numeric: tabular-nums; }
 .update-pop-actions:has(#upd-later[hidden]) { grid-template-columns: 1fr; }
+
+/* ---- Pago repetido y chat del pago ---- */
+.pay-repeated { display: inline-block; margin-top: 3px; padding: 1px 7px; border-radius: 8px; background: #fef3c7; color: #b45309; font-size: 11px; font-weight: 700; }
+.pay-chat { display: block; margin-top: 4px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 3px 8px; border-radius: 8px; border: 1px solid var(--line, #e5e1ef); background: transparent; font-size: 12px; cursor: pointer; text-align: left; }
+.pay-chat:hover { border-color: var(--acc1); }
+
+/* Empresas de envío rápidas (con "Otra") y editor de formularios */
+.carrier-quick { display: flex; gap: 6px; flex-wrap: wrap; margin-top: -2px; }
+.carrier-quick[hidden] { display: none; }
+.carrier-quick button { padding: 5px 10px; font-size: 12px; border-radius: 14px; }
+.forms-list { display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 300px); overflow-y: auto; }
+
+/* ---- Modo compacto (laptops pequeñas): barra de 40 px (igual que barHeight() en main.js) ---- */
+body.compact { --bar-h: 40px; }
+body.compact .bar { gap: 4px; padding: 0 6px 0 4px; }
+body.compact .brand { height: 32px; gap: 6px; padding: 0 8px 0 2px; }
+body.compact .brand img { width: 24px; height: 24px; border-radius: 7px; }
+body.compact .brand-name { font-size: 13px; }
+body.compact .brand-meta { display: none; }
+body.compact .tab { height: 28px; gap: 6px; font-size: 12.5px; }
+body.compact .tab img, body.compact .tab .tab-icon { width: 16px; height: 16px; }
+body.compact .icon-btn { width: 28px; height: 28px; border-radius: 8px; }
+body.compact .icon-btn svg { width: 16px; height: 16px; }
+
+/* ---- Primer inicio guiado ---- */
+.onb-card { width: 520px; text-align: center; }
+.onb-steps { list-style: none; margin: 10px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.onb-steps li { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line, #e5e1ef); border-radius: 14px; }
+.onb-steps li[hidden] { display: none; }
+.onb-steps li div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.onb-steps small { color: var(--muted); font-size: 12.5px; }
+.onb-steps select { margin-top: 6px; }
+.onb-num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--acc1), var(--acc2)); }
+.onb-steps li.done { border-color: #86efac; background: rgb(34 197 94 / 0.07); }
+.onb-steps li.done .onb-num { background: #22c55e; }
+.onb-steps li.done button { color: #16a34a; font-weight: 700; }
+body.compact .toolbar { height: 32px; }
+body.compact .bar .icon-btn.add { width: auto; height: 28px; padding: 0 10px; font-size: 12.5px; border-radius: 9px; }
+body.compact .bar .icon-btn.add svg { width: 14px; height: 14px; }

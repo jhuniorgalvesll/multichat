@@ -139,4 +139,10 @@ function byId(id) {
   return [...waiting.values()].find((e) => e.id === id) || null;
 }
 
-module.exports = { start, find, forAccount, addNotification, setPageTexts, markConfirming, remove, doneFor, byId, purge };
+// Chats que esperan datos de envío (para sugerir de quién es un pago).
+function all() {
+  purge();
+  return [...waiting.values()].map((e) => ({ accountId: e.accountId, chat: e.chat, since: e.since }));
+}
+
+module.exports = { all, start, find, forAccount, addNotification, setPageTexts, markConfirming, remove, doneFor, byId, purge };

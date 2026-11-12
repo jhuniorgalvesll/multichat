@@ -61,11 +61,15 @@ function isToday(at) {
   return dayKey(at) === dayKey();
 }
 
-function addPayment({ app: payApp, name, amount, at, text, source }) {
+function addPayment({ app: payApp, name, amount, at, text, source, repeated, chat }) {
   if (!isToday(at)) return;
   const day = dayKey(at);
   const data = read(day);
-  data.payments.push({ app: payApp, name, amount, at, text: String(text || '').slice(0, 300), ...(source ? { source } : {}) });
+  data.payments.push({
+    app: payApp, name, amount, at, text: String(text || '').slice(0, 300),
+    ...(source ? { source } : {}), ...(repeated ? { repeated: true } : {}),
+    ...(chat ? { chat: { accountId: chat.accountId, title: String(chat.title).slice(0, 120), why: chat.why, notifId: chat.notifId } } : {}),
+  });
   write(day, data);
 }
 
@@ -79,11 +83,11 @@ function addNotification({ texts, payment, at }) {
 }
 
 // Ticket impreso (o guardado en PDF): se guarda el ticket completo para poder reimprimirlo durante el día.
-function addPrint(ticket, { pdf = false } = {}) {
+function addPrint(ticket, { pdf = false, chat = '' } = {}) {
   const day = dayKey();
   const data = read(day);
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  data.prints.unshift({ id, at: Date.now(), pdf: Boolean(pdf), ticket });
+  data.prints.unshift({ id, at: Date.now(), pdf: Boolean(pdf), ticket, ...(chat ? { chat: String(chat).slice(0, 120) } : {}) });
   data.prints.length = Math.min(data.prints.length, MAX_PRINTS);
   write(day, data);
 }

@@ -140,7 +140,7 @@
   <section class="backdrop" id="tpl-modal" hidden>
     <form class="card modal wide" id="tpl-form" autocomplete="off">
       <h2>Respuestas rápidas</h2>
-      <p class="note">Textos y fotos que usas seguido: QR de Yape y Plin, cuentas bancarias, link de pago, precios. Con el botón ⚡ (o Ctrl+Shift+R) se pegan en el chat abierto y <b>tú decides cuándo enviarlos</b>. Puedes escribir {saludo} (Buenos días / Buenas tardes), {cuenta} o {fecha}.</p>
+      <p class="note">Textos y fotos que usas seguido: QR de Yape y Plin, cuentas bancarias, link de pago, precios. Con el botón ⚡ (o Ctrl+Shift+R) se pegan en el chat abierto y <b>tú decides cuándo enviarlos</b>. Puedes escribir {saludo} (Buenos días / Buenas tardes), {cuenta}, {fecha}, <b>{cliente}</b> (el nombre del chat abierto) o <b>{pedido}</b> (el N° de pedido de su ticket de hoy). Ej.: "Hola {cliente}, tu pedido N° {pedido} ya salió 🚚".</p>
       <div class="tpl-list" id="tpl-list"></div>
       <button type="button" id="tpl-add">+ Agregar respuesta</button>
       <p class="error" id="tpl-error"></p>
@@ -228,6 +228,11 @@
             <button type="button" data-carrier="Otra">Otra</button>
           </div>
           <label id="ticket-carrierName-label" hidden>Nombre de la empresa de envío <input id="ticket-carrierName" maxlength="30" placeholder="Ej.: Marvisur"></label>
+          <div class="carrier-quick" id="ticket-carrier-quick" hidden>
+            <button type="button" data-name="Marvisur">Marvisur</button>
+            <button type="button" data-name="Flores">Flores</button>
+            <button type="button" data-name="Cruz del Sur">Cruz del Sur</button>
+          </div>
           <div class="row">
             <label>Remitente <select id="ticket-profileId"></select></label>
             <label>Canalización
@@ -306,8 +311,7 @@
     <form class="card modal wide" id="forms-form" autocomplete="off">
       <h2>Formularios de envío</h2>
       <p class="note">Se pegan en el chat con el botón 📝. El cliente los responde y, al seleccionar su respuesta → clic derecho → <b>Imprimir ticket de envío</b>, los datos se llenan solos. Usa títulos como Nombre, DNI, Celular, Agencia, Dirección, Distrito, Referencia 1, Referencia 2 y Nota.</p>
-      <label>Shalom (agencia) <textarea id="forms-Shalom" rows="9"></textarea></label>
-      <label>Olva (domicilio) <textarea id="forms-Olva" rows="11"></textarea></label>
+      <div id="forms-list" class="forms-list"></div>
       <div class="actions">
         <button type="button" id="forms-reset">Restaurar originales</button>
         <button type="button" id="forms-cancel">Cancelar</button>
@@ -623,6 +627,25 @@
         </div>
       </div>
       <div class="flyer-preview"><canvas id="fly-canvas"></canvas></div>
+    </div>
+  </section>
+
+  <!-- Primer inicio guiado: 4 pasos para empezar (solo en PCs nuevas; también desde ⚙) -->
+  <section class="backdrop" id="onb-modal" hidden>
+    <div class="card modal onb-card">
+      <img class="update-pop-logo" src="../build/icon.png" alt="">
+      <h2>¡Bienvenido a MultiChat Pro!</h2>
+      <p class="note">Deja todo listo en 4 pasos. Puedes hacerlos ahora o cuando quieras desde ⚙ → Guía de inicio.</p>
+      <ol class="onb-steps">
+        <li id="onb-1"><span class="onb-num">1</span><div><b>Agrega tu WhatsApp</b><small>Escanea el código QR con tu celular, como en WhatsApp Web.</small></div><button type="button" data-step="1">Agregar</button></li>
+        <li id="onb-2"><span class="onb-num">2</span><div><b>Pon los datos de tu empresa</b><small>Nombre, logo, QR y dirección: salen en tus tickets de envío.</small></div><button type="button" data-step="2">Agregar</button></li>
+        <li id="onb-3"><span class="onb-num">3</span><div><b>Elige tu impresora de tickets</b><small id="onb-3-sub">La que usas para imprimir los tickets de envío.</small><select id="onb-printer" hidden></select></div><button type="button" data-step="3">Elegir</button></li>
+        <li id="onb-4"><span class="onb-num">4</span><div><b>Conecta tu celular</b><small>Para que MultiChat te avise con voz los Yape y Plin (Android o iPhone).</small></div><button type="button" data-step="4">Conectar</button></li>
+      </ol>
+      <div class="actions">
+        <button type="button" id="onb-skip">Más tarde</button>
+        <button type="button" class="primary" id="onb-done">Listo</button>
+      </div>
     </div>
   </section>
 

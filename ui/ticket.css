@@ -119,3 +119,12 @@
 .t-tight .t-note { font-size: 5.8pt; line-height: 1.18; }
 .t-tight .t-label { font-size: 7.4pt; }
 .t-tight .t-value { font-size: 6.6pt; }
+
+/* QR del N° de pedido */
+.t-order-qr { margin: 3mm auto 0; width: 24mm; text-align: center; }
+.t-order-qr svg { display: block; width: 24mm; height: 24mm; }
+.t-order-both { display: flex; align-items: center; justify-content: center; gap: 3mm; margin-top: 3mm; }
+.t-order-both .t-barcode { margin: 0; width: 38mm; }
+.t-order-both .t-barcode svg { width: 38mm; }
+.t-order-both .t-order-qr { margin: 0; width: 20mm; }
+.t-order-both .t-order-qr svg { width: 20mm; height: 20mm; }

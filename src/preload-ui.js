@@ -96,6 +96,11 @@ contextBridge.exposeInMainWorld('multichat', {
   verifyManual: (amount, time) => ipcRenderer.send('verify:manual', amount, time),
   setPaymentOption: (key, value) => ipcRenderer.send('payments:set', key, value),
   testPayment: () => ipcRenderer.send('payments:test'),
+  onboardingState: () => ipcRenderer.invoke('onboarding:state'),
+  onboardingDone: () => ipcRenderer.send('onboarding:done'),
+  onboardingPrinter: (name) => ipcRenderer.send('onboarding:printer', name),
+  onOnboarding: (fn) => ipcRenderer.on('ui:onboarding', () => fn()),
+  openPayChat: (at) => ipcRenderer.send('payments:open-chat', at),
   openPhoneLink: () => ipcRenderer.send('payments:open-phone-link'),
   onPaymentsUpdate: (fn) => ipcRenderer.on('payments:update', () => fn()),
 });

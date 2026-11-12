@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MultiChat Pro · Descargar</title>
+<meta name="description" content="MultiChat Pro: todas tus cuentas de WhatsApp, Telegram y más en una sola app, con avisos de Yape y Plin y tickets de envío. Para Windows y Mac.">
+<link rel="icon" href="icon.png">
+<style>
+  :root { --acc1: #7c3aed; --acc2: #db2777; --ink: #1b1530; --muted: #6b6480; --line: #ece8f5; --card: #fff; --soft: #f5f2fb; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif; color: var(--ink);
+    background: linear-gradient(135deg, #1e1048, #3b1a78 55%, #7a1f6b); min-height: 100vh; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 16px 32px; }
+  .hero { color: #fff; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .hero img { width: 88px; height: 88px; filter: drop-shadow(0 10px 30px rgb(124 58 237 / .6)); }
+  h1 { margin: 0; font-size: clamp(30px, 5vw, 44px); }
+  .pro { font-size: .38em; background: linear-gradient(135deg, #f59e0b, #ec4899); border-radius: 8px; padding: 3px 9px; vertical-align: middle; margin-left: 6px; }
+  .lead { margin: 6px 0 0; font-size: 18px; color: rgb(255 255 255 / .8); }
+  .card { margin-top: 30px; background: var(--card); border-radius: 26px; padding: clamp(20px, 4vw, 40px); box-shadow: 0 30px 80px rgb(0 0 0 / .35); }
+  .version { color: var(--muted); font-size: 15px; margin: 0 0 18px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+  .os { border: 2px solid var(--line); border-radius: 20px; padding: 24px 20px; text-align: center; display: flex; flex-direction: column; }
+  .os.suggested { border-color: var(--acc1); box-shadow: 0 0 0 4px rgb(124 58 237 / .12); }
+  .tag { align-self: center; font-size: 12px; font-weight: 700; color: #fff; background: linear-gradient(135deg, var(--acc1), var(--acc2)); border-radius: 20px; padding: 3px 10px; margin-bottom: 8px; visibility: hidden; }
+  .os.suggested .tag { visibility: visible; }
+  .logo { height: 70px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+  .os h2 { margin: 0 0 4px; font-size: 22px; }
+  .who { color: var(--muted); font-size: 14px; min-height: 38px; }
+  .file { margin-top: 10px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; background: var(--soft); border-radius: 10px; padding: 8px; color: #3b2a6b; overflow-wrap: anywhere; white-space: pre-line; }
+  .btn { margin-top: 14px; display: block; border-radius: 12px; padding: 13px; font-weight: 700; color: #fff; text-decoration: none;
+    background: linear-gradient(135deg, var(--acc1), var(--acc2)); font-size: 16px; }
+  .btn:hover { filter: brightness(1.08); }
+  .ok { margin-top: 10px; color: #16a34a; font-weight: 700; font-size: 14px; }
+  .help { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-top: 26px; }
+  .help section { background: var(--soft); border-radius: 18px; padding: 18px 22px; }
+  .help h3 { margin: 0 0 8px; font-size: 17px; }
+  .help ol { margin: 0; padding-left: 20px; line-height: 1.6; font-size: 14.5px; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 26px; }
+  .features div { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; font-size: 14.5px; }
+  .features b { display: block; margin-bottom: 3px; }
+  footer { text-align: center; color: rgb(255 255 255 / .7); font-size: 14px; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <img src="icon.png" alt="">
+    <div>
+      <h1>MultiChat <span class="pro">PRO</span></h1>
+      <p class="lead">Todas tus cuentas de WhatsApp y más en una sola app. Para Windows y Mac.</p>
+    </div>
+  </header>
+
+  <main class="card">
+    <p class="version" id="version">Última versión</p>
+    <div class="grid">
+      <div class="os" data-os="win">
+        <span class="tag">Recomendado para tu computadora</span>
+        <div class="logo"><svg width="64" height="64" viewBox="0 0 88 88" aria-hidden="true"><path fill="#0078d4" d="M0 12.4 36 7.5v34.8H0zM40 6.9 88 0v42.3H40zM0 45.7h36v34.8L0 75.6zM40 45.7h48V88l-48-6.8z"/></svg></div>
+        <h2>Windows</h2>
+        <div class="who">Windows 10 y 11</div>
+        <div class="file" id="file-win">MultiChat-Setup.exe</div>
+        <a class="btn" id="dl-win" href="#">Descargar para Windows</a>
+        <div class="ok">✓ Se actualiza sola</div>
+      </div>
+      <div class="os" data-os="mac-arm">
+        <span class="tag">Recomendado para tu computadora</span>
+        <div class="logo"><svg width="56" height="68" viewBox="0 0 814 1000" aria-hidden="true"><path fill="#111" d="M788 341c-6 4-108 62-108 190 0 148 130 200 134 202-1 3-21 72-69 142-43 62-88 124-157 124s-87-40-166-40c-77 0-104 41-167 41s-107-58-157-129C40 788 0 662 0 543c0-191 124-292 246-292 65 0 119 43 160 43 39 0 100-45 174-45 28 0 129 2 208 92zM555 159c31-36 52-87 52-138 0-7-1-14-2-20-50 2-109 33-144 74-28 32-54 83-54 135 0 8 1 16 2 18 3 1 9 2 14 2 45 0 101-30 132-71z"/></svg></div>
+        <h2>Mac con chip Apple</h2>
+        <div class="who">M1, M2, M3, M4</div>
+        <div class="file" id="file-mac-arm">MultiChat-arm64.dmg</div>
+        <a class="btn" id="dl-mac-arm" href="#">Descargar para Mac (Apple)</a>
+        <div class="ok">✓ Avisa cuando hay versión nueva</div>
+      </div>
+      <div class="os" data-os="mac-intel">
+        <span class="tag">Recomendado para tu computadora</span>
+        <div class="logo"><svg width="56" height="68" viewBox="0 0 814 1000" aria-hidden="true"><path fill="#111" d="M788 341c-6 4-108 62-108 190 0 148 130 200 134 202-1 3-21 72-69 142-43 62-88 124-157 124s-87-40-166-40c-77 0-104 41-167 41s-107-58-157-129C40 788 0 662 0 543c0-191 124-292 246-292 65 0 119 43 160 43 39 0 100-45 174-45 28 0 129 2 208 92zM555 159c31-36 52-87 52-138 0-7-1-14-2-20-50 2-109 33-144 74-28 32-54 83-54 135 0 8 1 16 2 18 3 1 9 2 14 2 45 0 101-30 132-71z"/></svg></div>
+        <h2>Mac con Intel</h2>
+        <div class="who">Modelos con procesador Intel</div>
+        <div class="file" id="file-mac-intel">MultiChat-x64.dmg</div>
+        <a class="btn" id="dl-mac-intel" href="#">Descargar para Mac (Intel)</a>
+        <div class="ok">✓ Avisa cuando hay versión nueva</div>
+      </div>
+    </div>
+
+    <div class="help">
+      <section>
+        <h3>Instalar en Windows</h3>
+        <ol>
+          <li>Abre el archivo descargado <b>MultiChat-Setup</b>.</li>
+          <li>Si Windows muestra "Windows protegió tu PC", pulsa <b>Más información → Ejecutar de todas formas</b>.</li>
+          <li>Sigue los pasos y abre MultiChat. Las nuevas versiones se instalan solas.</li>
+        </ol>
+      </section>
+      <section>
+        <h3>Instalar en Mac</h3>
+        <ol>
+          <li>Abre el archivo <b>.dmg</b> y arrastra <b>MultiChat</b> a <b>Aplicaciones</b>.</li>
+          <li>La primera vez, si dice que no puede verificar al desarrollador: <b>Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente</b>.</li>
+          <li>¿Qué Mac tienes?  → <b>Acerca de esta Mac</b>: dice "Chip Apple M…" o "Intel".</li>
+        </ol>
+      </section>
+    </div>
+
+    <div class="features">
+      <div><b>💬 Todas tus cuentas</b>WhatsApp, Telegram, Messenger, Instagram y más, en pestañas.</div>
+      <div><b>💜 Avisos de Yape y Plin</b>Te dice en voz alta quién te pagó (Windows con Enlace Móvil).</div>
+      <div><b>🖨 Tickets de envío</b>Shalom, Olva, Marvisur y más, con los datos del cliente llenados solos.</div>
+      <div><b>⚡ Respuestas rápidas</b>Textos y fotos listos; tú decides cuándo enviarlos.</div>
+    </div>
+  </main>
+
+  <footer>© lliuya.pe · todos los derechos reservados</footer>
+</div>
+<script>
+  // Botones con los archivos de la última versión publicada.
+  const REPO = 'jhuniorgalvesll/multichat';
+  const LATEST = `https://github.com/${REPO}/releases/latest`;
+  const set = (id, url, name, size) => {
+    const a = document.getElementById(`dl-${id}`);
+    a.href = url;
+    if (name) document.getElementById(`file-${id}`).textContent = `${name}${size ? `\n${Math.round(size / 1048576)} MB` : ''}`;
+  };
+  for (const id of ['win', 'mac-arm', 'mac-intel']) set(id, LATEST);
+  fetch(`https://api.github.com/repos/${REPO}/releases/latest`)
+    .then((r) => (r.ok ? r.json() : Promise.reject()))
+    .then((rel) => {
+      document.getElementById('version').textContent = `Última versión: ${String(rel.tag_name || '').replace(/^v/, '')}`;
+      const find = (re) => (rel.assets || []).find((a) => re.test(a.name));
+      const pairs = [['win', /Setup.*\.exe$/i], ['mac-arm', /arm64\.dmg$/i], ['mac-intel', /x64\.dmg$/i]];
+      for (const [id, re] of pairs) {
+        const a = find(re);
+        if (a) set(id, a.browser_download_url, a.name, a.size);
+      }
+    })
+    .catch(() => {});
+
+  // Resalta la opción de esta computadora.
+  const ua = navigator.userAgent;
+  let mine = /Windows/i.test(ua) ? 'win' : /Macintosh|Mac OS X/i.test(ua) ? 'mac-arm' : '';
+  const uaData = navigator.userAgentData;
+  if (mine === 'mac-arm' && uaData && uaData.getHighEntropyValues) {
+    uaData.getHighEntropyValues(['architecture']).then((v) => {
+      if (v.architecture === 'x86') mark('mac-intel');
+    }).catch(() => {});
+  }
+  function mark(os) {
+    for (const el of document.querySelectorAll('.os')) el.classList.toggle('suggested', el.dataset.os === os);
+  }
+  if (mine) mark(mine);
+</script>
+</body>
+</html>
