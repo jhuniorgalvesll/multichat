@@ -40,6 +40,16 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.16.0
+
+- **Pago ↔ chat**: al llegar un Yape o Plin, sugiere el chat del cliente (nombre parecido o el único que mandó una foto) y con un clic lo abre.
+- **Pago repetido**: mismo nombre y monto en menos de 15 minutos → aviso "⚠ Pago repetido".
+- **Ticket**: código del N° de pedido en barras, QR (con los datos del envío) o los dos.
+- **Más empresas**: formularios y botones para Marvisur, Flores y Cruz del Sur.
+- **Respuestas rápidas** con `{cliente}` (nombre del chat) y `{pedido}` (N° de su ticket de hoy).
+- **Modo compacto** (⚙ → Apariencia) y **guía de inicio** de 4 pasos en PCs nuevas.
+- **Página de descarga**: https://jhuniorgalvesll.github.io/multichat/
+
 ## Novedades v1.15.0
 
 - **MultiChat para Mac** (chip Apple M1, M2, M3, M4 e Intel). Descarga en Releases:

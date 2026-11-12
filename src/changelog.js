@@ -3,6 +3,17 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.16.0',
+    items: [
+      'Pago ↔ chat: al llegar un Yape te sugiere el chat del cliente y con un clic se abre.',
+      'Aviso de pago repetido (mismo nombre y monto en menos de 15 minutos).',
+      'Ticket: código del pedido en barras, QR o los dos (Remitentes).',
+      'Formularios y botones para Marvisur, Flores y Cruz del Sur.',
+      'Respuestas rápidas con {cliente} y {pedido}.',
+      'Modo compacto (⚙ → Apariencia) y guía de inicio de 4 pasos para PCs nuevas.',
+    ],
+  },
+  {
     version: '1.15.0',
     items: [
       'MultiChat ahora también para Mac (chip Apple M1, M2, M3, M4 e Intel).',
