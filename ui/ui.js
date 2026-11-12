@@ -2564,3 +2564,52 @@ $('onb-skip').addEventListener('click', () => closeOnboarding(false));
 $('onb-done').addEventListener('click', () => closeOnboarding(true));
 $('onb-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeOnboarding(false); });
 api.onOnboarding(openOnboarding);
+
+// -- Calificar MultiChat --
+
+let rateOpen = false;
+let rateValue = 0;
+const RATE_TEXT = ['Toca las estrellas', 'Mala', 'Regular', 'Buena', 'Muy buena', '¡Excelente!'];
+function paintStars(v) {
+  for (const b of document.querySelectorAll('#rate-stars button')) b.classList.toggle('on', Number(b.dataset.v) <= v);
+  $('rate-label').textContent = RATE_TEXT[v] || RATE_TEXT[0];
+}
+function openRate(fromPrompt = false) {
+  if (state.locked || passwordMode) return;
+  closeCoffee();
+  if (drawerOpen) closeDrawer();
+  rateValue = 0;
+  paintStars(0);
+  $('rate-text').value = '';
+  $('rate-error').textContent = '';
+  $('rate-never').hidden = !fromPrompt;
+  $('rate-modal').hidden = false;
+  if (!rateOpen) api.setOverlay(true);
+  rateOpen = true;
+}
+function closeRate(reason) {
+  if (!rateOpen) return;
+  rateOpen = false;
+  $('rate-modal').hidden = true;
+  api.setOverlay(false);
+  if (reason) api.rateLater(reason);
+}
+for (const b of document.querySelectorAll('#rate-stars button')) {
+  b.addEventListener('click', () => { rateValue = Number(b.dataset.v); paintStars(rateValue); $('rate-error').textContent = ''; });
+  b.addEventListener('mouseenter', () => paintStars(Number(b.dataset.v)));
+}
+$('rate-stars').addEventListener('mouseleave', () => paintStars(rateValue));
+$('rate-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!rateValue) {
+    $('rate-error').textContent = 'Elige de 1 a 5 estrellas.';
+    return;
+  }
+  api.sendRating({ stars: rateValue, text: $('rate-text').value, name: $('rate-name').value, publish: $('rate-public').checked });
+  closeRate();
+});
+$('rate-later').addEventListener('click', () => closeRate('later'));
+$('rate-never').addEventListener('click', () => closeRate('never'));
+$('rate-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeRate('later'); });
+$('about-rate').addEventListener('click', () => openRate(false));
+api.onRatePrompt(() => openRate(true));

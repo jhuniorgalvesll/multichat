@@ -425,6 +425,7 @@
         <div class="creator-label">Creado por</div>
         <div class="creator-name js-creator"></div>
         <div class="creator-rights" id="creator-rights"></div>
+        <button type="button" class="drawer-btn" id="about-rate">⭐ Calificar MultiChat</button>
         <button type="button" class="drawer-btn coffee-link" id="about-coffee">☕ Invítale un cafecito al creador</button>
       </div>
     </aside>
@@ -628,6 +629,29 @@
       </div>
       <div class="flyer-preview"><canvas id="fly-canvas"></canvas></div>
     </div>
+  </section>
+
+  <!-- Calificar MultiChat: el cliente elige estrellas y comentario; se envía por WhatsApp (él presiona Enviar) -->
+  <section class="backdrop" id="rate-modal" hidden>
+    <form class="card modal rate-card" id="rate-form" autocomplete="off">
+      <img class="update-pop-logo" src="../build/icon.png" alt="">
+      <h2>¿Qué te parece MultiChat Pro?</h2>
+      <p class="note">Tu opinión ayuda a mejorar la app y a que otros negocios la conozcan.</p>
+      <div class="rate-stars" id="rate-stars" role="radiogroup" aria-label="Calificación">
+        <button type="button" data-v="1" aria-label="1 estrella">★</button><button type="button" data-v="2" aria-label="2 estrellas">★</button><button type="button" data-v="3" aria-label="3 estrellas">★</button><button type="button" data-v="4" aria-label="4 estrellas">★</button><button type="button" data-v="5" aria-label="5 estrellas">★</button>
+      </div>
+      <div class="rate-label" id="rate-label">Toca las estrellas</div>
+      <label>Tu comentario <textarea id="rate-text" rows="3" maxlength="300" placeholder="¿Qué es lo que más te sirve? ¿Qué mejorarías?"></textarea></label>
+      <label>¿Cómo quieres aparecer? (opcional) <input id="rate-name" maxlength="40" placeholder="Ej.: Rosa · Tienda Agro, Arequipa"></label>
+      <label class="check"><input type="checkbox" id="rate-public" checked> Autorizo publicar mi calificación en la página de MultiChat</label>
+      <p class="hint">Se abre WhatsApp con tu calificación lista: solo presiona <b>Enviar</b>.</p>
+      <p class="error" id="rate-error"></p>
+      <div class="actions">
+        <button type="button" id="rate-later">Ahora no</button>
+        <button type="submit" class="primary">Enviar por WhatsApp</button>
+      </div>
+      <button type="button" class="link-btn" id="rate-never">No volver a preguntar</button>
+    </form>
   </section>
 
   <!-- Primer inicio guiado: 4 pasos para empezar (solo en PCs nuevas; también desde ⚙) -->

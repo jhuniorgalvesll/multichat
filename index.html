@@ -25,7 +25,7 @@
 <meta name="twitter:description" content="Para Windows y Mac. Avisos de Yape y Plin y tickets de envío para Shalom y Olva.">
 <meta name="twitter:image" content="https://jhuniorgalvesll.github.io/multichat/multichat-pro.png">
 <link rel="alternate" type="text/plain" href="https://jhuniorgalvesll.github.io/multichat/llms.txt" title="Resumen para asistentes de IA">
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "MultiChat Pro", "applicationCategory": "BusinessApplication", "applicationSubCategory": "Mensajería y ventas por WhatsApp", "operatingSystem": "Windows 10, Windows 11, macOS", "url": "https://jhuniorgalvesll.github.io/multichat/", "image": "https://jhuniorgalvesll.github.io/multichat/multichat-pro.png", "inLanguage": "es-PE", "description": "Aplicación de escritorio para Windows y Mac con varias cuentas de WhatsApp, Telegram y más en pestañas, avisos de pagos Yape y Plin en voz alta, tickets de envío para Shalom y Olva y respuestas rápidas.", "featureList": ["Varias cuentas de WhatsApp en una sola app", "Avisos de Yape y Plin en voz alta", "Tickets de envío para Shalom, Olva, Marvisur, Flores y Cruz del Sur", "Respuestas rápidas con nombre del cliente y número de pedido", "Actualización automática"], "author": {"@type": "Organization", "name": "lliuya.pe"}, "publisher": {"@type": "Organization", "name": "lliuya.pe"}, "areaServed": {"@type": "Country", "name": "Perú"}}</script>
+<script type="application/ld+json" id="ld-app">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "MultiChat Pro", "applicationCategory": "BusinessApplication", "applicationSubCategory": "Mensajería y ventas por WhatsApp", "operatingSystem": "Windows 10, Windows 11, macOS", "url": "https://jhuniorgalvesll.github.io/multichat/", "image": "https://jhuniorgalvesll.github.io/multichat/multichat-pro.png", "inLanguage": "es-PE", "description": "Aplicación de escritorio para Windows y Mac con varias cuentas de WhatsApp, Telegram y más en pestañas, avisos de pagos Yape y Plin en voz alta, tickets de envío para Shalom y Olva y respuestas rápidas.", "featureList": ["Varias cuentas de WhatsApp en una sola app", "Avisos de Yape y Plin en voz alta", "Tickets de envío para Shalom, Olva, Marvisur, Flores y Cruz del Sur", "Respuestas rápidas con nombre del cliente y número de pedido", "Actualización automática"], "author": {"@type": "Organization", "name": "lliuya.pe"}, "publisher": {"@type": "Organization", "name": "lliuya.pe"}, "areaServed": {"@type": "Country", "name": "Perú"}}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "¿Qué es MultiChat Pro?", "acceptedAnswer": {"@type": "Answer", "text": "Es una aplicación de escritorio para Windows y Mac que junta varias cuentas de WhatsApp, Telegram, Messenger, Instagram, Meta Business Suite, Discord y Slack en pestañas, en una sola ventana. Está pensada para negocios que venden por WhatsApp en Perú."}}, {"@type": "Question", "name": "¿Puedo usar varias cuentas de WhatsApp en la misma computadora?", "acceptedAnswer": {"@type": "Answer", "text": "Sí. Cada pestaña es una sesión independiente: puedes tener WhatsApp de ventas, WhatsApp personal y otras cuentas abiertas al mismo tiempo, cada una con su código QR."}}, {"@type": "Question", "name": "¿Cómo avisa MultiChat los pagos de Yape y Plin?", "acceptedAnswer": {"@type": "Answer", "text": "En Windows, con Enlace Móvil (Phone Link) conectado a tu celular Android o iPhone, MultiChat lee el aviso del pago y te dice en voz alta quién te yapeó o plineó y cuánto. También suma los pagos del día."}}, {"@type": "Question", "name": "¿MultiChat envía mensajes solo?", "acceptedAnswer": {"@type": "Answer", "text": "No. MultiChat nunca envía mensajes por su cuenta: pega las respuestas rápidas, formularios o datos en el chat y tú decides cuándo presionar Enter. Así respetas las reglas de WhatsApp."}}, {"@type": "Question", "name": "¿Sirve para imprimir tickets de envío de Shalom u Olva?", "acceptedAnswer": {"@type": "Answer", "text": "Sí. Seleccionas el mensaje del cliente con sus datos y MultiChat llena el ticket de envío (nombre, DNI, celular, agencia o dirección) para Shalom, Olva, Marvisur, Flores, Cruz del Sur u otra empresa, con código de barras o QR del pedido."}}, {"@type": "Question", "name": "¿Funciona en Mac?", "acceptedAnswer": {"@type": "Answer", "text": "Sí, en Mac con chip Apple (M1, M2, M3, M4) y en Mac con Intel. Los avisos de Yape y Plin del celular son solo para Windows, porque Enlace Móvil es una app de Windows."}}, {"@type": "Question", "name": "¿Cómo se actualiza?", "acceptedAnswer": {"@type": "Answer", "text": "En Windows se actualiza sola: descarga la versión nueva y la instala la próxima vez que abres la app, sin cerrar tus chats. En Mac te avisa cuando hay una versión nueva para descargarla."}}]}</script>
 <link rel="icon" href="build/icon.png">
 <link rel="apple-touch-icon" href="build/icon.png">
@@ -59,6 +59,17 @@
   .help section { background: var(--soft); border-radius: 18px; padding: 18px 22px; }
   .help h3 { margin: 0 0 8px; font-size: 17px; }
   .help ol { margin: 0; padding-left: 20px; line-height: 1.6; font-size: 14.5px; }
+  .reviews { margin-top: 30px; }
+  .reviews h2 { font-size: 22px; margin: 0 0 8px; }
+  .reviews-summary { color: var(--muted); font-size: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .reviews-summary .avg { font-size: 34px; font-weight: 800; color: var(--ink); }
+  .stars { color: #f59e0b; letter-spacing: 2px; font-size: 18px; }
+  .stars .off { color: #d6d0e4; }
+  .reviews-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 14px; }
+  .review { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .review p { margin: 6px 0; font-size: 14.5px; line-height: 1.5; }
+  .review small { display: block; margin-top: 6px; color: var(--muted); }
+  .reviews-how { color: var(--muted); font-size: 13.5px; margin: 12px 0 0; }
   .faq { margin-top: 30px; }
   .faq h2 { font-size: 22px; margin: 0 0 12px; }
   .faq details { border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin-bottom: 8px; }
@@ -138,6 +149,13 @@
       <div><b>⚡ Respuestas rápidas</b>Textos y fotos listos; tú decides cuándo enviarlos.</div>
     </div>
 
+    <section class="reviews" aria-labelledby="reviews-title">
+      <h2 id="reviews-title">Opiniones de clientes</h2>
+      <div class="reviews-summary" id="reviews-summary">Todavía no hay calificaciones publicadas.</div>
+      <div class="reviews-list" id="reviews-list"></div>
+      <p class="reviews-how">¿Usas MultiChat? Califícalo desde la app: clic en el logo de <b>MultiChat Pro</b> → <b>⭐ Calificar MultiChat</b>.</p>
+    </section>
+
     <section class="faq" aria-labelledby="faq-title">
       <h2 id="faq-title">Preguntas frecuentes</h2>
       <details><summary>¿Qué es MultiChat Pro?</summary><p>Es una aplicación de escritorio para Windows y Mac que junta varias cuentas de WhatsApp, Telegram, Messenger, Instagram, Meta Business Suite, Discord y Slack en pestañas, en una sola ventana. Está pensada para negocios que venden por WhatsApp en Perú.</p></details>
@@ -172,6 +190,33 @@
         const a = find(re);
         if (a) set(id, a.browser_download_url, a.name, a.size);
       }
+    })
+    .catch(() => {});
+
+  // Opiniones de clientes: solo las calificaciones reales que llegaron por WhatsApp y se aprobaron (reviews.json).
+  const starsHtml = (n) => `<span class="stars" aria-label="${n} de 5 estrellas">${'★'.repeat(n)}<span class="off">${'★'.repeat(5 - n)}</span></span>`;
+  const esc = (t) => String(t || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  fetch('reviews.json?v=' + Date.now())
+    .then((r) => (r.ok ? r.json() : []))
+    .then((list) => {
+      const reviews = (Array.isArray(list) ? list : []).filter((r) => r && r.stars >= 1 && r.stars <= 5);
+      if (!reviews.length) return;
+      const avg = reviews.reduce((t, r) => t + Number(r.stars), 0) / reviews.length;
+      document.getElementById('reviews-summary').innerHTML = `<span class="avg">${avg.toFixed(1)}</span>${starsHtml(Math.round(avg))}<span>${reviews.length} calificaci${reviews.length === 1 ? 'ón' : 'ones'} de clientes</span>`;
+      document.getElementById('reviews-list').innerHTML = reviews.slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).map((r) => `
+        <article class="review">${starsHtml(Number(r.stars))}${r.text ? `<p>“${esc(r.text)}”</p>` : ''}<small>${esc(r.name || 'Cliente de MultiChat')}${r.date ? ` · ${esc(r.date)}` : ''}</small></article>`).join('');
+      // Datos para Google: calificación promedio y reseñas (solo si hay calificaciones reales).
+      const ld = document.getElementById('ld-app');
+      const data = JSON.parse(ld.textContent);
+      data.aggregateRating = { '@type': 'AggregateRating', ratingValue: avg.toFixed(1), ratingCount: reviews.length, bestRating: 5, worstRating: 1 };
+      data.review = reviews.slice(0, 10).map((r) => ({
+        '@type': 'Review',
+        reviewRating: { '@type': 'Rating', ratingValue: r.stars, bestRating: 5 },
+        author: { '@type': 'Person', name: r.name || 'Cliente de MultiChat' },
+        ...(r.date ? { datePublished: r.date } : {}),
+        ...(r.text ? { reviewBody: r.text } : {}),
+      }));
+      ld.textContent = JSON.stringify(data);
     })
     .catch(() => {});
 

@@ -29,6 +29,7 @@ const tickets = require('./tickets');
 const APP_NAME = 'MultiChat Pro';
 const CREATOR = 'lliuya.pe';
 const CREATOR_YAPE = '925459643'; // "Invítale un cafecito al creador" (voluntario)
+const CREATOR_WHATSAPP = '51925459643'; // calificaciones de los clientes (llegan por WhatsApp)
 // Alto de la barra superior: igual que --bar-h en ui.css (52 px; 40 px en modo compacto).
 const barHeight = () => (store.get().settings.compact ? 40 : 52);
 const TILE_HEADER = 26;  // igual que .tile-head en ui.css
@@ -1978,6 +1979,44 @@ function setLayout(layout) {
 
 // ---------- Bienvenida del día (una vez al día, al abrir o mostrar la ventana) ----------
 
+// ---------- Calificar MultiChat ----------
+// A los 7 días de uso se pide una vez la calificación (con "Ahora no" vuelve a los 14 días; "No volver a preguntar"
+// no la pide más). Se envía por WhatsApp al creador: se abre el chat con el texto listo y el cliente presiona Enviar.
+const RATE_AFTER = 7 * 24 * 60 * 60 * 1000;
+const RATE_AGAIN = 14 * 24 * 60 * 60 * 1000;
+
+function maybeRatePrompt() {
+  const { settings } = store.get();
+  const now = Date.now();
+  if (!settings.firstSeen) {
+    settings.firstSeen = now;
+    store.save();
+    return;
+  }
+  if (settings.rated || settings.rateNever || locked || !win || !win.isVisible()) return;
+  if (now - settings.firstSeen < RATE_AFTER || now < (settings.rateNextAt || 0)) return;
+  settings.rateNextAt = now + RATE_AGAIN;
+  store.save();
+  win.webContents.send('ui:rate');
+}
+
+function sendRating(data) {
+  const stars = Math.min(5, Math.max(1, Math.round(Number(data && data.stars) || 0)));
+  const clean = (v, n) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const text = [
+    `${'⭐'.repeat(stars)} *Calificación de MultiChat Pro*`,
+    `Estrellas: ${stars}/5`,
+    clean(data.text, 300) && `Comentario: ${clean(data.text, 300)}`,
+    clean(data.name, 40) && `Nombre: ${clean(data.name, 40)}`,
+    `Publicar en la página: ${data.publish ? 'Sí' : 'No'}`,
+    `Versión ${app.getVersion()} · ${process.platform === 'darwin' ? 'Mac' : 'Windows'}`,
+  ].filter(Boolean).join('\n');
+  const { settings } = store.get();
+  settings.rated = true;
+  store.save();
+  shell.openExternal(`https://wa.me/${CREATOR_WHATSAPP}?text=${encodeURIComponent(text)}`).catch(() => copyText(text));
+}
+
 // Primer inicio guiado (solo PCs nuevas: sin cuentas ni remitentes). En las que ya se usan no aparece.
 function maybeOnboarding() {
   const data = store.get();
@@ -2144,6 +2183,7 @@ function settingsPanel() {
         items: [
           action('about', 'Acerca de, novedades y actualizaciones', `Versión ${app.getVersion()}`),
           action('checkUpdates', 'Buscar actualizaciones'),
+          action('rate', '⭐ Calificar MultiChat'),
           action('coffee', '☕ Invítale un cafecito al creador'),
           action('quit', `Salir de ${APP_NAME}`),
         ],
@@ -2199,6 +2239,7 @@ function settingsDo(id, value) {
     paymentsPanel: () => send('ui:payments-panel'),
     phoneGuide: () => send('ui:phone-guide'),
     onboarding: () => send('ui:onboarding'),
+    rate: () => send('ui:rate'),
     testPayment: () => onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }),
     verifyPayment: () => send('ui:verify', { status: 'ask' }),
     phoneLinkCheck: showPhoneLinkCheck,
@@ -2636,6 +2677,13 @@ function registerIpc() {
   });
   ipcMain.handle('payments:state', () => paymentsState());
   ipcMain.handle('onboarding:state', () => onboardingState());
+  ipcMain.on('rate:send', (_e, data) => { if (!locked) sendRating(data || {}); });
+  ipcMain.on('rate:later', (_e, reason) => {
+    const { settings } = store.get();
+    if (reason === 'never') settings.rateNever = true;
+    else settings.rateNextAt = Date.now() + RATE_AGAIN;
+    store.save();
+  });
   ipcMain.on('onboarding:done', () => {
     store.get().settings.onboarded = true;
     store.save();
@@ -3000,6 +3048,8 @@ function init() {
   setInterval(pollShipChats, 3000);
   setTimeout(announceUpdated, 4000);
   setTimeout(() => { if (!maybeOnboarding()) maybeWelcome(); }, 2500);
+  maybeRatePrompt(); // la primera vez solo guarda la fecha de inicio
+  setInterval(maybeRatePrompt, 60 * 60 * 1000);
   setTimeout(updateReminder, 60_000);
   setInterval(updateReminder, 10 * 60_000);
   updater.start({

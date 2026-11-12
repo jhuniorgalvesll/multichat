@@ -3,6 +3,7 @@ title: MultiChat Pro
 lang: es-PE
 include:
   - llms.txt
+  - reviews.json
 exclude:
   - README.md
   - SECURITY.md
