@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.17.1
+
+- La calificación se pide **una vez al día hasta que se envíe** ("Mañana" la pospone un día). En PCs nuevas empieza el día siguiente a instalar; en las que ya se usaban, desde ahora.
+
 ## Novedades v1.17.0
 
 - **⭐ Calificar MultiChat** (logo de MultiChat Pro o ⚙): estrellas, comentario y nombre opcional; se envía por WhatsApp al creador (el cliente presiona Enviar). Se pide una sola vez a los 7 días de uso. Las calificaciones aprobadas salen en la página de descarga.

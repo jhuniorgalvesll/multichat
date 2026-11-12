@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.17.1',
+    items: ['La calificación se pide una vez al día hasta que la envíes (en PCs nuevas, desde el día siguiente a instalar).'],
+  },
+  {
     version: '1.17.0',
     items: [
       'Nuevo "⭐ Calificar MultiChat" (clic en el logo o en ⚙): elige estrellas, escribe tu comentario y envíalo por WhatsApp.',

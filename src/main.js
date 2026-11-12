@@ -1980,20 +1980,22 @@ function setLayout(layout) {
 // ---------- Bienvenida del día (una vez al día, al abrir o mostrar la ventana) ----------
 
 // ---------- Calificar MultiChat ----------
-// A los 7 días de uso se pide una vez la calificación (con "Ahora no" vuelve a los 14 días; "No volver a preguntar"
-// no la pide más). Se envía por WhatsApp al creador: se abre el chat con el texto listo y el cliente presiona Enviar.
-const RATE_AFTER = 7 * 24 * 60 * 60 * 1000;
-const RATE_AGAIN = 14 * 24 * 60 * 60 * 1000;
+// Se pide la calificación una vez al día hasta que el cliente la envíe. En una PC nueva, desde el día siguiente a la
+// instalación (el primer día es para configurar); en las que ya se usaban, desde ahora. Se envía por WhatsApp al
+// creador: se abre el chat con el texto listo y el cliente presiona Enviar.
+const RATE_AFTER = 24 * 60 * 60 * 1000;
+const RATE_AGAIN = 24 * 60 * 60 * 1000;
 
 function maybeRatePrompt() {
-  const { settings } = store.get();
+  const data = store.get();
+  const { settings } = data;
   const now = Date.now();
   if (!settings.firstSeen) {
-    settings.firstSeen = now;
+    // Ya se usaba antes (tiene cuentas): se puede pedir desde hoy. PC nueva: desde mañana.
+    settings.firstSeen = data.accounts.length && !settings.onboardingPending ? now - RATE_AFTER : now;
     store.save();
-    return;
   }
-  if (settings.rated || settings.rateNever || locked || !win || !win.isVisible()) return;
+  if (settings.rated || locked || !win || !win.isVisible() || onboardingVisible) return;
   if (now - settings.firstSeen < RATE_AFTER || now < (settings.rateNextAt || 0)) return;
   settings.rateNextAt = now + RATE_AGAIN;
   store.save();
@@ -2018,6 +2020,7 @@ function sendRating(data) {
 }
 
 // Primer inicio guiado (solo PCs nuevas: sin cuentas ni remitentes). En las que ya se usan no aparece.
+let onboardingVisible = false;
 function maybeOnboarding() {
   const data = store.get();
   if (data.settings.onboarded) return false;
@@ -2031,6 +2034,8 @@ function maybeOnboarding() {
   data.settings.lastWelcome = paylog.dayKey(); // hoy no hace falta la bienvenida del día
   store.save();
   if (win && !win.isDestroyed()) win.webContents.send('ui:onboarding');
+  onboardingVisible = true;
+  setTimeout(() => { onboardingVisible = false; }, 10 * 60 * 1000);
   return true;
 }
 
@@ -2239,7 +2244,7 @@ function settingsDo(id, value) {
     paymentsPanel: () => send('ui:payments-panel'),
     phoneGuide: () => send('ui:phone-guide'),
     onboarding: () => send('ui:onboarding'),
-    rate: () => send('ui:rate'),
+    rate: () => send('ui:rate-now'),
     testPayment: () => onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }),
     verifyPayment: () => send('ui:verify', { status: 'ask' }),
     phoneLinkCheck: showPhoneLinkCheck,
@@ -2680,8 +2685,7 @@ function registerIpc() {
   ipcMain.on('rate:send', (_e, data) => { if (!locked) sendRating(data || {}); });
   ipcMain.on('rate:later', (_e, reason) => {
     const { settings } = store.get();
-    if (reason === 'never') settings.rateNever = true;
-    else settings.rateNextAt = Date.now() + RATE_AGAIN;
+    settings.rateNextAt = Date.now() + RATE_AGAIN; // vuelve a pedirse mañana
     store.save();
   });
   ipcMain.on('onboarding:done', () => {
@@ -3048,8 +3052,8 @@ function init() {
   setInterval(pollShipChats, 3000);
   setTimeout(announceUpdated, 4000);
   setTimeout(() => { if (!maybeOnboarding()) maybeWelcome(); }, 2500);
-  maybeRatePrompt(); // la primera vez solo guarda la fecha de inicio
-  setInterval(maybeRatePrompt, 60 * 60 * 1000);
+  setTimeout(maybeRatePrompt, 20_000); // después de la bienvenida del día
+  setInterval(maybeRatePrompt, 30 * 60 * 1000);
   setTimeout(updateReminder, 60_000);
   setInterval(updateReminder, 10 * 60_000);
   updater.start({

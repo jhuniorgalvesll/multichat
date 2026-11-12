@@ -99,6 +99,7 @@ contextBridge.exposeInMainWorld('multichat', {
   sendRating: (data) => ipcRenderer.send('rate:send', data),
   rateLater: (reason) => ipcRenderer.send('rate:later', reason),
   onRatePrompt: (fn) => ipcRenderer.on('ui:rate', () => fn()),
+  onRateNow: (fn) => ipcRenderer.on('ui:rate-now', () => fn()),
   onboardingState: () => ipcRenderer.invoke('onboarding:state'),
   onboardingDone: () => ipcRenderer.send('onboarding:done'),
   onboardingPrinter: (name) => ipcRenderer.send('onboarding:printer', name),

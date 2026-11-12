@@ -2582,7 +2582,7 @@ function openRate(fromPrompt = false) {
   paintStars(0);
   $('rate-text').value = '';
   $('rate-error').textContent = '';
-  $('rate-never').hidden = !fromPrompt;
+  $('rate-later').textContent = fromPrompt ? 'Mañana' : 'Ahora no';
   $('rate-modal').hidden = false;
   if (!rateOpen) api.setOverlay(true);
   rateOpen = true;
@@ -2609,7 +2609,13 @@ $('rate-form').addEventListener('submit', (e) => {
   closeRate();
 });
 $('rate-later').addEventListener('click', () => closeRate('later'));
-$('rate-never').addEventListener('click', () => closeRate('never'));
 $('rate-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeRate('later'); });
 $('about-rate').addEventListener('click', () => openRate(false));
-api.onRatePrompt(() => openRate(true));
+// Si en ese momento hay otra ventana abierta (bienvenida, guía, aviso de actualización), espera a que se cierre.
+function ratePromptWhenFree() {
+  const busy = (typeof welcomeOpen !== 'undefined' && welcomeOpen) || onbOpen || updatePopupOpen || ticketPanelOpen || drawerOpen;
+  if (busy) setTimeout(ratePromptWhenFree, 30000);
+  else openRate(true);
+}
+api.onRatePrompt(ratePromptWhenFree);
+api.onRateNow(() => openRate(false));
