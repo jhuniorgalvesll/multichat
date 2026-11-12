@@ -61,13 +61,13 @@ function isToday(at) {
   return dayKey(at) === dayKey();
 }
 
-function addPayment({ app: payApp, name, amount, at, text, source, repeated, chat }) {
+function addPayment({ app: payApp, name, amount, at, text, source, repeated, chat, code }) {
   if (!isToday(at)) return;
   const day = dayKey(at);
   const data = read(day);
   data.payments.push({
     app: payApp, name, amount, at, text: String(text || '').slice(0, 300),
-    ...(source ? { source } : {}), ...(repeated ? { repeated: true } : {}),
+    ...(source ? { source } : {}), ...(repeated ? { repeated: true } : {}), ...(code ? { code: String(code).slice(0, 6) } : {}),
     ...(chat ? { chat: { accountId: chat.accountId, title: String(chat.title).slice(0, 120), why: chat.why, notifId: chat.notifId } } : {}),
   });
   write(day, data);
@@ -121,7 +121,7 @@ function recover(parse, day = dayKey()) {
     if (!p) continue;
     n.payment = true;
     if (data.payments.some((x) => Math.abs(x.at - n.at) < 2000 && Math.abs(x.amount - p.amount) < 0.005)) continue;
-    data.payments.push({ app: p.app, name: p.name, amount: p.amount, at: n.at, text: String(p.text || '').slice(0, 300) });
+    data.payments.push({ app: p.app, name: p.name, amount: p.amount, at: n.at, text: String(p.text || '').slice(0, 300), ...(p.code ? { code: p.code } : {}) });
     added += 1;
   }
   if (added) {

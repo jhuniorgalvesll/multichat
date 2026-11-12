@@ -2771,7 +2771,9 @@ function announcePayment(payment) {
   if (!store.get().settings.paymentVoice || !win || win.isDestroyed()) return;
   const text = locked
     ? `Recibiste un ${payment.app}`
-    : `${payment.repeated ? 'Atención, pago repetido. ' : ''}${payment.name.replace(/\*/g, '')} ${PAY_VERB[payment.app]} ${spokenMoney(payment.amount)}`;
+    : `${payment.repeated ? 'Atención, pago repetido. ' : ''}${payment.name.replace(/\*/g, '')} ${PAY_VERB[payment.app]} ${spokenMoney(payment.amount)}`
+      // Código de seguridad dígito por dígito ("4, 2, 7") para compararlo con la captura del cliente.
+      + (payment.code ? `. Código de seguridad: ${payment.code.split('').join(', ')}` : '');
   sayAloud(text);
 }
 
@@ -2809,7 +2811,7 @@ function onPayment(payment) {
     kind: 'payment',
     payApp: payment.app,
     accountName: payLabel(payment),
-    title: locked ? `Pago recibido por ${payment.app}` : `${payment.repeated ? '⚠ Pago repetido · ' : ''}${payment.name} ${verb} ${money(payment.amount)}`,
+    title: locked ? `Pago recibido por ${payment.app}` : `${payment.repeated ? '⚠ Pago repetido · ' : ''}${payment.name} ${verb} ${money(payment.amount)}${payment.code ? ` · Cód. ${payment.code}` : ''}`,
     body: locked ? 'Desbloquea MultiChat Pro para ver el detalle'
       : payment.test ? 'Prueba: así llegarán los pagos de Yape y Plin'
         : payment.chat ? `💬 ${payment.chat.why === 'foto' ? '¿Es de' : 'Chat:'} ${payment.chat.title}${payment.chat.why === 'foto' ? '? (mandó una foto)' : ''} · ${findAccount(payment.chat.accountId).name} — clic para abrirlo`
@@ -2853,7 +2855,7 @@ async function paymentsState() {
     windows: process.platform === 'win32',
     phoneLink: { running: await payments.phoneLinkRunning(), dbFound, lastAt: lastPhoneAt, watching: Boolean(paymentWatcher && paymentWatcher.running) },
     today: log.payments.map((p) => ({
-      app: p.app, label: payLabel(p), name: p.name, amount: p.amount, at: p.at, repeated: Boolean(p.repeated),
+      app: p.app, label: payLabel(p), name: p.name, amount: p.amount, at: p.at, repeated: Boolean(p.repeated), code: p.code || '',
       chat: p.chat && findAccount(p.chat.accountId) ? { title: p.chat.title, account: findAccount(p.chat.accountId).name, why: p.chat.why } : null,
     })),
     total: log.payments.reduce((t, p) => t + p.amount, 0),

@@ -81,7 +81,9 @@ function parsePayment(texts) {
   if (!name) return null;
   // 'BBVA': cobros con QR de BBVA Empresas (el cliente puede pagar desde Yape, Plin u otro banco).
   const app = isYape ? 'Yape' : /plin/i.test(all) ? 'Plin' : 'BBVA';
-  return { app, name: cap(name), amount, text: texts.join(' · ').slice(0, 300) };
+  // Código de seguridad de Yape (3 dígitos): "El cód. de seguridad es: 427" / "Código de seguridad: 427".
+  const code = (all.match(/c[oó]d(?:igo|\.)?\s*de\s*seguridad(?:\s*es)?\s*:?\s*(\d{3})\b/i) || [])[1] || '';
+  return { app, name: cap(name), amount, ...(code ? { code } : {}), text: texts.join(' · ').slice(0, 300) };
 }
 
 // ArrivalTime de Windows (FILETIME: décimas de microsegundo desde 1601) → milisegundos desde 1970.

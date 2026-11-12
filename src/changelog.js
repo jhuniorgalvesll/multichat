@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.17.2',
+    items: ['Yape: la voz también dice el código de seguridad (3 dígitos), y se ve en el aviso y en Pagos de hoy.'],
+  },
+  {
     version: '1.17.1',
     items: ['La calificación se pide una vez al día hasta que la envíes (en PCs nuevas, desde el día siguiente a instalar).'],
   },

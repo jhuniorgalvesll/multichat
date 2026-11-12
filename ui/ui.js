@@ -2158,7 +2158,7 @@ async function loadPayments() {
     who.className = 'pay-who';
     who.textContent = p.name;
     const when = document.createElement('small');
-    when.textContent = `${p.label} · ${hhmm(p.at)}`;
+    when.textContent = `${p.label} · ${hhmm(p.at)}${p.code ? ` · Cód. ${p.code}` : ''}`;
     who.append(when);
     if (p.repeated) {
       const warn = Object.assign(document.createElement('span'), { className: 'pay-repeated', textContent: '⚠ repetido' });
