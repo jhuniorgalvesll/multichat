@@ -68,6 +68,7 @@
   .reviews-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 14px; }
   .review { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
   .review p { margin: 6px 0; font-size: 14.5px; line-height: 1.5; }
+  .review.mine { border-color: #f59e0b; box-shadow: 0 0 0 3px rgb(245 158 11 / .15); }
   .review small { display: block; margin-top: 6px; color: var(--muted); }
   .reviews-how { color: var(--muted); font-size: 13.5px; margin: 12px 0 0; }
   .rate-toast { position: fixed; right: 18px; bottom: 18px; z-index: 50; width: 330px; max-width: calc(100vw - 32px); background: #fff; border-radius: 18px;
@@ -205,8 +206,9 @@
       <textarea id="rt-text" rows="2" maxlength="300" placeholder="Tu comentario (opcional)"></textarea>
       <input id="rt-name" maxlength="40" placeholder="¿Cómo quieres aparecer? Ej.: Rosa · Arequipa">
       <label class="rt-check"><input type="checkbox" id="rt-public" checked> Autorizo publicar mi calificación</label>
-      <button type="button" class="rt-send" id="rt-send">Enviar por WhatsApp</button>
-      <small class="rt-hint">Se abre WhatsApp con tu calificación lista: solo presiona Enviar.</small>
+      <input id="rt-web" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
+      <button type="button" class="rt-send" id="rt-send">Enviar calificación</button>
+      <small class="rt-hint" id="rt-hint">Se abre WhatsApp con tu calificación lista: solo presiona Enviar.</small>
     </div>
   </aside>
 
@@ -235,32 +237,38 @@
     })
     .catch(() => {});
 
-  // Opiniones de clientes: solo las calificaciones reales que llegaron por WhatsApp y se aprobaron (reviews.json).
+  // Opiniones de clientes: calificaciones reales guardadas en la hoja de Google (REVIEWS_API) más las de reviews.json.
+  // Si REVIEWS_API está vacío, las calificaciones se envían por WhatsApp y se publican a mano en reviews.json.
+  const REVIEWS_API = '';
   const starsHtml = (n) => `<span class="stars" aria-label="${n} de 5 estrellas">${'★'.repeat(n)}<span class="off">${'★'.repeat(5 - n)}</span></span>`;
   const esc = (t) => String(t || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  fetch('reviews.json?v=' + Date.now())
-    .then((r) => (r.ok ? r.json() : []))
-    .then((list) => {
-      const reviews = (Array.isArray(list) ? list : []).filter((r) => r && r.stars >= 1 && r.stars <= 5);
-      if (!reviews.length) return;
-      const avg = reviews.reduce((t, r) => t + Number(r.stars), 0) / reviews.length;
-      document.getElementById('reviews-summary').innerHTML = `<span class="avg">${avg.toFixed(1)}</span>${starsHtml(Math.round(avg))}<span>${reviews.length} calificaci${reviews.length === 1 ? 'ón' : 'ones'} de clientes</span>`;
-      document.getElementById('reviews-list').innerHTML = reviews.slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).map((r) => `
-        <article class="review">${starsHtml(Number(r.stars))}${r.text ? `<p>“${esc(r.text)}”</p>` : ''}<small>${esc(r.name || 'Cliente de MultiChat')}${r.date ? ` · ${esc(r.date)}` : ''}</small></article>`).join('');
-      // Datos para Google: calificación promedio y reseñas (solo si hay calificaciones reales).
-      const ld = document.getElementById('ld-app');
-      const data = JSON.parse(ld.textContent);
-      data.aggregateRating = { '@type': 'AggregateRating', ratingValue: avg.toFixed(1), ratingCount: reviews.length, bestRating: 5, worstRating: 1 };
-      data.review = reviews.slice(0, 10).map((r) => ({
-        '@type': 'Review',
-        reviewRating: { '@type': 'Rating', ratingValue: r.stars, bestRating: 5 },
-        author: { '@type': 'Person', name: r.name || 'Cliente de MultiChat' },
-        ...(r.date ? { datePublished: r.date } : {}),
-        ...(r.text ? { reviewBody: r.text } : {}),
-      }));
-      ld.textContent = JSON.stringify(data);
-    })
-    .catch(() => {});
+  let allReviews = [];
+  function renderReviews() {
+    const reviews = allReviews.filter((r) => r && r.stars >= 1 && r.stars <= 5);
+    if (!reviews.length) return;
+    const avg = reviews.reduce((t, r) => t + Number(r.stars), 0) / reviews.length;
+    document.getElementById('reviews-summary').innerHTML = `<span class="avg">${avg.toFixed(1)}</span>${starsHtml(Math.round(avg))}<span>${reviews.length} calificaci${reviews.length === 1 ? 'ón' : 'ones'} de clientes</span>`;
+    const sorted = reviews.slice().sort((x, y) => String(y.date).localeCompare(String(x.date)));
+    document.getElementById('reviews-list').innerHTML = sorted.slice(0, 24).map((r) => `
+      <article class="review${r.mine ? ' mine' : ''}">${starsHtml(Number(r.stars))}${r.text ? `<p>“${esc(r.text)}”</p>` : ''}<small>${esc(r.name || 'Cliente de MultiChat')}${r.date ? ` · ${esc(r.date)}` : ''}${r.mine ? ' · <b>tu opinión</b>' : ''}</small></article>`).join('');
+    // Datos para Google: calificación promedio y reseñas (solo calificaciones reales).
+    const ld = document.getElementById('ld-app');
+    const data = JSON.parse(ld.textContent);
+    data.aggregateRating = { '@type': 'AggregateRating', ratingValue: avg.toFixed(1), ratingCount: reviews.length, bestRating: 5, worstRating: 1 };
+    data.review = sorted.slice(0, 10).map((r) => ({
+      '@type': 'Review',
+      reviewRating: { '@type': 'Rating', ratingValue: r.stars, bestRating: 5 },
+      author: { '@type': 'Person', name: r.name || 'Cliente de MultiChat' },
+      ...(r.date ? { datePublished: r.date } : {}),
+      ...(r.text ? { reviewBody: r.text } : {}),
+    }));
+    ld.textContent = JSON.stringify(data);
+  }
+  const getJson = (url) => fetch(url).then((r) => (r.ok ? r.json() : [])).then((l) => (Array.isArray(l) ? l : [])).catch(() => []);
+  Promise.all([getJson('reviews.json?v=' + Date.now()), REVIEWS_API ? getJson(REVIEWS_API) : []]).then(([manual, saved]) => {
+    allReviews = allReviews.concat(manual, saved);
+    renderReviews();
+  });
 
   // Aviso para calificar: sale a los pocos segundos en cada visita hasta que la persona envíe su calificación.
   // Al cerrarlo vuelve en la próxima visita (o a los 2 minutos si sigue en la página). Se envía por WhatsApp.
@@ -295,17 +303,30 @@
     document.getElementById('rt-send').addEventListener('click', () => {
       if (!value) return;
       const clean = (id, n) => document.getElementById(id).value.replace(/\s+/g, ' ').trim().slice(0, n);
-      const text = [
-        `${'⭐'.repeat(value)} *Calificación de MultiChat Pro*`,
-        `Estrellas: ${value}/5`,
-        clean('rt-text', 300) && `Comentario: ${clean('rt-text', 300)}`,
-        clean('rt-name', 40) && `Nombre: ${clean('rt-name', 40)}`,
-        `Publicar en la página: ${document.getElementById('rt-public').checked ? 'Sí' : 'No'}`,
-        'Desde la página web',
-      ].filter(Boolean).join('\n');
+      const review = { stars: value, text: clean('rt-text', 300), name: clean('rt-name', 40), publish: document.getElementById('rt-public').checked };
       store.set('mc-rated', '1');
-      window.open(`https://wa.me/${WA}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
-      toast.innerHTML = '<b>¡Gracias por tu calificación! 💜</b><small style="display:block;color:#6b6480;margin-top:4px">Solo falta presionar Enviar en WhatsApp.</small>';
+      if (REVIEWS_API) {
+        // Se guarda en la hoja y aparece al instante en "Opiniones de clientes".
+        fetch(REVIEWS_API, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ ...review, source: 'web', website: document.getElementById('rt-web').value }) }).catch(() => {});
+        if (review.publish) {
+          const d = new Date();
+          allReviews.push({ ...review, name: review.name || 'Cliente de MultiChat', date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, mine: true });
+          renderReviews();
+          document.getElementById('reviews-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        toast.innerHTML = `<b>¡Gracias por tu calificación! 💜</b><small style="display:block;color:#6b6480;margin-top:4px">${review.publish ? 'Ya aparece en "Opiniones de clientes".' : 'La recibimos. No se mostrará en la página.'}</small>`;
+      } else {
+        const text = [
+          `${'⭐'.repeat(value)} *Calificación de MultiChat Pro*`,
+          `Estrellas: ${value}/5`,
+          review.text && `Comentario: ${review.text}`,
+          review.name && `Nombre: ${review.name}`,
+          `Publicar en la página: ${review.publish ? 'Sí' : 'No'}`,
+          'Desde la página web',
+        ].filter(Boolean).join('\n');
+        window.open(`https://wa.me/${WA}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+        toast.innerHTML = '<b>¡Gracias por tu calificación! 💜</b><small style="display:block;color:#6b6480;margin-top:4px">Solo falta presionar Enviar en WhatsApp.</small>';
+      }
       setTimeout(() => { toast.hidden = true; }, 6000);
     });
     document.getElementById('rate-cta').addEventListener('click', () => {
@@ -313,6 +334,7 @@
       toast.hidden = false;
       document.getElementById('rt-stars').scrollIntoView({ block: 'nearest' });
     });
+    if (REVIEWS_API) document.getElementById('rt-hint').textContent = 'Tu calificación se verá en la página para quienes quieran descargar MultiChat.';
     setTimeout(show, 6000);
   })();
 
