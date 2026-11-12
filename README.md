@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.17.3
+
+- Los Yape registrados hoy antes de actualizar también muestran su **código de seguridad** (se toma del aviso guardado del celular).
+
 ## Novedades v1.17.2
 
 - **Código de seguridad de Yape**: la voz lo dice dígito por dígito ("Miguel Rojas te yapeó 16 soles. Código de seguridad: 4, 2, 7") y aparece en el aviso y en Pagos de hoy, para compararlo con la captura del cliente.

@@ -39,6 +39,11 @@ const cap = (s) => s.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (_, sep, ch) =>
 // BBVA Empresas: "Cobro con QR" · "HUGO PAUL DIAZ BLACIDO  te hizo un pago de S/ 11.0".
 const PAYMENT_PHRASE = /te\s+(?:envi[oó]|ha enviado|hizo|yape[oó]|pline[oó]|transfiri[oó]|pag[oó])|yapearon|recibiste|cobro con qr|abono/i;
 
+// Código de seguridad de Yape (3 dígitos) en el texto de un aviso, o ''.
+function securityCode(text) {
+  return (String(text || '').match(/c[oó]d(?:igo|\.)?\s*(?:de\s*)?seguridad(?:\s*es)?\s*:?\s*(\d{3})\b/i) || [])[1] || '';
+}
+
 function parsePayment(texts) {
   const all = texts.join('\n');
   // Yape avisa "Confirmación de Pago · Fulano* te envió un pago por S/ 45. El cód. de seguridad es: 217"
@@ -82,7 +87,7 @@ function parsePayment(texts) {
   // 'BBVA': cobros con QR de BBVA Empresas (el cliente puede pagar desde Yape, Plin u otro banco).
   const app = isYape ? 'Yape' : /plin/i.test(all) ? 'Plin' : 'BBVA';
   // Código de seguridad de Yape (3 dígitos): "El cód. de seguridad es: 427" / "Código de seguridad: 427".
-  const code = (all.match(/c[oó]d(?:igo|\.)?\s*de\s*seguridad(?:\s*es)?\s*:?\s*(\d{3})\b/i) || [])[1] || '';
+  const code = securityCode(all);
   return { app, name: cap(name), amount, ...(code ? { code } : {}), text: texts.join(' · ').slice(0, 300) };
 }
 
@@ -242,4 +247,4 @@ function phoneLinkRunning() {
   });
 }
 
-module.exports = { createWatcher, phoneLinkRunning, parsePayment, toastTexts, databasePath };
+module.exports = { createWatcher, phoneLinkRunning, parsePayment, toastTexts, databasePath, securityCode };

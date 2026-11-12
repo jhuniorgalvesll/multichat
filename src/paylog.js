@@ -110,7 +110,7 @@ function findPrint(id) {
 
 // Vuelve a revisar las notificaciones guardadas del día con la versión actual del lector de pagos: los pagos que
 // antes no se reconocían (por ejemplo, Yape con el nombre "Yodver Lim*") se agregan al día. Devuelve cuántos sumó.
-function recover(parse, day = dayKey()) {
+function recover(parse, day = dayKey(), codeOf = null) {
   const data = read(day);
   let added = 0;
   for (const n of data.notifications) {
@@ -124,7 +124,24 @@ function recover(parse, day = dayKey()) {
     data.payments.push({ app: p.app, name: p.name, amount: p.amount, at: n.at, text: String(p.text || '').slice(0, 300), ...(p.code ? { code: p.code } : {}) });
     added += 1;
   }
-  if (added) {
+  // Pagos de Yape guardados sin código de seguridad (antes de la v1.17.2): se toma del texto del aviso o de la
+  // notificación del celular que llegó a la misma hora con el mismo monto.
+  let coded = 0;
+  if (typeof codeOf === 'function') {
+    for (const p of data.payments) {
+      if (p.code || p.app !== 'Yape') continue;
+      let code = codeOf(p.text);
+      if (!code) {
+        const n = data.notifications.find((x) => Math.abs(x.at - p.at) < 3 * 60000 && codeOf(list(x.texts).join(' ')) && list(x.texts).join(' ').includes(String(p.amount).split('.')[0]));
+        if (n) code = codeOf(list(n.texts).join(' '));
+      }
+      if (code) {
+        p.code = code;
+        coded += 1;
+      }
+    }
+  }
+  if (added || coded) {
     data.payments.sort((a, b) => a.at - b.at);
     write(day, data);
   }

@@ -3048,7 +3048,7 @@ function init() {
     pushPayments();
   }, 60_000);
   // Pagos de hoy que una versión anterior no reconoció (quedaron como notificación): se suman ahora.
-  try { paylog.recover(payments.parsePayment); } catch { /* registro dañado: se ignora */ }
+  try { paylog.recover(payments.parsePayment, paylog.dayKey(), payments.securityCode); } catch { /* registro dañado: se ignora */ }
   syncPaymentWatcher();
   screensaver.init(() => store.get().settings);
   setInterval(pollShipChats, 3000);
