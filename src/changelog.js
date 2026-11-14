@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.17.4',
+    items: ['La PC vuelve a apagar la pantalla y suspenderse normal (ya no se calienta). "Seguir avisando con la pantalla apagada" queda apagado; se puede activar en ⚙ → Pagos.'],
+  },
+  {
     version: '1.17.3',
     items: ['Pagos de hoy: los Yape que llegaron antes de la actualización también muestran su código de seguridad.'],
   },

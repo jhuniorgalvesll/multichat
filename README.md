@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.17.4
+
+- **La PC ya no se calienta**: "Seguir avisando con la pantalla apagada" se apagó para todos, así Windows apaga la pantalla y suspende la laptop normal. Los pagos que lleguen mientras duerme se registran al volver. Quien quiera puede activarlo en ⚙ → Pagos (avisa que la laptop no se duerme y puede calentarse).
+
 ## Novedades v1.17.3
 
 - Los Yape registrados hoy antes de actualizar también muestran su **código de seguridad** (se toma del aviso guardado del celular).

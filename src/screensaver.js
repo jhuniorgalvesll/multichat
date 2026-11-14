@@ -106,4 +106,4 @@ function init(getSettings) {
   sync();
 }
 
-module.exports = { init, sync, wake };
+module.exports = { init, sync, wake, isBlack: () => windows.length > 0 };

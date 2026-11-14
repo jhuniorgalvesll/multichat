@@ -1192,7 +1192,7 @@ async function readShipChat(view) {
 // Para ahorrar: la cuenta que se está viendo se revisa cada 3 s; las demás solo si esperan datos, cada 9 s.
 let shipTick = 0;
 async function pollShipChats() {
-  if (locked) return;
+  if (locked || screensaver.isBlack()) return; // con la pantalla en negro no se revisan chats (menos trabajo)
   shipTick += 1;
   for (const acc of openAccounts()) {
     if (acc.service !== 'whatsapp') continue;
@@ -2121,7 +2121,7 @@ function settingsPanel() {
           toggle('paymentAlerts', 'Avisar cuando llegue un pago', s.paymentAlerts),
           toggle('paymentVoice', 'Decir los pagos en voz alta', s.paymentVoice),
           toggle('readAllPhone', 'Leer en voz alta todas las notificaciones del celular', s.readAllPhone),
-          toggle('keepAwake', 'Seguir avisando con la pantalla apagada', s.keepAwake, 'MultiChat pone la pantalla en negro sin dejar que la laptop se duerma'),
+          toggle('keepAwake', 'Seguir avisando con la pantalla apagada', s.keepAwake, '⚠ La laptop no se duerme y puede calentarse. Apagado: la PC se suspende normal y los pagos se registran al volver'),
           { id: 'blackScreenMinutes', type: 'choice', label: 'Poner la pantalla en negro después de', value: s.blackScreenMinutes || 5, options: [2, 5, 10, 15, 30].map((v) => ({ value: v, label: `${v} minutos sin usar la PC` })) },
           action('testPayment', '🔊 Probar aviso y voz'),
           action('verifyPayment', '🛡️ Verificar la captura de un cliente'),
@@ -2981,6 +2981,13 @@ function init() {
   if (!store.get().settings.bubbleReset) {
     store.get().settings.bubbleReset = true;
     store.get().settings.bubble = false;
+    store.save();
+  }
+  // Una vez (v1.17.4): "Seguir avisando con la pantalla apagada" no deja que la laptop se duerma y la calienta;
+  // se apaga para todos, así Windows apaga la pantalla y suspende la PC normal. Se puede volver a activar en ⚙.
+  if (!store.get().settings.keepAwakeReset) {
+    store.get().settings.keepAwakeReset = true;
+    store.get().settings.keepAwake = false;
     store.save();
   }
   if (!store.get().settings.alwaysOnTopReset) {
