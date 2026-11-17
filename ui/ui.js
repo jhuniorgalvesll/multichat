@@ -2665,9 +2665,10 @@ api.onRuc((d) => {
     $('ruc-copy').hidden = true;
     return;
   }
+  $('ruc-eldni').hidden = !(d.status === 'resultado' && !d.ok && d.error === 'no_encontrado' && d.tipo === 'dni');
   if (!d.ok) {
     $('ruc-state').textContent = {
-      no_encontrado: d.tipo === 'dni' ? 'Ese DNI no tiene RUC en SUNAT (la persona no es contribuyente). Para personas sin RUC, SUNAT no muestra el nombre.' : 'SUNAT no encontró ese RUC. Revisa los 11 dígitos.',
+      no_encontrado: d.tipo === 'dni' ? 'Ese DNI no tiene RUC en SUNAT (la persona no es contribuyente). Para ver el nombre puedes buscarlo tú en eldni.com: el DNI queda copiado, pégalo con Ctrl+V.' : 'SUNAT no encontró ese RUC. Revisa los 11 dígitos.',
       varios: `SUNAT encontró ${d.n || 'varios'} resultados: elige uno en la ventana de SUNAT.`,
       numero: 'Escribe un RUC de 11 dígitos o un DNI de 8 dígitos.',
       cerrada: 'Se cerró la ventana de SUNAT.',
@@ -2698,3 +2699,11 @@ $('ruc-copy').addEventListener('click', async () => {
 });
 $('ruc-close').addEventListener('click', closeRuc);
 $('ruc-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeRuc(); });
+
+// DNI sin RUC: abre eldni.com en el navegador con el DNI copiado (la persona lo pega y busca; MultiChat no lee esa página).
+$('ruc-eldni').addEventListener('click', async () => {
+  const dni = $('ruc-num').value.replace(/\D/g, '');
+  await navigator.clipboard.writeText(dni).catch(() => {});
+  api.openUrl('https://eldni.com/pe/buscar-datos-por-dni');
+  $('ruc-state').textContent = `DNI ${dni} copiado: pégalo en eldni.com con Ctrl+V. Úsalo solo para confirmar los datos que te dio tu cliente.`;
+});

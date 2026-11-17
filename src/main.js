@@ -2726,6 +2726,10 @@ function registerIpc() {
   });
   // Envío por Shalom: consulta el rastreo público y la IA propone 3 respuestas solo con ese resultado.
   ipcMain.handle('ship:detect', (_e, text) => shalomtrack.detectar(text));
+  // Solo páginas permitidas, en el navegador de la persona.
+  ipcMain.on('app:open-url', (_e, url) => {
+    if (url === 'https://eldni.com/pe/buscar-datos-por-dni') shell.openExternal(url).catch(() => {});
+  });
   ipcMain.on('ruc:consultar', (_e, numero) => {
     const q = sunatruc.detectar(String(numero || ''));
     if (q) consultarSunat(q);

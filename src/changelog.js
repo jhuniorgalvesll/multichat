@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.19.2',
+    items: ['DNI sin RUC: botón "Buscar nombre en eldni.com" que abre esa página con el DNI copiado (lo pegas con Ctrl+V).'],
+  },
+  {
     version: '1.19.1',
     items: ['Consulta DNI: si la persona no tiene RUC, MultiChat lo dice claro y cierra la ventana de SUNAT.'],
   },
