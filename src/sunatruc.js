@@ -126,7 +126,8 @@ function detectar(texto) {
 }
 
 // DNI: abre eldni.com en una ventana visible con el DNI escrito y pulsa "Buscar" (como lo haría la persona).
-// MultiChat NO lee ni guarda lo que muestra esa página: la persona ve el nombre y lo copia si lo necesita.
+// Cuando la página muestra el resultado de ESE DNI, toma solo el nombre completo (lo mismo que su botón "Copiar")
+// para pegarlo en el chat o en el ticket. Una consulta a la vez, pedida por la persona; no se guarda nada más.
 const URL_ELDNI = process.env.MULTICHAT_ELDNI_URL || 'https://eldni.com/pe/buscar-datos-por-dni';
 
 function eldniScript(dni) {
@@ -149,8 +150,33 @@ function eldniScript(dni) {
   })()`;
 }
 
+// Nombre completo del resultado de ese DNI: el campo "Nombres y apellidos" o la fila de la tabla con ese DNI.
+function eldniLeerScript(dni) {
+  return `(() => {
+    const norm = (s) => String(s || '').replace(/\\s+/g, ' ').trim();
+    const dni = ${JSON.stringify(dni)};
+    const fila = [...document.querySelectorAll('tr')].find((tr) => tr.cells && tr.cells.length >= 4 && norm(tr.cells[0].textContent) === dni);
+    const etiquetas = [...document.querySelectorAll('label, b, strong, p, div, span, h4, h5')]
+      .filter((el) => el.children.length <= 2 && /^\\W*nombres y apellidos\\W*$/i.test(norm(el.textContent)));
+    let nombre = '';
+    for (const et of etiquetas) {
+      let el = et;
+      for (let k = 0; k < 4 && el && !nombre; k++) {
+        const input = el.querySelector && el.querySelector('input');
+        if (input && norm(input.value)) nombre = norm(input.value);
+        el = el.nextElementSibling || el.parentElement;
+      }
+      if (nombre) break;
+    }
+    if (!nombre && fila) nombre = [1, 2, 3].map((i) => norm(fila.cells[i].textContent)).filter(Boolean).join(' ');
+    // Solo si la página muestra ese mismo DNI (no otro resultado).
+    if (!nombre || !(fila || document.body.innerText.includes(dni))) return '';
+    return nombre.toUpperCase().slice(0, 90);
+  })()`;
+}
+
 let ventanaDni = null;
-function abrirEldni({ dni, parent }) {
+function abrirEldni({ dni, parent, onName }) {
   if (ventanaDni && !ventanaDni.isDestroyed()) ventanaDni.destroy();
   const win = new BrowserWindow({
     width: 1000,
@@ -163,11 +189,24 @@ function abrirEldni({ dni, parent }) {
   ventanaDni = win;
   let llenado = false;
   // Intenta escribir el DNI apenas aparece el buscador (si la página tarda o pide verificación, sigue intentando).
+  let listo = false;
   const timer = setInterval(async () => {
-    if (win.isDestroyed() || llenado) return clearInterval(timer);
-    try { llenado = Boolean(await win.webContents.executeJavaScript(eldniScript(dni), true)); } catch { /* cargando */ }
+    if (win.isDestroyed() || listo) return clearInterval(timer);
+    try {
+      if (!llenado) {
+        llenado = Boolean(await win.webContents.executeJavaScript(eldniScript(dni), true));
+        return;
+      }
+      const nombre = await win.webContents.executeJavaScript(eldniLeerScript(dni), true);
+      if (nombre) {
+        listo = true;
+        clearInterval(timer);
+        if (onName) onName(nombre);
+        setTimeout(() => { if (!win.isDestroyed()) win.close(); }, 800);
+      }
+    } catch { /* cargando */ }
   }, 1000);
-  setTimeout(() => clearInterval(timer), 60000);
+  setTimeout(() => clearInterval(timer), 120000);
   win.on('closed', () => { clearInterval(timer); if (ventanaDni === win) ventanaDni = null; });
   win.loadURL(URL_ELDNI).catch(() => {});
   return win;

@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.19.5
+
+- **DNI → nombre automático**: al consultar un DNI, cuando la búsqueda muestra el resultado de ese DNI, MultiChat toma el nombre completo (solo eso) y cierra la ventana. Luego: *💬 Pegar en el chat* (nombre y DNI listos para WhatsApp, tú presionas Enter) o *🖨 Usar en el ticket* (destinatario y DNI).
+
 ## Novedades v1.19.4
 
 - **RUC o DNI, cada uno a su página**: el RUC (11 dígitos) se consulta en SUNAT; el DNI (8 dígitos) abre directo la búsqueda de datos por DNI (eldni.com) en una ventana con el número escrito y buscado. Copias el nombre, lo pegas en MultiChat y *Usar en el ticket*. MultiChat no lee esa página.

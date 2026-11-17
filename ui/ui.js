@@ -2658,11 +2658,22 @@ api.onRuc((d) => {
     $('ruc-eldni').hidden = true;
     $('ruc-name-box').hidden = true;
   }
+  if (d.status !== 'dni-nombre') $('ruc-chat').hidden = !(d.status === 'resultado' && d.ok);
   if (d.status === 'pedir') {
     $('ruc-state').textContent = '';
     $('ruc-data').hidden = true;
     $('ruc-copy').hidden = true;
     $('ruc-num').focus();
+    return;
+  }
+  if (d.status === 'dni-nombre') {
+    $('ruc-name').value = d.name;
+    rucPersona = { name: d.name, dni: d.numero };
+    $('ruc-state').textContent = `✓ ${d.name} · DNI ${d.numero}`;
+    $('ruc-name-box').hidden = false;
+    $('ruc-ticket').hidden = false;
+    $('ruc-chat').hidden = false;
+    $('ruc-eldni').hidden = true;
     return;
   }
   if (d.status === 'dni') {
@@ -2740,7 +2751,7 @@ $('ruc-eldni').addEventListener('click', async () => {
 // Datos de la consulta → ticket de envío (se completa la agencia o dirección y se imprime).
 $('ruc-ticket').addEventListener('click', () => {
   if (!rucPersona) return;
-  const name = (rucPersona.name || $('ruc-name').value).replace(/\s+/g, ' ').trim();
+  const name = ($('ruc-name').value || rucPersona.name).replace(/\s+/g, ' ').trim();
   if (!name) {
     $('ruc-state').textContent = 'Escribe o pega el nombre completo para el ticket.';
     $('ruc-name').focus();
@@ -2748,4 +2759,18 @@ $('ruc-ticket').addEventListener('click', () => {
   }
   closeRuc();
   openTicketPanel({ prefill: { name, ...(rucPersona.dni ? { dni: rucPersona.dni } : {}) } });
+});
+
+// Nombre y DNI listos en el chat abierto (para WhatsApp); la persona revisa y presiona Enter.
+$('ruc-chat').addEventListener('click', async () => {
+  if (!rucPersona) return;
+  const name = ($('ruc-name').value || rucPersona.name).replace(/\s+/g, ' ').trim();
+  const lineas = [name && `*Nombre:* ${name}`, rucPersona.dni && `*DNI:* ${rucPersona.dni}`, rucPersona.ruc && `*RUC:* ${rucPersona.ruc}`].filter(Boolean);
+  if (!lineas.length) return;
+  const result = await api.pasteReply(lineas.join('\n'));
+  if (result && result.ok) closeRuc();
+  else {
+    await navigator.clipboard.writeText(lineas.join('\n')).catch(() => {});
+    $('ruc-state').textContent = 'Copiado: abre el chat y pégalo con Ctrl+V.';
+  }
 });

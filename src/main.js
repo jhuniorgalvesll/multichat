@@ -2987,7 +2987,11 @@ function consultarSunat(q) {
   // DNI: no va a SUNAT; se abre eldni.com con el DNI escrito (el DNI también queda copiado).
   if (q.tipo === 'dni') {
     copyText(q.numero);
-    sunatruc.abrirEldni({ dni: q.numero, parent: win });
+    sunatruc.abrirEldni({
+      dni: q.numero,
+      parent: win,
+      onName: (name) => { if (win && !win.isDestroyed()) win.webContents.send('ui:ruc', { status: 'dni-nombre', ...q, name }); },
+    });
     win.webContents.send('ui:ruc', { status: 'dni', ...q });
     return;
   }
