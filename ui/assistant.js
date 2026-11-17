@@ -7,7 +7,7 @@ let aiOpen = false;
 let aiAccount = '';
 let aiBusy = false;
 
-async function openAssistantPanel({ text = '', accountName = '' } = {}) {
+async function openAssistantPanel({ text = '', accountName = '', ship = null } = {}) {
   if (state.locked || passwordMode) return;
   closeCoffee();
   aiAccount = accountName;
@@ -27,6 +27,10 @@ async function openAssistantPanel({ text = '', accountName = '' } = {}) {
   const found = await api.detectShipment(text);
   $('ai-ship-order').value = found.orden || '';
   $('ai-ship-code').value = found.codigo || '';
+  if (ship && ship.reading) {
+    $('ai-ship-state').textContent = '📷 Leyendo el ticket de la foto…';
+    return;
+  }
   if (text && config.hasKey) suggestNow();
   else if (!config.hasKey) $('ai-key').focus();
   else $('ai-message').focus();
@@ -136,3 +140,20 @@ $('ai-modal').addEventListener('keydown', (e) => {
 });
 $('ai-btn').addEventListener('click', () => (aiOpen ? closeAssistantPanel() : api.openAssistant()));
 api.onAssistant(openAssistantPanel);
+
+// N° de orden y código leídos de la foto del ticket: se llenan y se consulta el envío.
+function applyTicketPhoto(found) {
+  if (!found || !found.ok) {
+    $('ai-ship-state').textContent = (found && found.error) || 'No se pudo leer la foto.';
+    return;
+  }
+  if (found.orden) $('ai-ship-order').value = found.orden;
+  if (found.codigo) $('ai-ship-code').value = found.codigo;
+  if (found.orden && found.codigo) trackNow();
+  else $('ai-ship-state').textContent = `Leído del ticket: ${found.orden ? `orden ${found.orden}` : 'falta el N° de orden'} · ${found.codigo ? `código ${found.codigo}` : 'falta el código'}. Completa lo que falta.`;
+}
+api.onAiShip(applyTicketPhoto);
+$('ai-ship-photo').addEventListener('click', async () => {
+  $('ai-ship-state').textContent = '📷 Leyendo el ticket de la foto copiada…';
+  applyTicketPhoto(await api.shipFromClipboard());
+});

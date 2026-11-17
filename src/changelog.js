@@ -3,6 +3,13 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.18.1',
+    items: [
+      'Consultar envío: corregido el estado leído de Shalom (a veces decía "Entregado" cuando estaba "En origen").',
+      'Clic derecho sobre la foto del ticket de Shalom → "📦 Consultar envío Shalom con este ticket": lee el N° de orden y el código de la foto.',
+    ],
+  },
+  {
     version: '1.18.0',
     items: ['Asistente con IA: "📦 Consultar envío" revisa el rastreo de Shalom con el N° de orden y el código del ticket y propone 3 respuestas solo con lo que dice Shalom.'],
   },

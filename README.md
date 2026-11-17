@@ -40,6 +40,11 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.18.1
+
+- **Consultar envío desde la foto del ticket**: clic derecho sobre la foto del ticket de Shalom en el chat → *📦 Consultar envío Shalom con este ticket*. Lee el N° de orden y el código impresos (Windows), consulta Shalom y la IA propone las 3 respuestas. También: botón "📷 Leer N° y código de una foto del ticket" en el asistente (con la foto copiada).
+- Corregido: el estado se lee del título de Shalom ("En origen", "En destino"...), no de la barra de etapas.
+
 ## Novedades v1.18.0
 
 - **Consultar envío de Shalom** desde el asistente con IA: con el N° de orden y el código de 4 caracteres del ticket (se detectan solos en el mensaje del cliente), MultiChat consulta el rastreo público de Shalom y la IA propone 3 respuestas usando **solo** lo que dice Shalom (estado y fechas), sin inventar plazos, agencias ni costos, y sin escribir datos personales. Tú eliges una y presionas Enter.

@@ -66,9 +66,18 @@ function pageScript(orden, codigo) {
       if (marca) {
         let tarjeta = marca;
         for (let k = 0; k < 4 && tarjeta.parentElement; k++) tarjeta = tarjeta.parentElement;
-        const titulo = tarjeta.querySelector('.text-4xl');
+        // El título del estado ("En origen", "En destino"...) puede aparecer un poco después que la tarjeta.
+        let titulo = tarjeta.querySelector('.text-4xl');
+        for (let k = 0; k < 8 && !(titulo && norm(titulo.innerText)); k++) {
+          await sleep(400);
+          titulo = tarjeta.querySelector('.text-4xl');
+        }
         const detalle = tarjeta.querySelector('p.text-silver-title');
+        // Primera línea de la tarjeta, antes de "N° DE ORDEN" (es el estado; la leyenda de etapas va después).
+        const antes = String(tarjeta.innerText || '').split(/N[°º]\\s*DE\\s*ORDEN/i)[0];
+        const primera = norm((antes.split('\\n').map(norm).filter(Boolean)[0]) || '');
         return {
+          primera,
           estado_pagina: 'encontrada',
           titulo: titulo ? norm(titulo.innerText) : '',
           detalle: detalle ? norm(detalle.innerText) : '',
@@ -83,6 +92,21 @@ function pageScript(orden, codigo) {
   })()`;
 }
 
+// Con tiempo máximo: si la página no responde, la consulta termina igual (nunca queda esperando).
+const conLimite = (promesa, ms) => Promise.race([promesa, new Promise((_, rej) => setTimeout(() => rej(new Error('tiempo')), ms))]);
+
+async function abrirPagina(win) {
+  for (let intento = 0; intento < 3; intento++) {
+    try {
+      await conLimite(win.loadURL(URL_RASTREO), 30000);
+      return;
+    } catch (err) {
+      if (intento === 2) throw err;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+  }
+}
+
 async function consultar(orden, codigo) {
   const win = new BrowserWindow({
     show: false,
@@ -90,15 +114,13 @@ async function consultar(orden, codigo) {
     height: 900,
     webPreferences: { partition: 'persist:shalom-rastreo', sandbox: true, contextIsolation: true, backgroundThrottling: false },
   });
-  const timer = setTimeout(() => { if (!win.isDestroyed()) win.destroy(); }, 60000);
   try {
-    await win.loadURL(URL_RASTREO);
-    const leido = await win.webContents.executeJavaScript(pageScript(orden, codigo), true);
+    await abrirPagina(win);
+    const leido = await conLimite(win.webContents.executeJavaScript(pageScript(orden, codigo), true), 45000);
     return leido || { estado_pagina: 'sin_respuesta' };
-  } catch {
-    return { estado_pagina: 'sin_respuesta' };
+  } catch (err) {
+    return { estado_pagina: 'sin_respuesta', motivo: String((err && err.message) || err).slice(0, 200) };
   } finally {
-    clearTimeout(timer);
     if (!win.isDestroyed()) win.destroy();
   }
 }
@@ -106,8 +128,8 @@ async function consultar(orden, codigo) {
 function interpretar(leido) {
   if (leido.estado_pagina === 'no_encontrada') return { ok: false, error: 'no_encontrada' };
   if (leido.estado_pagina !== 'encontrada') return { ok: false, error: leido.estado_pagina === 'sin_formulario' ? 'pagina_cambio' : 'sin_respuesta' };
-  const porBarra = leido.tramos_totales === 3 ? ETAPAS[leido.tramos_completos] : null;
-  const estado = leido.titulo || porBarra || ETAPAS.slice().reverse().find((e) => new RegExp(e, 'i').test(leido.texto)) || '';
+  // Nunca se toma el estado de la leyenda de etapas (que nombra a las cuatro): solo del título de la tarjeta.
+  const estado = leido.titulo || leido.primera || '';
   if (!estado) return { ok: false, error: 'pagina_cambio' };
   const conocido = ETAPAS.find((e) => e.toLowerCase() === estado.toLowerCase());
   const r = {
@@ -147,4 +169,15 @@ function detectar(texto) {
   return { orden, codigo };
 }
 
-module.exports = { rastrear, detectar, interpretar, fecha, respuestaCliente };
+// N° de orden y código leídos del texto de la foto del ticket ("NRO. ORDEN: 104122737 CÓDIGO: K3CW").
+// El lector de texto a veces confunde letras y números o junta las palabras ("104122737CÓDIGO").
+function desdeTicket(texto) {
+  const t = String(texto || '').replace(/\r/g, ' ');
+  const om = t.match(/ORDEN\s*[:.;]?\s*([0-9OoIl|]{6,12})/i);
+  const orden = om ? om[1].replace(/[Oo]/g, '0').replace(/[Il|]/g, '1') : '';
+  const cm = t.match(/C[OÓ0]D[IÍ1l]G[O0]\s*[:.;]?\s*([A-Za-z0-9]{4})(?![A-Za-z0-9])/i);
+  const codigo = cm ? cm[1].toUpperCase() : '';
+  return { orden: /^\d{6,12}$/.test(orden) ? orden : '', codigo };
+}
+
+module.exports = { rastrear, detectar, desdeTicket, interpretar, fecha, respuestaCliente, consultar };

@@ -1866,6 +1866,7 @@ function showEditMenu(wc, params) {
   if (params.hasImageContents) {
     template.push(
       { label: '🛡️ Verificar pago de esta captura (Yape / Plin)', click: () => verifyImageAt(wc, params.x, params.y) },
+      { label: '📦 Consultar envío Shalom con este ticket', click: () => shipFromImageAt(wc, params.x, params.y) },
       { label: 'Copiar imagen', click: () => wc.copyImageAt(params.x, params.y) },
       { type: 'separator' },
     );
@@ -2712,6 +2713,7 @@ function registerIpc() {
   });
   // Envío por Shalom: consulta el rastreo público y la IA propone 3 respuestas solo con ese resultado.
   ipcMain.handle('ship:detect', (_e, text) => shalomtrack.detectar(text));
+  ipcMain.handle('ship:from-clipboard', async () => (locked ? { ok: false } : readShipTicket(await readClipboardImage())));
   ipcMain.handle('ship:track-reply', async (_e, { orden, codigo, text } = {}) => {
     if (locked) return { ok: false, error: 'La app está bloqueada.' };
     const rastreo = await shalomtrack.rastrear(orden, codigo);
@@ -2927,6 +2929,29 @@ function sendVerifyResult(info, extra = {}) {
 }
 
 // Clic derecho en una imagen del chat → se lee su texto y se compara con los pagos que llegaron.
+// Foto del ticket de Shalom → N° de orden y código (lector de texto de Windows) → asistente con la consulta lista.
+async function readShipTicket(image) {
+  if (!image || image.isEmpty()) return { ok: false, error: 'No se pudo tomar la imagen. Cópiala (clic derecho → Copiar imagen) y vuelve a intentar.' };
+  if (process.platform !== 'win32') return { ok: false, error: 'La lectura de fotos funciona en Windows. Escribe el N° de orden y el código del ticket.' };
+  // Agrandar ayuda a leer la letra chica del ticket.
+  const { width } = image.getSize();
+  const big = width && width < 1600 ? image.resize({ width: width * 2, quality: 'best' }) : image;
+  const text = await verify.readImageText(big.toPNG());
+  const found = shalomtrack.desdeTicket(text);
+  if (!found.orden && !found.codigo) return { ok: false, error: 'No se encontró el N° de orden ni el código en la foto. Escríbelos del ticket.' };
+  return { ok: true, ...found };
+}
+
+async function shipFromImageAt(wc, x, y) {
+  if (locked) return;
+  const acc = findAccount(idForWebContents(wc) || activeId);
+  win.webContents.send('ui:ai', { text: '', accountName: acc ? acc.name : '', ship: { reading: true } });
+  wc.copyImageAt(x, y);
+  await new Promise((r) => setTimeout(r, 400));
+  const found = await readShipTicket(await readClipboardImage());
+  win.webContents.send('ui:ai-ship', found);
+}
+
 async function verifyImageAt(wc, x, y) {
   if (locked) return;
   win.webContents.send('ui:verify', { status: 'reading' });
