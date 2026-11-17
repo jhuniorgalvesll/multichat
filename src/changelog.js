@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.18.2',
+    items: ['Actualizaciones: botón "Actualizar ahora" en el aviso y en el panel del logo (se cierra unos segundos y vuelve a abrirse). "Buscar actualizaciones" encuentra la versión más nueva aunque ya haya otra descargada.'],
+  },
+  {
     version: '1.18.1',
     items: [
       'Consultar envío: corregido el estado leído de Shalom (a veces decía "Entregado" cuando estaba "En origen").',

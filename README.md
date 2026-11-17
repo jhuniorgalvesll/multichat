@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.18.2
+
+- **Actualizar ahora**: el aviso "Actualización lista" y el panel del logo tienen el botón *Actualizar ahora* (MultiChat se cierra unos segundos y vuelve a abrirse con tus cuentas). "Buscar actualizaciones" encuentra la versión más nueva aunque ya haya otra descargada.
+
 ## Novedades v1.18.1
 
 - **Consultar envío desde la foto del ticket**: clic derecho sobre la foto del ticket de Shalom en el chat → *📦 Consultar envío Shalom con este ticket*. Lee el N° de orden y el código impresos (Windows), consulta Shalom y la IA propone las 3 respuestas. También: botón "📷 Leer N° y código de una foto del ticket" en el asistente (con la foto copiada).

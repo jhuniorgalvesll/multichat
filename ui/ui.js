@@ -1946,7 +1946,7 @@ const UPDATE_TEXT = {
   idle: ['Actualizaciones automáticas', 'Se revisan solas. Nunca se cierra la app mientras trabajas.', 'Buscar actualizaciones'],
   checking: ['Buscando actualizaciones…', 'Un momento.', ''],
   downloading: ['Descargando la versión {v}…', 'Te avisaremos cuando esté lista.', ''],
-  ready: ['Versión {v} descargada', 'Se instalará sola la próxima vez que abras MultiChat. No se cierra nada ahora.', ''],
+  ready: ['Versión {v} lista', 'Pulsa "Actualizar ahora": MultiChat se cierra unos segundos y vuelve a abrirse solo, con tus cuentas. O se instala sola la próxima vez que lo abras.', 'Actualizar ahora'],
   latest: ['Tienes la última versión', 'Las actualizaciones se revisan solas.', 'Buscar de nuevo'],
   error: ['No se pudo revisar', 'Revisa tu conexión a internet.', 'Intentar de nuevo'],
   dev: ['Actualizaciones automáticas', 'Funcionan en la app instalada.', ''],
@@ -1985,6 +1985,15 @@ async function loadAbout() {
 }
 
 $('update-action').addEventListener('click', async () => {
+  if ($('update-card').dataset.status === 'ready') {
+    $('update-action').disabled = true;
+    $('update-action').textContent = 'Actualizando…';
+    const result = await api.installUpdateNow();
+    $('update-action').disabled = false;
+    if (result && result.ok && api.platform === 'darwin') $('update-sub').textContent = 'Descargando… Abre el archivo y arrastra MultiChat a Aplicaciones.';
+    else if (!result || !result.ok) $('update-sub').textContent = (result && result.error) || 'No se pudo actualizar ahora. Cierra MultiChat (clic derecho en el ícono junto al reloj → Salir) y ábrelo de nuevo.';
+    return;
+  }
   showUpdateState({ status: 'checking' });
   showUpdateState(await api.checkUpdate());
 });
@@ -2025,7 +2034,7 @@ api.onUpdateReady(({ version, items, mode = 'ready', days = 0, behind = false, c
   else clearInterval(forcedTimer);
   $('upd-tag').textContent = { ready: 'Actualización lista', reminder: 'Actualización pendiente', required: 'Actualización necesaria', forced: 'Actualización obligatoria' }[mode] || 'Actualización lista';
   $('upd-hint').innerHTML = {
-    ready: 'Ya se descargó. <b>Se instalará sola la próxima vez que abras MultiChat</b> (por ejemplo, al prender la PC). No se cierra nada ahora: sigue trabajando.',
+    ready: 'Ya se descargó. Pulsa <b>Actualizar ahora</b> (se cierra unos segundos y vuelve a abrirse con tus cuentas) o sigue trabajando: <b>se instalará sola la próxima vez que abras MultiChat</b>.',
     reminder: `Esta versión te espera hace <b>${days} días</b>. Actualiza cuando tengas un momento: MultiChat se cierra unos segundos y vuelve a abrirse solo. <b>Tus cuentas siguen conectadas.</b>`,
     forced: behind
       ? `Tu MultiChat (versión ${current}) está <b>muy desactualizado</b>. Se actualizará a la <b>última versión</b> para que todo funcione bien. Toma menos de un minuto y <b>tus cuentas siguen conectadas</b>.`
@@ -2044,16 +2053,17 @@ api.onUpdateReady(({ version, items, mode = 'ready', days = 0, behind = false, c
   }
   $('upd-now').textContent = mac ? 'Descargar versión nueva' : 'Actualizar ahora';
   $('upd-error').textContent = '';
-  $('upd-ok').hidden = mode !== 'ready' || mac;
-  $('upd-ok').previousElementSibling.hidden = mode === 'ready' && !mac;
-  $('upd-later').textContent = mode === 'required' ? 'Recordarme en 4 horas' : 'Más tarde';
+  // Siempre hay "Actualizar ahora"; en el aviso de versión lista, el otro botón es "Después".
+  $('upd-ok').hidden = true;
+  $('upd-ok').previousElementSibling.hidden = false;
+  $('upd-later').textContent = mode === 'required' ? 'Recordarme en 4 horas' : mode === 'ready' ? 'Después' : 'Más tarde';
   $('upd-version').textContent = `Versión ${version}`;
   $('upd-items').replaceChildren(...(items || []).map((text) => Object.assign(document.createElement('li'), { textContent: text })));
   $('upd-items').hidden = !(items && items.length);
   $('update-modal').hidden = false;
   if (!updatePopupOpen) api.setOverlay(true);
   updatePopupOpen = true;
-  (mode === 'ready' ? $('upd-ok') : $('upd-now')).focus();
+  $('upd-now').focus();
 });
 $('upd-later').addEventListener('click', () => closeUpdatePopup());
 $('upd-now').addEventListener('click', async () => {

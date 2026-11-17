@@ -149,7 +149,8 @@ async function check() {
     set({ status: 'dev' });
     return state;
   }
-  if (state.status === 'ready' || state.status === 'downloading') return state;
+  // Si ya hay una versión lista, igual se revisa: si salió otra más nueva, se descarga esa.
+  if (state.status === 'downloading') return state;
   try {
     const result = await load().checkForUpdates();
     const latest = result && result.updateInfo ? result.updateInfo.version : '';
