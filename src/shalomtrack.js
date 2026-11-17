@@ -144,6 +144,21 @@ function interpretar(leido) {
   return r;
 }
 
+// Letras y números que el lector de texto confunde en los tickets (primero los más comunes).
+const PARECIDOS = { V: 'WU', W: 'VM', U: 'VO', O: '0DQ', 0: 'OD', D: '0O', Q: 'O0', I: '1L', 1: 'IL', L: '1I', S: '5', 5: 'S', B: '8', 8: 'B', Z: '2', 2: 'Z', G: '6', 6: 'G', M: 'WN', N: 'M' };
+const MAX_VARIANTES = 6;
+
+// Otros códigos posibles cambiando un solo carácter parecido.
+function variantes(codigo) {
+  const out = [];
+  for (let i = 0; i < codigo.length; i++) {
+    for (const c of PARECIDOS[codigo[i]] || '') out.push(codigo.slice(0, i) + c + codigo.slice(i + 1));
+  }
+  // V/W primero (lo más común en los tickets), luego el resto.
+  out.sort((a, b) => Number(!/[VW]/.test(a) || !/[VW]/.test(codigo)) - Number(!/[VW]/.test(b) || !/[VW]/.test(codigo)));
+  return [...new Set(out)].slice(0, MAX_VARIANTES);
+}
+
 // Consulta (una a la vez; el mismo envío se recuerda 10 minutos).
 function rastrear(ordenIn, codigoIn) {
   const orden = String(ordenIn || '').replace(/\D/g, '');
@@ -153,7 +168,18 @@ function rastrear(ordenIn, codigoIn) {
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return Promise.resolve(hit.result);
   const run = busy.then(async () => {
-    const result = { transportista: 'shalom', consultado_el: new Date().toISOString(), ...interpretar(await consultar(orden, codigo)) };
+    let result = { transportista: 'shalom', consultado_el: new Date().toISOString(), ...interpretar(await consultar(orden, codigo)) };
+    // No encontrada: el código pudo leerse mal de la foto (W→V, 0→O...). Se prueban esas letras, una a la vez.
+    if (!result.ok && result.error === 'no_encontrada') {
+      for (const otro of variantes(codigo)) {
+        const intento = interpretar(await consultar(orden, otro));
+        if (intento.ok) {
+          result = { transportista: 'shalom', consultado_el: new Date().toISOString(), ...intento, codigo_corregido: otro };
+          break;
+        }
+        if (intento.error !== 'no_encontrada') break; // la página no respondió: no se sigue probando
+      }
+    }
     if (result.ok || result.error === 'no_encontrada') cache.set(key, { at: Date.now(), result });
     return result;
   });
@@ -180,4 +206,4 @@ function desdeTicket(texto) {
   return { orden: /^\d{6,12}$/.test(orden) ? orden : '', codigo };
 }
 
-module.exports = { rastrear, detectar, desdeTicket, interpretar, fecha, respuestaCliente, consultar };
+module.exports = { rastrear, detectar, desdeTicket, interpretar, fecha, respuestaCliente, consultar, variantes };

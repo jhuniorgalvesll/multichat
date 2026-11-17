@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.18.3
+
+- **Código del ticket mal leído**: si Shalom no encuentra la orden, MultiChat prueba las letras que el lector suele confundir (W/V, O/0, I/1, S/5, B/8…) y, si una funciona, corrige el código y avisa "✓ Código corregido".
+
 ## Novedades v1.18.2
 
 - **Actualizar ahora**: el aviso "Actualización lista" y el panel del logo tienen el botón *Actualizar ahora* (MultiChat se cierra unos segundos y vuelve a abrirse con tus cuentas). "Buscar actualizaciones" encuentra la versión más nueva aunque ya haya otra descargada.

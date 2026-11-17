@@ -108,7 +108,9 @@ async function trackNow() {
   aiBusy = false;
   $('ai-ship-go').disabled = false;
   $('ai-suggest').disabled = false;
-  $('ai-ship-state').textContent = shipLine(result.rastreo);
+  const r = result.rastreo || {};
+  if (r.codigo_corregido) $('ai-ship-code').value = r.codigo_corregido;
+  $('ai-ship-state').textContent = `${r.codigo_corregido ? `✓ Código corregido a ${r.codigo_corregido} (la foto se leyó distinto) · ` : ''}${shipLine(r)}`;
   if (!result.ok) {
     $('ai-status').textContent = result.error;
     if (result.needsKey) $('ai-config').open = true;

@@ -2718,7 +2718,8 @@ function registerIpc() {
     if (locked) return { ok: false, error: 'La app está bloqueada.' };
     const rastreo = await shalomtrack.rastrear(orden, codigo);
     const { settings } = store.get();
-    const result = await assistant.suggestShipping({ storedKey: settings.aiKey, customerMessage: text, rastreo });
+    const { codigo_corregido: _fix, ...paraIa } = rastreo; // la IA no necesita (ni debe escribir) el código
+    const result = await assistant.suggestShipping({ storedKey: settings.aiKey, customerMessage: text, rastreo: paraIa });
     return { ...result, rastreo };
   });
   // La respuesta elegida se pega en el chat abierto; el usuario la revisa y presiona Enter.
