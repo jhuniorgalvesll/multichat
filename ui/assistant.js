@@ -23,6 +23,10 @@ async function openAssistantPanel({ text = '', accountName = '' } = {}) {
   $('ai-modal').hidden = false;
   if (!aiOpen) api.setOverlay(true);
   aiOpen = true;
+  $('ai-ship-state').textContent = '';
+  const found = await api.detectShipment(text);
+  $('ai-ship-order').value = found.orden || '';
+  $('ai-ship-code').value = found.codigo || '';
   if (text && config.hasKey) suggestNow();
   else if (!config.hasKey) $('ai-key').focus();
   else $('ai-message').focus();
@@ -74,6 +78,44 @@ async function suggestNow() {
 }
 
 $('ai-suggest').addEventListener('click', suggestNow);
+
+// Estado del envío según Shalom, en una línea (sin nombres ni DNI).
+function shipLine(r) {
+  if (!r) return '';
+  if (r.ok) {
+    const fechas = [r.registrado_el && `registrado el ${r.registrado_el}`, r.en_destino_el && `en destino desde el ${r.en_destino_el}`, r.entregado_el && `entregado el ${r.entregado_el}`].filter(Boolean);
+    return `Shalom: "${r.estado}"${fechas.length ? ` · ${fechas.join(' · ')}` : ''}`;
+  }
+  return {
+    no_encontrada: 'Shalom no encontró esa orden: revisa el N° y el código del ticket.',
+    datos_invalidos: 'Revisa el N° de orden (solo números) y el código de 4 caracteres.',
+  }[r.error] || 'No se pudo consultar Shalom en este momento.';
+}
+
+async function trackNow() {
+  if (aiBusy) return;
+  aiBusy = true;
+  $('ai-ship-go').disabled = true;
+  $('ai-suggest').disabled = true;
+  $('ai-ship-state').textContent = '🔎 Consultando el rastreo de Shalom…';
+  $('ai-status').textContent = '';
+  $('ai-results').replaceChildren();
+  const result = await api.trackAndReply({ orden: $('ai-ship-order').value, codigo: $('ai-ship-code').value, text: $('ai-message').value });
+  aiBusy = false;
+  $('ai-ship-go').disabled = false;
+  $('ai-suggest').disabled = false;
+  $('ai-ship-state').textContent = shipLine(result.rastreo);
+  if (!result.ok) {
+    $('ai-status').textContent = result.error;
+    if (result.needsKey) $('ai-config').open = true;
+    return;
+  }
+  $('ai-status').textContent = 'Elige una, pégala en el chat y revísala antes de enviar.';
+  $('ai-results').replaceChildren(...result.replies.map(replyCard));
+}
+$('ai-ship-go').addEventListener('click', trackNow);
+$('ai-ship-code').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
+$('ai-ship-order').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, ''); });
 $('ai-message').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) suggestNow();
 });

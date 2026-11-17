@@ -91,6 +91,8 @@ contextBridge.exposeInMainWorld('multichat', {
   assistantConfig: () => ipcRenderer.invoke('ai:config'),
   saveAssistantConfig: (config) => ipcRenderer.invoke('ai:save-config', config),
   suggestReplies: (text, accountName) => ipcRenderer.invoke('ai:suggest', text, accountName),
+  detectShipment: (text) => ipcRenderer.invoke('ship:detect', text),
+  trackAndReply: (data) => ipcRenderer.invoke('ship:track-reply', data),
   pasteReply: (text) => ipcRenderer.invoke('ai:paste', text),
   verifyClipboard: () => ipcRenderer.send('verify:clipboard'),
   verifyManual: (amount, time) => ipcRenderer.send('verify:manual', amount, time),

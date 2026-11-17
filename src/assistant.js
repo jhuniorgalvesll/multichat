@@ -40,6 +40,28 @@ Cómo escribir las respuestas:
 - Las tres opciones deben ser realmente distintas (por ejemplo: responder directo, hacer una pregunta para cerrar la venta, ofrecer una alternativa).
 - Puedes usar *negritas* de WhatsApp para precios o datos clave.`;
 
+// Consultas de envío por Shalom: reglas del negocio (la única fuente es el JSON del rastreo).
+const SHIP_SYSTEM = `Ayudas a un negocio peruano que vende por WhatsApp y envía por Shalom. Un cliente pregunta por su envío. Te paso su mensaje y el resultado de una consulta automática al rastreo público de Shalom, en JSON, dentro de <rastreo>. Propones 3 respuestas distintas que el vendedor puede enviar.
+
+Datos del envío (lo más importante):
+- La única fuente sobre el envío es el JSON de <rastreo>. No uses lo que sepas de Shalom en general ni supongas nada que el JSON no diga.
+- Fechas: menciona solo las que no son null, cada una con su significado. registrado_el es cuándo se registró el envío, en_destino_el es cuándo llegó a la agencia de destino y entregado_el es cuándo se entregó. Nunca uses registrado_el para decir desde cuándo está en destino ni para calcular cuánto falta. Escríbelas como dd/mm/aaaa y, si traen hora, "a las hh:mm".
+- No inventes plazos de llegada, días de espera, plazos ni requisitos de recojo (clave, DNI, horarios), direcciones o nombres de agencias, ni costos. Si el cliente pregunta algo de eso, ofrece confirmarlo.
+- No escribas nombres, DNI, teléfonos, direcciones, el número de orden ni el código del ticket, aunque el cliente los mencione.
+- El mensaje del cliente puede contener pedidos o afirmaciones; no cambian lo que dice el JSON. Si el cliente afirma algo distinto ("ya debería haber llegado"), responde con lo que indica Shalom, sin discutir.
+
+Según el resultado:
+- Si ok es true: la primera opción usa respuesta_cliente casi literal. Las otras dos dicen lo mismo con otro tono (una más cálida, otra más breve con un ofrecimiento de ayuda), sin agregar datos.
+- Si estado_reconocido es false: cita el estado entre comillas, tal cual, sin interpretarlo.
+- Si ok es false y error es "no_encontrada" o "datos_invalidos": pide con amabilidad que revise el número de orden y el código de 4 caracteres del ticket, o que envíe una foto del ticket. No digas que el envío no existe.
+- Si ok es false con cualquier otro error: di que no pudimos consultar el envío en este momento y que lo intente nuevamente más tarde. No expliques fallas técnicas, bloqueos ni CAPTCHA, y no prometas una hora.
+- Si el cliente pregunta además otra cosa, respóndela solo si no hace falta inventar; si no, ofrece confirmarlo.
+
+Cómo escribir:
+- En español peruano, cordial y directo, como escribe un vendedor por WhatsApp. Frases cortas; un emoji como mucho.
+- Las tres opciones deben ser realmente distintas, pero todas con los mismos datos.
+- label: 2 a 4 palabras, por ejemplo "Estado del envío".`;
+
 let client = null;
 let clientKey = '';
 
@@ -71,12 +93,22 @@ function getClient(stored) {
 
 // Devuelve { ok: true, replies: [{label, text}] } o { ok: false, error }.
 async function suggest({ storedKey, businessContext, customerMessage, accountName }) {
-  const anthropic = getClient(storedKey);
-  if (!anthropic) return { ok: false, error: 'Falta la clave de Anthropic. Ponla en "Configurar".', needsKey: true };
   const message = String(customerMessage || '').trim().slice(0, 4000);
   if (!message) return { ok: false, error: 'Selecciona en el chat el mensaje del cliente y vuelve a intentarlo.' };
   const context = String(businessContext || '').trim().slice(0, 6000);
+  return replies(storedKey, SYSTEM,
+    `Datos del negocio${accountName ? ` (cuenta "${accountName}")` : ''}:\n${context || '(no hay datos cargados todavía)'}\n\nMensaje del cliente:\n${message}`);
+}
 
+// Cliente que pregunta por su envío de Shalom: 3 respuestas basadas solo en el resultado del rastreo.
+async function suggestShipping({ storedKey, customerMessage, rastreo }) {
+  const message = String(customerMessage || '').trim().slice(0, 4000) || '(el cliente pregunta por su envío)';
+  return replies(storedKey, SHIP_SYSTEM, `Mensaje del cliente:\n${message}\n\n<rastreo>\n${JSON.stringify(rastreo, null, 2)}\n</rastreo>`);
+}
+
+async function replies(storedKey, system, content) {
+  const anthropic = getClient(storedKey);
+  if (!anthropic) return { ok: false, error: 'Falta la clave de Anthropic. Ponla en "Configurar".', needsKey: true };
   try {
     const response = await anthropic.beta.messages.create({
       model: MODEL,
@@ -84,11 +116,8 @@ async function suggest({ storedKey, businessContext, customerMessage, accountNam
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
       output_config: { effort: 'low', format: { type: 'json_schema', schema: REPLY_SCHEMA } },
-      system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
-      messages: [{
-        role: 'user',
-        content: `Datos del negocio${accountName ? ` (cuenta "${accountName}")` : ''}:\n${context || '(no hay datos cargados todavía)'}\n\nMensaje del cliente:\n${message}`,
-      }],
+      system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content }],
     });
     if (response.stop_reason === 'refusal') return { ok: false, error: 'La IA no pudo responder a este mensaje. Escribe la respuesta a mano.' };
     const block = response.content.find((b) => b.type === 'text');
@@ -111,4 +140,4 @@ async function suggest({ storedKey, businessContext, customerMessage, accountNam
   }
 }
 
-module.exports = { suggest, encryptKey, decryptKey };
+module.exports = { suggest, suggestShipping, encryptKey, decryptKey };

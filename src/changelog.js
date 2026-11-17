@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.18.0',
+    items: ['Asistente con IA: "📦 Consultar envío" revisa el rastreo de Shalom con el N° de orden y el código del ticket y propone 3 respuestas solo con lo que dice Shalom.'],
+  },
+  {
     version: '1.17.4',
     items: ['La PC vuelve a apagar la pantalla y suspenderse normal (ya no se calienta). "Seguir avisando con la pantalla apagada" queda apagado; se puede activar en ⚙ → Pagos.'],
   },

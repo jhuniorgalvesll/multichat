@@ -574,6 +574,15 @@
         <textarea id="ai-message" rows="3" maxlength="4000" placeholder="Selecciona el mensaje del cliente en el chat antes de abrir el asistente, o pégalo aquí"></textarea>
       </label>
       <button type="button" class="primary" id="ai-suggest">✨ Sugerir 3 respuestas</button>
+      <div class="ai-ship" id="ai-ship">
+        <div class="ai-ship-title">📦 ¿Pregunta por su envío de Shalom? Consulta el rastreo y responde con lo que dice Shalom:</div>
+        <div class="ai-ship-row">
+          <input id="ai-ship-order" inputmode="numeric" maxlength="12" placeholder="N° de orden (ticket)">
+          <input id="ai-ship-code" maxlength="4" placeholder="Código (4)">
+          <button type="button" id="ai-ship-go">Consultar envío</button>
+        </div>
+        <div class="note" id="ai-ship-state"></div>
+      </div>
       <p class="note ai-status" id="ai-status"></p>
       <div class="ai-results" id="ai-results"></div>
       <details class="ai-config" id="ai-config">

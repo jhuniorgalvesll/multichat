@@ -17,6 +17,7 @@ const verify = require('./verify');
 const assistant = require('./assistant');
 const shipwatch = require('./shipwatch');
 const paymatch = require('./paymatch');
+const shalomtrack = require('./shalomtrack');
 const voice = require('./voice');
 const screensaver = require('./screensaver');
 const bubble = require('./bubble');
@@ -2708,6 +2709,15 @@ function registerIpc() {
     if (locked) return { ok: false, error: 'La app está bloqueada.' };
     const { settings } = store.get();
     return assistant.suggest({ storedKey: settings.aiKey, businessContext: settings.aiContext, customerMessage: text, accountName });
+  });
+  // Envío por Shalom: consulta el rastreo público y la IA propone 3 respuestas solo con ese resultado.
+  ipcMain.handle('ship:detect', (_e, text) => shalomtrack.detectar(text));
+  ipcMain.handle('ship:track-reply', async (_e, { orden, codigo, text } = {}) => {
+    if (locked) return { ok: false, error: 'La app está bloqueada.' };
+    const rastreo = await shalomtrack.rastrear(orden, codigo);
+    const { settings } = store.get();
+    const result = await assistant.suggestShipping({ storedKey: settings.aiKey, customerMessage: text, rastreo });
+    return { ...result, rastreo };
   });
   // La respuesta elegida se pega en el chat abierto; el usuario la revisa y presiona Enter.
   ipcMain.handle('ai:paste', async (_e, text) => {

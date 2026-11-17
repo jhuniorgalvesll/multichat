@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.18.0
+
+- **Consultar envío de Shalom** desde el asistente con IA: con el N° de orden y el código de 4 caracteres del ticket (se detectan solos en el mensaje del cliente), MultiChat consulta el rastreo público de Shalom y la IA propone 3 respuestas usando **solo** lo que dice Shalom (estado y fechas), sin inventar plazos, agencias ni costos, y sin escribir datos personales. Tú eliges una y presionas Enter.
+
 ## Novedades v1.17.4
 
 - **La PC ya no se calienta**: "Seguir avisando con la pantalla apagada" se apagó para todos, así Windows apaga la pantalla y suspende la laptop normal. Los pagos que lleguen mientras duerme se registran al volver. Quien quiera puede activarlo en ⚙ → Pagos (avisa que la laptop no se duerme y puede calentarse).
