@@ -2665,13 +2665,26 @@ api.onRuc((d) => {
     $('ruc-num').focus();
     return;
   }
+  if (d.status === 'dni') {
+    $('ruc-state').textContent = `Se abrió la búsqueda del DNI ${d.numero} en otra ventana (el DNI también quedó copiado). Copia ahí el nombre completo, pégalo aquí y pulsa "Usar en el ticket".`;
+    $('ruc-data').hidden = true;
+    $('ruc-copy').hidden = true;
+    $('ruc-eldni').hidden = false;
+    $('ruc-eldni').textContent = '🌐 Abrir de nuevo la búsqueda';
+    $('ruc-name-box').hidden = false;
+    $('ruc-ticket').hidden = false;
+    $('ruc-name').value = '';
+    rucPersona = { name: '', dni: d.numero };
+    setTimeout(() => $('ruc-name').focus(), 300);
+    return;
+  }
   if (d.status === 'buscando') {
     $('ruc-state').textContent = `Consultando ${d.tipo === 'ruc' ? 'RUC' : 'DNI'} ${d.numero} en la ventana de SUNAT… (si pide verificación, márcala allí)`;
     $('ruc-data').hidden = true;
     $('ruc-copy').hidden = true;
     return;
   }
-  const sinRuc = d.status === 'resultado' && !d.ok && d.error === 'no_encontrado' && d.tipo === 'dni';
+  const sinRuc = d.status === 'dni' || (d.status === 'resultado' && !d.ok && d.error === 'no_encontrado' && d.tipo === 'dni');
   $('ruc-eldni').hidden = !sinRuc;
   // DNI sin RUC: se escribe o pega el nombre y se usa en el ticket.
   $('ruc-name-box').hidden = !sinRuc;
@@ -2721,9 +2734,7 @@ $('ruc-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') clos
 // DNI sin RUC: abre eldni.com en el navegador con el DNI copiado (la persona lo pega y busca; MultiChat no lee esa página).
 $('ruc-eldni').addEventListener('click', async () => {
   const dni = $('ruc-num').value.replace(/\D/g, '');
-  await navigator.clipboard.writeText(dni).catch(() => {});
-  api.openUrl('https://eldni.com/pe/buscar-datos-por-dni');
-  $('ruc-state').textContent = `DNI ${dni} copiado: pégalo en eldni.com con Ctrl+V. Úsalo solo para confirmar los datos que te dio tu cliente.`;
+  api.consultarRuc(dni); // vuelve a abrir la búsqueda del DNI
 });
 
 // Datos de la consulta → ticket de envío (se completa la agencia o dirección y se imprime).

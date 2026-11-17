@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.19.4
+
+- **RUC o DNI, cada uno a su página**: el RUC (11 dígitos) se consulta en SUNAT; el DNI (8 dígitos) abre directo la búsqueda de datos por DNI (eldni.com) en una ventana con el número escrito y buscado. Copias el nombre, lo pegas en MultiChat y *Usar en el ticket*. MultiChat no lee esa página.
+
 ## Novedades v1.19.3
 
 - **Consulta → ticket**: después de consultar un RUC o DNI, *🖨 Usar en el ticket* llena el destinatario (nombre o razón social) y el DNI (del RUC 10 o del DNI consultado). Si el DNI no tiene RUC, pegas el nombre (por ejemplo de eldni.com) y lo pasas al ticket. Completas agencia o dirección y presionas Imprimir.

@@ -1885,7 +1885,9 @@ function showEditMenu(wc, params) {
     },
     { label: '📝 Pedir datos de envío', submenu: shippingFormItems() },
     ...(sunatruc.detectar(selection) ? [{
-      label: `🔎 Consultar ${sunatruc.detectar(selection).tipo === 'ruc' ? 'RUC' : 'DNI'} ${sunatruc.detectar(selection).numero} en SUNAT`,
+      label: sunatruc.detectar(selection).tipo === 'ruc'
+        ? `🔎 Consultar RUC ${sunatruc.detectar(selection).numero} en SUNAT`
+        : `🔎 Buscar datos del DNI ${sunatruc.detectar(selection).numero}`,
       click: () => consultarSunat(sunatruc.detectar(selection)),
     }] : []),
     { label: 'Recordarme de este chat…', click: () => openReminderDialog(idForWebContents(wc), selection.slice(0, 300)) },
@@ -2197,7 +2199,7 @@ function settingsPanel() {
           action('about', 'Acerca de, novedades y actualizaciones', `Versión ${app.getVersion()}`),
           action('checkUpdates', 'Buscar actualizaciones'),
           action('rate', '⭐ Calificar MultiChat'),
-          action('rucSunat', '🔎 Consultar RUC o DNI en SUNAT (gratis)'),
+          action('rucSunat', '🔎 Consultar RUC (SUNAT) o DNI (gratis)'),
           action('coffee', '☕ Invítale un cafecito al creador'),
           action('quit', `Salir de ${APP_NAME}`),
         ],
@@ -2982,6 +2984,13 @@ async function shipFromImageAt(wc, x, y) {
 // Consulta RUC / DNI en la página oficial de SUNAT (ventana visible). El resultado se muestra para copiarlo.
 function consultarSunat(q) {
   if (locked || !q) return;
+  // DNI: no va a SUNAT; se abre eldni.com con el DNI escrito (el DNI también queda copiado).
+  if (q.tipo === 'dni') {
+    copyText(q.numero);
+    sunatruc.abrirEldni({ dni: q.numero, parent: win });
+    win.webContents.send('ui:ruc', { status: 'dni', ...q });
+    return;
+  }
   win.webContents.send('ui:ruc', { status: 'buscando', ...q });
   const ventanaSunat = sunatruc.consultar({
     ...q,
