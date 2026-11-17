@@ -2667,7 +2667,7 @@ api.onRuc((d) => {
   }
   if (!d.ok) {
     $('ruc-state').textContent = {
-      no_encontrado: 'SUNAT no encontró ese número.',
+      no_encontrado: d.tipo === 'dni' ? 'Ese DNI no tiene RUC en SUNAT (la persona no es contribuyente). Para personas sin RUC, SUNAT no muestra el nombre.' : 'SUNAT no encontró ese RUC. Revisa los 11 dígitos.',
       varios: `SUNAT encontró ${d.n || 'varios'} resultados: elige uno en la ventana de SUNAT.`,
       numero: 'Escribe un RUC de 11 dígitos o un DNI de 8 dígitos.',
       cerrada: 'Se cerró la ventana de SUNAT.',

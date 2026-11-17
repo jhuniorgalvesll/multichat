@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.19.1',
+    items: ['Consulta DNI: si la persona no tiene RUC, MultiChat lo dice claro y cierra la ventana de SUNAT.'],
+  },
+  {
     version: '1.19.0',
     items: ['Consultar RUC o DNI en SUNAT gratis: selecciona el número en el chat → clic derecho → "🔎 Consultar en SUNAT" (o ⚙ → Consultar RUC o DNI). Abre la página oficial y te muestra los datos para copiar.'],
   },

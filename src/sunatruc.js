@@ -101,7 +101,10 @@ function consultar({ tipo, numero, parent, onResult }) {
       }
       const leido = await wc.executeJavaScript(READ_SCRIPT, true);
       if (leido.estado === 'ficha' && leido.datos.ruc) fin({ ok: true, datos: leido.datos });
-      else if (leido.estado === 'no_encontrado') fin({ ok: false, error: 'no_encontrado' });
+      else if (leido.estado === 'no_encontrado') {
+        fin({ ok: false, error: 'no_encontrado' });
+        if (!win.isDestroyed()) win.close(); // el mensaje ya se muestra en MultiChat
+      }
       else if (leido.estado === 'lista') fin({ ok: false, error: 'varios', n: leido.n });
     } catch { /* la página está cargando */ }
   }, 1000);
