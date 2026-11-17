@@ -2634,6 +2634,7 @@ api.onRateNow(() => openRate(false));
 
 let rucOpen = false;
 let rucTexto = '';
+let rucPersona = null; // { name, dni } para el ticket
 const RUC_CAMPOS = [['ruc', 'RUC'], ['tipo', 'Tipo'], ['nombreComercial', 'Nombre comercial'], ['estadoContribuyente', 'Estado'], ['condicion', 'Condición'], ['domicilio', 'Domicilio fiscal']];
 function openRuc() {
   if (state.locked || passwordMode) return;
@@ -2652,6 +2653,11 @@ function closeRuc() {
 api.onRuc((d) => {
   openRuc();
   if (d.numero) $('ruc-num').value = d.numero;
+  if (d.status !== 'resultado') {
+    $('ruc-ticket').hidden = true;
+    $('ruc-eldni').hidden = true;
+    $('ruc-name-box').hidden = true;
+  }
   if (d.status === 'pedir') {
     $('ruc-state').textContent = '';
     $('ruc-data').hidden = true;
@@ -2665,7 +2671,15 @@ api.onRuc((d) => {
     $('ruc-copy').hidden = true;
     return;
   }
-  $('ruc-eldni').hidden = !(d.status === 'resultado' && !d.ok && d.error === 'no_encontrado' && d.tipo === 'dni');
+  const sinRuc = d.status === 'resultado' && !d.ok && d.error === 'no_encontrado' && d.tipo === 'dni';
+  $('ruc-eldni').hidden = !sinRuc;
+  // DNI sin RUC: se escribe o pega el nombre y se usa en el ticket.
+  $('ruc-name-box').hidden = !sinRuc;
+  if (sinRuc) {
+    rucPersona = { name: '', dni: d.numero };
+    $('ruc-name').value = '';
+  }
+  $('ruc-ticket').hidden = !sinRuc && !(d.status === 'resultado' && d.ok);
   if (!d.ok) {
     $('ruc-state').textContent = {
       no_encontrado: d.tipo === 'dni' ? 'Ese DNI no tiene RUC en SUNAT (la persona no es contribuyente). Para ver el nombre puedes buscarlo tú en eldni.com: el DNI queda copiado, pégalo con Ctrl+V.' : 'SUNAT no encontró ese RUC. Revisa los 11 dígitos.',
@@ -2677,6 +2691,10 @@ api.onRuc((d) => {
     return;
   }
   $('ruc-state').textContent = '✓ Datos de SUNAT';
+  // "20100130204 - EMPRESA SAC" → nombre; con RUC 10 el DNI son los 8 dígitos del medio.
+  const [rucNum, ...resto] = String(d.datos.ruc || '').split(' - ');
+  const numRuc = rucNum.replace(/\D/g, '');
+  rucPersona = { name: resto.join(' - ').trim(), dni: d.tipo === 'dni' ? d.numero : (numRuc.startsWith('10') ? numRuc.slice(2, 10) : ''), ruc: numRuc };
   const filas = RUC_CAMPOS.filter(([k]) => d.datos[k]).map(([k, label]) => [label, d.datos[k]]);
   rucTexto = filas.map(([l, v]) => `${l}: ${v}`).join('\n');
   $('ruc-data').replaceChildren(...filas.map(([l, v]) => {
@@ -2706,4 +2724,17 @@ $('ruc-eldni').addEventListener('click', async () => {
   await navigator.clipboard.writeText(dni).catch(() => {});
   api.openUrl('https://eldni.com/pe/buscar-datos-por-dni');
   $('ruc-state').textContent = `DNI ${dni} copiado: pégalo en eldni.com con Ctrl+V. Úsalo solo para confirmar los datos que te dio tu cliente.`;
+});
+
+// Datos de la consulta → ticket de envío (se completa la agencia o dirección y se imprime).
+$('ruc-ticket').addEventListener('click', () => {
+  if (!rucPersona) return;
+  const name = (rucPersona.name || $('ruc-name').value).replace(/\s+/g, ' ').trim();
+  if (!name) {
+    $('ruc-state').textContent = 'Escribe o pega el nombre completo para el ticket.';
+    $('ruc-name').focus();
+    return;
+  }
+  closeRuc();
+  openTicketPanel({ prefill: { name, ...(rucPersona.dni ? { dni: rucPersona.dni } : {}) } });
 });

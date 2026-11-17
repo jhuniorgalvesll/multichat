@@ -1611,3 +1611,5 @@ body.compact .bar .icon-btn.add svg { width: 14px; height: 14px; }
 .ruc-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .ruc-data { text-align: left; border: 1px solid var(--line, #e5e1ef); border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; }
 .ruc-data[hidden] { display: none; }
+.ruc-name { text-align: left; }
+.ruc-name[hidden] { display: none; }

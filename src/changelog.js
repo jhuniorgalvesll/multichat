@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.19.3',
+    items: ['Consulta RUC/DNI → "🖨 Usar en el ticket": el nombre y el DNI pasan al ticket de envío para imprimirlo. Si el DNI no tiene RUC, pegas el nombre y listo.'],
+  },
+  {
     version: '1.19.2',
     items: ['DNI sin RUC: botón "Buscar nombre en eldni.com" que abre esa página con el DNI copiado (lo pegas con Ctrl+V).'],
   },

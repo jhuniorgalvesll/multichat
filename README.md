@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.19.3
+
+- **Consulta → ticket**: después de consultar un RUC o DNI, *🖨 Usar en el ticket* llena el destinatario (nombre o razón social) y el DNI (del RUC 10 o del DNI consultado). Si el DNI no tiene RUC, pegas el nombre (por ejemplo de eldni.com) y lo pasas al ticket. Completas agencia o dirección y presionas Imprimir.
+
 ## Novedades v1.19.0
 
 - **Consultar RUC o DNI en SUNAT (gratis)**: selecciona el número en el chat → clic derecho → *🔎 Consultar RUC/DNI … en SUNAT*, o ⚙ → *Consultar RUC o DNI*. Se abre la página oficial de SUNAT en una ventana con el número ya escrito (si SUNAT pide verificación, la marcas tú) y MultiChat muestra RUC, razón social, estado, condición y domicilio fiscal para copiarlos. No se salta ninguna verificación de SUNAT.
