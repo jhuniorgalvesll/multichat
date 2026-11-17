@@ -2732,6 +2732,16 @@ function registerIpc() {
   ipcMain.on('app:open-url', (_e, url) => {
     if (url === 'https://eldni.com/pe/buscar-datos-por-dni') shell.openExternal(url).catch(() => {});
   });
+  // Ticket: DNI escrito y destinatario vacío → buscar el nombre (la ventana se cierra sola al tenerlo).
+  ipcMain.on('dni:nombre', (_e, dni) => {
+    const n = String(dni || '').replace(/\D/g, '');
+    if (locked || !/^\d{8}$/.test(n)) return;
+    sunatruc.abrirEldni({
+      dni: n,
+      parent: win,
+      onName: (name) => { if (win && !win.isDestroyed()) win.webContents.send('ui:dni-name', { dni: n, name }); },
+    });
+  });
   ipcMain.on('ruc:consultar', (_e, numero) => {
     const q = sunatruc.detectar(String(numero || ''));
     if (q) consultarSunat(q);

@@ -93,6 +93,8 @@ contextBridge.exposeInMainWorld('multichat', {
   suggestReplies: (text, accountName) => ipcRenderer.invoke('ai:suggest', text, accountName),
   detectShipment: (text) => ipcRenderer.invoke('ship:detect', text),
   openUrl: (url) => ipcRenderer.send('app:open-url', url),
+  buscarNombreDni: (dni) => ipcRenderer.send('dni:nombre', dni),
+  onDniName: (fn) => ipcRenderer.on('ui:dni-name', (_e, data) => fn(data)),
   consultarRuc: (numero) => ipcRenderer.send('ruc:consultar', numero),
   onRuc: (fn) => ipcRenderer.on('ui:ruc', (_e, data) => fn(data)),
   shipFromClipboard: () => ipcRenderer.invoke('ship:from-clipboard'),

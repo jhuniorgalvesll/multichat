@@ -1613,3 +1613,5 @@ body.compact .bar .icon-btn.add svg { width: 14px; height: 14px; }
 .ruc-data[hidden] { display: none; }
 .ruc-name { text-align: left; }
 .ruc-name[hidden] { display: none; }
+.ticket-dni-hint { display: block; min-height: 0; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.ticket-dni-hint:empty { display: none; }

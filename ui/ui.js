@@ -1211,6 +1211,9 @@ async function openTicketPanel({ accountId = null, channel = 'WhatsApp', prefill
   ticketPanelOpen = true;
   layoutTicketPanel();
   $(['ticket-name', 'ticket-phone', 'ticket-destination'].find((id) => !$(id).value) || 'ticket-orderNumber').focus();
+  $('ticket-dni-hint').textContent = '';
+  dniBuscado = '';
+  buscarNombreDelDni();
   // Primera vez (PC nueva): todavía no hay remitente; se pide agregar los datos de la empresa.
   if (!ticketProfiles.length) {
     await openProfiles({ addNew: true });
@@ -2773,4 +2776,30 @@ $('ruc-chat').addEventListener('click', async () => {
     await navigator.clipboard.writeText(lineas.join('\n')).catch(() => {});
     $('ruc-state').textContent = 'Copiado: abre el chat y pégalo con Ctrl+V.';
   }
+});
+
+// -- Ticket: con el DNI escrito y el destinatario vacío, se busca el nombre y se llena solo --
+let dniBuscado = '';
+let dniTimer = null;
+function buscarNombreDelDni() {
+  if (!ticketPanelOpen) return;
+  const dni = $('ticket-dni').value.replace(/\D/g, '');
+  if (!/^\d{8}$/.test(dni) || $('ticket-name').value.trim() || dni === dniBuscado) return;
+  dniBuscado = dni;
+  $('ticket-dni-hint').textContent = '🔎 Buscando el nombre…';
+  api.buscarNombreDni(dni);
+}
+$('ticket-dni').addEventListener('input', () => {
+  clearTimeout(dniTimer);
+  if (!/^\d{8}$/.test($('ticket-dni').value.replace(/\D/g, ''))) $('ticket-dni-hint').textContent = '';
+  dniTimer = setTimeout(buscarNombreDelDni, 700);
+});
+api.onDniName(({ dni, name }) => {
+  if (!ticketPanelOpen || $('ticket-dni').value.replace(/\D/g, '') !== dni) return;
+  if (!$('ticket-name').value.trim()) {
+    $('ticket-name').value = name;
+    $('ticket-name').classList.add('auto');
+    updateTicketPreview();
+  }
+  $('ticket-dni-hint').textContent = '✓ Nombre encontrado por DNI: revísalo';
 });

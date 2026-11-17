@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.19.6',
+    items: ['Ticket de envío: con el DNI escrito y el destinatario vacío, el nombre se busca y se llena solo.'],
+  },
+  {
     version: '1.19.5',
     items: ['Consulta DNI: el nombre completo llega solo a MultiChat. Botones "💬 Pegar en el chat" (nombre y DNI para WhatsApp) y "🖨 Usar en el ticket" (destinatario y DNI).'],
   },
