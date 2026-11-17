@@ -2793,14 +2793,10 @@ $('ruc-chat').addEventListener('click', async () => {
   if (!rucPersona) return;
   const name = rucNombre();
   const p = rucPersona;
-  const lineas = [
-    name && `*${p.fuente === 'ruc' && !p.ruc.startsWith('10') ? 'Razón social' : 'Nombre'}:* ${name}`,
-    p.ruc && `*RUC:* ${p.ruc}`,
-    p.dni && `*DNI:* ${p.dni}`,
-    p.estado && `*Estado:* ${p.estado}`,
-    p.condicion && `*Condición:* ${p.condicion}`,
-    p.domicilio && `*Domicilio fiscal:* ${p.domicilio}`,
-  ].filter(Boolean);
+  // Con RUC: solo nombre o razón social y RUC. Con DNI: nombre y DNI.
+  const lineas = p.fuente === 'ruc'
+    ? [name && `*${p.ruc.startsWith('10') ? 'Nombre' : 'Razón social'}:* ${name}`, p.ruc && `*RUC:* ${p.ruc}`].filter(Boolean)
+    : [name && `*Nombre:* ${name}`, p.dni && `*DNI:* ${p.dni}`].filter(Boolean);
   if (!lineas.length) return;
   const result = await api.pasteReply(lineas.join('\n'));
   if (result && result.ok) closeRuc();
