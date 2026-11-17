@@ -18,6 +18,7 @@ const assistant = require('./assistant');
 const shipwatch = require('./shipwatch');
 const paymatch = require('./paymatch');
 const shalomtrack = require('./shalomtrack');
+const localreply = require('./localreply');
 const voice = require('./voice');
 const screensaver = require('./screensaver');
 const bubble = require('./bubble');
@@ -2709,7 +2710,12 @@ function registerIpc() {
   ipcMain.handle('ai:suggest', async (_e, text, accountName) => {
     if (locked) return { ok: false, error: 'La app está bloqueada.' };
     const { settings } = store.get();
-    return assistant.suggest({ storedKey: settings.aiKey, businessContext: settings.aiContext, customerMessage: text, accountName });
+    // Sin clave de Anthropic (gratis): respuestas armadas con "Datos de tu negocio", sin IA.
+    if (!assistant.decryptKey(settings.aiKey)) return localreply.sugerir(text, settings.aiContext);
+    const result = await assistant.suggest({ storedKey: settings.aiKey, businessContext: settings.aiContext, customerMessage: text, accountName });
+    if (result.ok) return result;
+    const local = localreply.sugerir(text, settings.aiContext);
+    return local.ok ? { ...local, aiError: result.error } : result;
   });
   // Envío por Shalom: consulta el rastreo público y la IA propone 3 respuestas solo con ese resultado.
   ipcMain.handle('ship:detect', (_e, text) => shalomtrack.detectar(text));

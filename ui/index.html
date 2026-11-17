@@ -587,14 +587,18 @@
       <p class="note ai-status" id="ai-status"></p>
       <div class="ai-results" id="ai-results"></div>
       <details class="ai-config" id="ai-config">
-        <summary>⚙ Configurar: clave y datos de tu negocio</summary>
-        <label>Clave de API de Anthropic
-          <input id="ai-key" type="password" autocomplete="off" spellcheck="false">
-        </label>
-        <p class="note">Se crea en console.anthropic.com → API Keys. Se guarda cifrada en esta PC. Cada sugerencia cuesta aprox. S/ 0.05 a S/ 0.10, cobrados en tu cuenta de Anthropic.</p>
-        <label>Datos de tu negocio (la IA solo usa esto, no inventa precios)
+        <summary>⚙ Configurar: datos de tu negocio</summary>
+        <label>Datos de tu negocio (precios, envíos, pagos, horario: uno por línea)
           <textarea id="ai-context" rows="6" maxlength="6000" placeholder="Ej.:&#10;Mi Tienda — productos agrícolas y veterinarios. Lima.&#10;Fipronil 250 ml: S/ 45. Abono foliar 1 L: S/ 38.&#10;Envíos a todo el Perú por Shalom (S/ 10) y Olva (S/ 15), salen al día siguiente.&#10;Pagos: Yape y Plin al 999 999 999, BCP 123-456789.&#10;Horario: lunes a sábado de 7 a. m. a 7 p. m."></textarea>
         </label>
+        <p class="note"><b>Gratis:</b> con estos datos MultiChat arma las respuestas sin IA (solo usa lo que escribas aquí).</p>
+        <details class="ai-key-box">
+          <summary>Opcional: respuestas con IA (de pago)</summary>
+          <label>Clave de API de Anthropic
+            <input id="ai-key" type="password" autocomplete="off" spellcheck="false">
+          </label>
+          <p class="note">Se crea en console.anthropic.com → API Keys. Se guarda cifrada en esta PC. Cada sugerencia cuesta aprox. S/ 0.05 a S/ 0.10, cobrados en tu cuenta de Anthropic. Sin clave, todo sigue funcionando gratis.</p>
+        </details>
         <div class="ai-config-actions">
           <button type="button" id="ai-save">Guardar</button>
           <span class="note" id="ai-config-status"></span>

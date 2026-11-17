@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.18.5',
+    items: ['"✨ Sugerir 3 respuestas" gratis: sin clave, MultiChat arma las respuestas con tus "Datos de tu negocio" (precios, envíos, pagos, horario), sin IA.'],
+  },
+  {
     version: '1.18.4',
     items: ['Consultar envío gratis: sin clave de Anthropic, MultiChat arma las 3 respuestas con lo que dice Shalom (sin IA y sin costo).'],
   },

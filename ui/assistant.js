@@ -19,7 +19,7 @@ async function openAssistantPanel({ text = '', accountName = '', ship = null } =
   $('ai-context').value = config.context;
   $('ai-key').value = '';
   $('ai-key').placeholder = config.hasKey ? 'Clave guardada ✓ (escribe otra para cambiarla)' : 'sk-ant-…';
-  $('ai-config').open = !config.hasKey || !config.context;
+  $('ai-config').open = !config.context;
   $('ai-modal').hidden = false;
   if (!aiOpen) api.setOverlay(true);
   aiOpen = true;
@@ -31,8 +31,9 @@ async function openAssistantPanel({ text = '', accountName = '', ship = null } =
     $('ai-ship-state').textContent = '📷 Leyendo el ticket de la foto…';
     return;
   }
-  if (text && config.hasKey) suggestNow();
-  else if (!config.hasKey) $('ai-key').focus();
+  // Con clave usa la IA; sin clave arma respuestas gratis con "Datos de tu negocio".
+  if (text && (config.hasKey || config.context)) suggestNow();
+  else if (!config.context && !config.hasKey) $('ai-context').focus();
   else $('ai-message').focus();
 }
 
@@ -74,10 +75,13 @@ async function suggestNow() {
   $('ai-suggest').disabled = false;
   if (!result.ok) {
     $('ai-status').textContent = result.error;
-    if (result.needsKey) $('ai-config').open = true;
+    if (result.needsKey || result.needsContext) $('ai-config').open = true;
+    if (result.needsContext) $('ai-context').focus();
     return;
   }
-  $('ai-status').textContent = 'Elige una, pégala en el chat y revísala antes de enviar.';
+  $('ai-status').textContent = result.local
+    ? `Respuestas armadas por MultiChat con "Datos de tu negocio" (gratis, sin IA)${result.aiError ? ' — la IA no respondió' : ''}. Elige una, pégala y revísala antes de enviar.`
+    : 'Elige una, pégala en el chat y revísala antes de enviar.';
   $('ai-results').replaceChildren(...result.replies.map(replyCard));
 }
 

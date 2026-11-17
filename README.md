@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.18.5
+
+- **Sugerir respuestas gratis**: sin clave de Anthropic, *✨ Sugerir 3 respuestas* busca en "Datos de tu negocio" lo que pregunta el cliente (producto, precio, envío, pago, horario, ubicación) y arma 3 respuestas con ese texto, sin IA y sin costo. Si no encuentra el dato, propone confirmarlo. La clave de Anthropic queda como opción de pago.
+
 ## Novedades v1.18.4
 
 - **Consultar envío gratis**: sin clave de Anthropic, MultiChat arma solo las 3 respuestas (estado, cálida y breve) con el estado y las fechas que da Shalom, sin IA y sin costo. Con clave, las escribe la IA; si la IA falla, quedan las de MultiChat.
