@@ -19,6 +19,7 @@ const shipwatch = require('./shipwatch');
 const paymatch = require('./paymatch');
 const shalomtrack = require('./shalomtrack');
 const localreply = require('./localreply');
+const sunatruc = require('./sunatruc');
 const voice = require('./voice');
 const screensaver = require('./screensaver');
 const bubble = require('./bubble');
@@ -1883,6 +1884,10 @@ function showEditMenu(wc, params) {
       click: () => openTicketFor(idForWebContents(wc), selection),
     },
     { label: '📝 Pedir datos de envío', submenu: shippingFormItems() },
+    ...(sunatruc.detectar(selection) ? [{
+      label: `🔎 Consultar ${sunatruc.detectar(selection).tipo === 'ruc' ? 'RUC' : 'DNI'} ${sunatruc.detectar(selection).numero} en SUNAT`,
+      click: () => consultarSunat(sunatruc.detectar(selection)),
+    }] : []),
     { label: 'Recordarme de este chat…', click: () => openReminderDialog(idForWebContents(wc), selection.slice(0, 300)) },
     { type: 'separator' },
     { label: 'Cortar', role: 'cut', enabled: params.editFlags.canCut },
@@ -2192,6 +2197,7 @@ function settingsPanel() {
           action('about', 'Acerca de, novedades y actualizaciones', `Versión ${app.getVersion()}`),
           action('checkUpdates', 'Buscar actualizaciones'),
           action('rate', '⭐ Calificar MultiChat'),
+          action('rucSunat', '🔎 Consultar RUC o DNI en SUNAT (gratis)'),
           action('coffee', '☕ Invítale un cafecito al creador'),
           action('quit', `Salir de ${APP_NAME}`),
         ],
@@ -2247,6 +2253,7 @@ function settingsDo(id, value) {
     paymentsPanel: () => send('ui:payments-panel'),
     phoneGuide: () => send('ui:phone-guide'),
     onboarding: () => send('ui:onboarding'),
+    rucSunat: () => send('ui:ruc', { status: 'pedir' }),
     rate: () => send('ui:rate-now'),
     testPayment: () => onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }),
     verifyPayment: () => send('ui:verify', { status: 'ask' }),
@@ -2719,6 +2726,11 @@ function registerIpc() {
   });
   // Envío por Shalom: consulta el rastreo público y la IA propone 3 respuestas solo con ese resultado.
   ipcMain.handle('ship:detect', (_e, text) => shalomtrack.detectar(text));
+  ipcMain.on('ruc:consultar', (_e, numero) => {
+    const q = sunatruc.detectar(String(numero || ''));
+    if (q) consultarSunat(q);
+    else if (win) win.webContents.send('ui:ruc', { status: 'resultado', ok: false, error: 'numero' });
+  });
   ipcMain.handle('ship:from-clipboard', async () => (locked ? { ok: false } : readShipTicket(await readClipboardImage())));
   ipcMain.handle('ship:track-reply', async (_e, { orden, codigo, text } = {}) => {
     if (locked) return { ok: false, error: 'La app está bloqueada.' };
@@ -2961,6 +2973,20 @@ async function shipFromImageAt(wc, x, y) {
   await new Promise((r) => setTimeout(r, 400));
   const found = await readShipTicket(await readClipboardImage());
   win.webContents.send('ui:ai-ship', found);
+}
+
+// Consulta RUC / DNI en la página oficial de SUNAT (ventana visible). El resultado se muestra para copiarlo.
+function consultarSunat(q) {
+  if (locked || !q) return;
+  win.webContents.send('ui:ruc', { status: 'buscando', ...q });
+  const ventanaSunat = sunatruc.consultar({
+    ...q,
+    parent: win,
+    onResult: (result) => {
+      if (result.ok && ventanaSunat && !ventanaSunat.isDestroyed()) ventanaSunat.close();
+      if (win && !win.isDestroyed()) win.webContents.send('ui:ruc', { status: 'resultado', ...q, ...result });
+    },
+  });
 }
 
 async function verifyImageAt(wc, x, y) {

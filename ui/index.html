@@ -645,6 +645,24 @@
     </div>
   </section>
 
+  <!-- Consulta RUC / DNI en SUNAT (gratis, en la página oficial) -->
+  <section class="backdrop" id="ruc-modal" hidden>
+    <form class="card modal ruc-card" id="ruc-form" autocomplete="off">
+      <h2>🔎 Consultar RUC o DNI</h2>
+      <p class="note">Se abre la página oficial de SUNAT con el número ya escrito. Si SUNAT muestra una verificación ("No soy un robot"), márcala en esa ventana. Gratis.</p>
+      <div class="ruc-row">
+        <input id="ruc-num" inputmode="numeric" maxlength="11" placeholder="RUC (11 dígitos) o DNI (8 dígitos)">
+        <button type="submit" class="primary" id="ruc-go">Consultar</button>
+      </div>
+      <p class="note" id="ruc-state"></p>
+      <div class="ruc-data" id="ruc-data" hidden></div>
+      <div class="actions">
+        <button type="button" id="ruc-copy" hidden>📋 Copiar datos</button>
+        <button type="button" id="ruc-close">Cerrar</button>
+      </div>
+    </form>
+  </section>
+
   <!-- Calificar MultiChat: el cliente elige estrellas y comentario; se envía por WhatsApp (él presiona Enviar) -->
   <section class="backdrop" id="rate-modal" hidden>
     <form class="card modal rate-card" id="rate-form" autocomplete="off">

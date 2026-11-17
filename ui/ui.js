@@ -2629,3 +2629,72 @@ function ratePromptWhenFree() {
 }
 api.onRatePrompt(ratePromptWhenFree);
 api.onRateNow(() => openRate(false));
+
+// -- Consulta RUC / DNI en SUNAT --
+
+let rucOpen = false;
+let rucTexto = '';
+const RUC_CAMPOS = [['ruc', 'RUC'], ['tipo', 'Tipo'], ['nombreComercial', 'Nombre comercial'], ['estadoContribuyente', 'Estado'], ['condicion', 'Condición'], ['domicilio', 'Domicilio fiscal']];
+function openRuc() {
+  if (state.locked || passwordMode) return;
+  closeCoffee();
+  if (drawerOpen) closeDrawer();
+  $('ruc-modal').hidden = false;
+  if (!rucOpen) api.setOverlay(true);
+  rucOpen = true;
+}
+function closeRuc() {
+  if (!rucOpen) return;
+  rucOpen = false;
+  $('ruc-modal').hidden = true;
+  api.setOverlay(false);
+}
+api.onRuc((d) => {
+  openRuc();
+  if (d.numero) $('ruc-num').value = d.numero;
+  if (d.status === 'pedir') {
+    $('ruc-state').textContent = '';
+    $('ruc-data').hidden = true;
+    $('ruc-copy').hidden = true;
+    $('ruc-num').focus();
+    return;
+  }
+  if (d.status === 'buscando') {
+    $('ruc-state').textContent = `Consultando ${d.tipo === 'ruc' ? 'RUC' : 'DNI'} ${d.numero} en la ventana de SUNAT… (si pide verificación, márcala allí)`;
+    $('ruc-data').hidden = true;
+    $('ruc-copy').hidden = true;
+    return;
+  }
+  if (!d.ok) {
+    $('ruc-state').textContent = {
+      no_encontrado: 'SUNAT no encontró ese número.',
+      varios: `SUNAT encontró ${d.n || 'varios'} resultados: elige uno en la ventana de SUNAT.`,
+      numero: 'Escribe un RUC de 11 dígitos o un DNI de 8 dígitos.',
+      cerrada: 'Se cerró la ventana de SUNAT.',
+      tiempo: 'SUNAT no respondió a tiempo. Inténtalo de nuevo.',
+    }[d.error] || 'No se pudo consultar SUNAT. Inténtalo de nuevo.';
+    return;
+  }
+  $('ruc-state').textContent = '✓ Datos de SUNAT';
+  const filas = RUC_CAMPOS.filter(([k]) => d.datos[k]).map(([k, label]) => [label, d.datos[k]]);
+  rucTexto = filas.map(([l, v]) => `${l}: ${v}`).join('\n');
+  $('ruc-data').replaceChildren(...filas.map(([l, v]) => {
+    const row = document.createElement('div');
+    row.append(Object.assign(document.createElement('b'), { textContent: `${l}: ` }), v);
+    return row;
+  }));
+  $('ruc-data').hidden = false;
+  $('ruc-copy').hidden = false;
+});
+$('ruc-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  api.consultarRuc($('ruc-num').value.replace(/\D/g, ''));
+});
+$('ruc-num').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, ''); });
+$('ruc-copy').addEventListener('click', async () => {
+  await navigator.clipboard.writeText(rucTexto).catch(() => {});
+  $('ruc-copy').textContent = '✓ Copiado';
+  setTimeout(() => { $('ruc-copy').textContent = '📋 Copiar datos'; }, 1500);
+});
+$('ruc-close').addEventListener('click', closeRuc);
+$('ruc-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeRuc(); });

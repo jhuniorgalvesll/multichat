@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.19.0
+
+- **Consultar RUC o DNI en SUNAT (gratis)**: selecciona el número en el chat → clic derecho → *🔎 Consultar RUC/DNI … en SUNAT*, o ⚙ → *Consultar RUC o DNI*. Se abre la página oficial de SUNAT en una ventana con el número ya escrito (si SUNAT pide verificación, la marcas tú) y MultiChat muestra RUC, razón social, estado, condición y domicilio fiscal para copiarlos. No se salta ninguna verificación de SUNAT.
+
 ## Novedades v1.18.5
 
 - **Sugerir respuestas gratis**: sin clave de Anthropic, *✨ Sugerir 3 respuestas* busca en "Datos de tu negocio" lo que pregunta el cliente (producto, precio, envío, pago, horario, ubicación) y arma 3 respuestas con ese texto, sin IA y sin costo. Si no encuentra el dato, propone confirmarlo. La clave de Anthropic queda como opción de pago.
