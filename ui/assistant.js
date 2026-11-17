@@ -116,7 +116,9 @@ async function trackNow() {
     if (result.needsKey) $('ai-config').open = true;
     return;
   }
-  $('ai-status').textContent = 'Elige una, pégala en el chat y revísala antes de enviar.';
+  $('ai-status').textContent = result.local
+    ? `Respuestas armadas por MultiChat con lo que dice Shalom (gratis, sin IA)${result.aiError ? ' — la IA no respondió' : ''}. Elige una, pégala y revísala antes de enviar.`
+    : 'Elige una, pégala en el chat y revísala antes de enviar.';
   $('ai-results').replaceChildren(...result.replies.map(replyCard));
 }
 $('ai-ship-go').addEventListener('click', trackNow);

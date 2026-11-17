@@ -2718,8 +2718,12 @@ function registerIpc() {
     if (locked) return { ok: false, error: 'La app está bloqueada.' };
     const rastreo = await shalomtrack.rastrear(orden, codigo);
     const { settings } = store.get();
+    // Sin clave de Anthropic (gratis): MultiChat arma las 3 respuestas con el resultado de Shalom.
+    if (!assistant.decryptKey(settings.aiKey)) return { ok: true, replies: shalomtrack.respuestas(rastreo), rastreo, local: true };
     const { codigo_corregido: _fix, ...paraIa } = rastreo; // la IA no necesita (ni debe escribir) el código
     const result = await assistant.suggestShipping({ storedKey: settings.aiKey, customerMessage: text, rastreo: paraIa });
+    // Si la IA falla (sin saldo, sin internet...), igual quedan las respuestas armadas por MultiChat.
+    if (!result.ok) return { ok: true, replies: shalomtrack.respuestas(rastreo), rastreo, local: true, aiError: result.error };
     return { ...result, rastreo };
   });
   // La respuesta elegida se pega en el chat abierto; el usuario la revisa y presiona Enter.

@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.18.4',
+    items: ['Consultar envío gratis: sin clave de Anthropic, MultiChat arma las 3 respuestas con lo que dice Shalom (sin IA y sin costo).'],
+  },
+  {
     version: '1.18.3',
     items: ['Consultar envío: si la foto del ticket se leyó con una letra confundida (W por V, O por 0…), la app prueba las parecidas y corrige el código sola.'],
   },

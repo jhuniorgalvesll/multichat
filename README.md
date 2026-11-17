@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.18.4
+
+- **Consultar envío gratis**: sin clave de Anthropic, MultiChat arma solo las 3 respuestas (estado, cálida y breve) con el estado y las fechas que da Shalom, sin IA y sin costo. Con clave, las escribe la IA; si la IA falla, quedan las de MultiChat.
+
 ## Novedades v1.18.3
 
 - **Código del ticket mal leído**: si Shalom no encuentra la orden, MultiChat prueba las letras que el lector suele confundir (W/V, O/0, I/1, S/5, B/8…) y, si una funciona, corrige el código y avisa "✓ Código corregido".

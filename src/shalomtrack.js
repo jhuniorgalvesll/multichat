@@ -206,4 +206,48 @@ function desdeTicket(texto) {
   return { orden: /^\d{6,12}$/.test(orden) ? orden : '', codigo };
 }
 
-module.exports = { rastrear, detectar, desdeTicket, interpretar, fecha, respuestaCliente, consultar, variantes };
+// Las 3 respuestas sin IA (gratis), armadas solo con el resultado del rastreo y con las mismas reglas:
+// sin plazos, agencias, costos ni datos personales; si no se encontró, pedir revisar el ticket.
+function respuestas(r) {
+  if (!r || !r.ok) {
+    if (r && ['no_encontrada', 'datos_invalidos'].includes(r.error)) {
+      return [
+        { label: 'Revisar el ticket', text: 'No pudimos encontrar tu envío con esos datos. ¿Podrías revisar el número de orden y el código de 4 caracteres del ticket? También puedes enviarnos una foto del ticket.' },
+        { label: 'Pedir foto amable', text: '¡Hola! 😊 Para ubicar tu envío, ¿nos ayudas revisando el número de orden y el código de 4 caracteres del ticket? Si prefieres, mándanos una foto del ticket.' },
+        { label: 'Breve', text: '¿Me confirmas el número de orden y el código de 4 caracteres del ticket? O envíame una foto del ticket y lo reviso.' },
+      ];
+    }
+    return [
+      { label: 'Consultar más tarde', text: 'En este momento no pudimos consultar tu envío. Por favor, inténtalo nuevamente más tarde.' },
+      { label: 'Respuesta cálida', text: '¡Hola! 😊 Ahora mismo no pudimos consultar tu envío en Shalom. Inténtalo nuevamente más tarde, por favor.' },
+      { label: 'Breve con ayuda', text: 'No pudimos consultar tu envío en este momento; inténtalo nuevamente más tarde. ¿Te ayudo con algo más?' },
+    ];
+  }
+  const reg = r.registrado_el ? `se registró el ${r.registrado_el}` : '';
+  const conReg = (txt) => (reg && r.estado !== 'Entregado' ? `${txt}, ${reg}` : txt);
+  let calida;
+  let breve;
+  if (!r.estado_reconocido) {
+    calida = conReg(`¡Hola! 😊 Revisé tu envío en Shalom: su estado es "${r.estado}"`);
+    breve = conReg(`Shalom muestra tu envío como "${r.estado}"`);
+  } else if (r.estado === 'Entregado') {
+    calida = `¡Hola! 😊 Revisé tu envío en Shalom: figura como entregado${r.entregado_el ? ` el ${r.entregado_el}` : ''}`;
+    breve = `Shalom indica que tu envío fue entregado${r.entregado_el ? ` el ${r.entregado_el}` : ''}`;
+  } else if (r.estado === 'En destino') {
+    calida = `¡Hola! 😊 Según Shalom, tu envío ya está en la agencia de destino${r.en_destino_el ? ` desde el ${r.en_destino_el}` : ''}`;
+    breve = `Tu envío ya está en la agencia de destino${r.en_destino_el ? ` desde el ${r.en_destino_el}` : ''}`;
+  } else if (r.estado === 'En tránsito') {
+    calida = conReg('¡Hola! 😊 Revisé tu envío en Shalom: ya está en camino, en tránsito');
+    breve = conReg('Tu envío está en tránsito');
+  } else {
+    calida = conReg('¡Hola! 😊 Revisé tu envío en Shalom: está en la agencia de origen');
+    breve = conReg('Tu envío figura en origen');
+  }
+  return [
+    { label: 'Estado del envío', text: r.respuesta_cliente },
+    { label: 'Respuesta cálida', text: `${calida}.` },
+    { label: 'Breve con ayuda', text: `${breve}. ¿Te ayudo con algo más?` },
+  ];
+}
+
+module.exports = { respuestas, rastrear, detectar, desdeTicket, interpretar, fecha, respuestaCliente, consultar, variantes };
