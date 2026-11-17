@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.19.7',
+    items: ['Corregido: "Pegar en el chat" y "Usar en el ticket" ya no usan el nombre de una consulta anterior. Con RUC se pegan sus datos completos (nombre, RUC, DNI, estado, condición y domicilio).'],
+  },
+  {
     version: '1.19.6',
     items: ['Ticket de envío: con el DNI escrito y el destinatario vacío, el nombre se busca y se llena solo.'],
   },

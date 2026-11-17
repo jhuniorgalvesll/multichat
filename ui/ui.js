@@ -2654,8 +2654,15 @@ function closeRuc() {
   api.setOverlay(false);
 }
 api.onRuc((d) => {
+  // Un resultado de otra consulta (por ejemplo, un DNI anterior que terminó tarde) se ignora.
+  if (d.numero && (d.status === 'resultado' || d.status === 'dni-nombre') && d.numero !== $('ruc-num').value.replace(/\D/g, '')) return;
   openRuc();
   if (d.numero) $('ruc-num').value = d.numero;
+  // Cada consulta nueva empieza limpia: sin el nombre ni los datos de la anterior.
+  if (d.status === 'pedir' || d.status === 'buscando' || d.status === 'dni') {
+    rucPersona = null;
+    $('ruc-name').value = '';
+  }
   if (d.status !== 'resultado') {
     $('ruc-ticket').hidden = true;
     $('ruc-eldni').hidden = true;
@@ -2671,7 +2678,7 @@ api.onRuc((d) => {
   }
   if (d.status === 'dni-nombre') {
     $('ruc-name').value = d.name;
-    rucPersona = { name: d.name, dni: d.numero };
+    rucPersona = { fuente: 'dni', name: d.name, dni: d.numero };
     $('ruc-state').textContent = `✓ ${d.name} · DNI ${d.numero}`;
     $('ruc-name-box').hidden = false;
     $('ruc-ticket').hidden = false;
@@ -2688,7 +2695,7 @@ api.onRuc((d) => {
     $('ruc-name-box').hidden = false;
     $('ruc-ticket').hidden = false;
     $('ruc-name').value = '';
-    rucPersona = { name: '', dni: d.numero };
+    rucPersona = { fuente: 'dni', name: '', dni: d.numero };
     setTimeout(() => $('ruc-name').focus(), 300);
     return;
   }
@@ -2703,7 +2710,7 @@ api.onRuc((d) => {
   // DNI sin RUC: se escribe o pega el nombre y se usa en el ticket.
   $('ruc-name-box').hidden = !sinRuc;
   if (sinRuc) {
-    rucPersona = { name: '', dni: d.numero };
+    rucPersona = { fuente: 'dni', name: '', dni: d.numero };
     $('ruc-name').value = '';
   }
   $('ruc-ticket').hidden = !sinRuc && !(d.status === 'resultado' && d.ok);
@@ -2721,7 +2728,17 @@ api.onRuc((d) => {
   // "20100130204 - EMPRESA SAC" → nombre; con RUC 10 el DNI son los 8 dígitos del medio.
   const [rucNum, ...resto] = String(d.datos.ruc || '').split(' - ');
   const numRuc = rucNum.replace(/\D/g, '');
-  rucPersona = { name: resto.join(' - ').trim(), dni: d.tipo === 'dni' ? d.numero : (numRuc.startsWith('10') ? numRuc.slice(2, 10) : ''), ruc: numRuc };
+  const limpio = (v) => (v && v.trim() !== '-' ? v.trim() : '');
+  rucPersona = {
+    fuente: 'ruc',
+    name: resto.join(' - ').trim(),
+    dni: d.tipo === 'dni' ? d.numero : (numRuc.startsWith('10') ? numRuc.slice(2, 10) : ''),
+    ruc: numRuc,
+    estado: limpio(d.datos.estadoContribuyente),
+    condicion: limpio(d.datos.condicion),
+    domicilio: limpio(d.datos.domicilio),
+  };
+  $('ruc-name').value = '';
   const filas = RUC_CAMPOS.filter(([k]) => d.datos[k]).map(([k, label]) => [label, d.datos[k]]);
   rucTexto = filas.map(([l, v]) => `${l}: ${v}`).join('\n');
   $('ruc-data').replaceChildren(...filas.map(([l, v]) => {
@@ -2752,9 +2769,16 @@ $('ruc-eldni').addEventListener('click', async () => {
 });
 
 // Datos de la consulta → ticket de envío (se completa la agencia o dirección y se imprime).
+// Nombre a usar: con RUC, el de SUNAT; con DNI, el del campo "Nombre completo" (que se puede corregir).
+function rucNombre() {
+  if (!rucPersona) return '';
+  const n = rucPersona.fuente === 'ruc' ? rucPersona.name : ($('ruc-name').value || rucPersona.name);
+  return String(n || '').replace(/\s+/g, ' ').trim();
+}
+
 $('ruc-ticket').addEventListener('click', () => {
   if (!rucPersona) return;
-  const name = ($('ruc-name').value || rucPersona.name).replace(/\s+/g, ' ').trim();
+  const name = rucNombre();
   if (!name) {
     $('ruc-state').textContent = 'Escribe o pega el nombre completo para el ticket.';
     $('ruc-name').focus();
@@ -2767,8 +2791,16 @@ $('ruc-ticket').addEventListener('click', () => {
 // Nombre y DNI listos en el chat abierto (para WhatsApp); la persona revisa y presiona Enter.
 $('ruc-chat').addEventListener('click', async () => {
   if (!rucPersona) return;
-  const name = ($('ruc-name').value || rucPersona.name).replace(/\s+/g, ' ').trim();
-  const lineas = [name && `*Nombre:* ${name}`, rucPersona.dni && `*DNI:* ${rucPersona.dni}`, rucPersona.ruc && `*RUC:* ${rucPersona.ruc}`].filter(Boolean);
+  const name = rucNombre();
+  const p = rucPersona;
+  const lineas = [
+    name && `*${p.fuente === 'ruc' && !p.ruc.startsWith('10') ? 'Razón social' : 'Nombre'}:* ${name}`,
+    p.ruc && `*RUC:* ${p.ruc}`,
+    p.dni && `*DNI:* ${p.dni}`,
+    p.estado && `*Estado:* ${p.estado}`,
+    p.condicion && `*Condición:* ${p.condicion}`,
+    p.domicilio && `*Domicilio fiscal:* ${p.domicilio}`,
+  ].filter(Boolean);
   if (!lineas.length) return;
   const result = await api.pasteReply(lineas.join('\n'));
   if (result && result.ok) closeRuc();
