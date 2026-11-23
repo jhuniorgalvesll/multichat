@@ -3,6 +3,7 @@
 const {
   app, BrowserWindow, WebContentsView, Menu, Tray, ipcMain,
   session, shell, dialog, nativeImage, clipboard, ClipboardItem, powerMonitor, nativeTheme, powerSaveBlocker,
+  desktopCapturer,
 } = require('electron');
 const fs = require('fs');
 const path = require('path');
@@ -67,8 +68,11 @@ const ATTENTION_HOURS = [['07:00', '19:00'], ['08:00', '18:00'], ['08:00', '20:0
 const BLUR_CSS = 'html { filter: blur(14px) !important; }';
 const MAX_TEMPLATES = 50;
 
+// Llamadas de WhatsApp Web: micrófono y cámara ('media'), elegir parlante o audífonos ('speaker-selection')
+// y compartir pantalla ('display-capture', con selector propio más abajo).
 const ALLOWED_PERMISSIONS = new Set([
   'notifications', 'media', 'clipboard-read', 'clipboard-sanitized-write', 'fullscreen',
+  'speaker-selection', 'display-capture', 'screen-wake-lock',
 ]);
 
 let win = null;
@@ -170,6 +174,25 @@ function setupSession(ses) {
     callback(ALLOWED_PERMISSIONS.has(permission));
   });
   ses.setPermissionCheckHandler((_wc, permission) => ALLOWED_PERMISSIONS.has(permission));
+  // Compartir pantalla en una llamada: la persona elige qué pantalla o ventana se comparte (nunca solo).
+  ses.setDisplayMediaRequestHandler(async (_req, callback) => {
+    try {
+      const fuentes = await desktopCapturer.getSources({ types: ['screen', 'window'] });
+      const lista = fuentes.slice(0, 8);
+      if (!lista.length) return callback({});
+      const { response } = await dialog.showMessageBox(win, {
+        type: 'question',
+        title: 'Compartir pantalla',
+        message: '¿Qué quieres compartir en la llamada?',
+        buttons: [...lista.map((f, i) => (f.id.startsWith('screen') ? `🖥️ Pantalla ${i + 1}` : `🪟 ${f.name.slice(0, 40)}`)), 'Cancelar'],
+        cancelId: lista.length,
+        noLink: true,
+      });
+      callback(response < lista.length ? { video: lista[response] } : {});
+    } catch {
+      callback({});
+    }
+  });
 }
 
 function idForWebContents(wc) {
@@ -221,6 +244,17 @@ function createView(acc) {
   wc.on('context-menu', (_e, params) => showEditMenu(wc, params));
   wc.on('did-create-window', (child) => {
     child.setMenuBarVisibility(false);
+    // Una ventana en blanco que luego va a otra página (enlace externo): se abre en el navegador y se cierra.
+    if (!svc.popupHosts) {
+      const fuera = (e, url) => {
+        if (esVentanaPropia(svc, url)) return;
+        e.preventDefault();
+        safeOpenExternal(url);
+        if (!child.isDestroyed()) child.close();
+      };
+      child.webContents.on('will-navigate', fuera);
+      child.webContents.on('will-redirect', fuera);
+    }
     child.webContents.setWindowOpenHandler((details) => handleWindowOpen(svc, details));
   });
   wc.on('before-input-event', (event, input) => handleShortcut(event, input));
@@ -262,7 +296,20 @@ function hostMatches(url, hosts) {
 
 // Ventanas emergentes de la página: las de inicio de sesión o de vincular cuentas de Meta se abren
 // dentro de la app (con la misma sesión); los enlaces a otros sitios, en el navegador.
+// Ventanas que WhatsApp Web abre para sí misma (p. ej. la ventana de una llamada): se abren dentro de la app,
+// con la misma sesión, para que la llamada funcione.
+function esVentanaPropia(svc, url) {
+  if (!/web\.whatsapp\.com/.test(svc.url || '')) return false;
+  return url === 'about:blank' || url === '' || hostMatches(url, ['web.whatsapp.com']);
+}
+
 function handleWindowOpen(svc, { url }) {
+  if (esVentanaPropia(svc, url)) {
+    return {
+      action: 'allow',
+      overrideBrowserWindowOptions: { width: 760, height: 620, autoHideMenuBar: true, icon: ICON, parent: win, title: 'WhatsApp' },
+    };
+  }
   const redirect = /^https:\/\/l[m]?\.facebook\.com\/l\.php/.test(url) || /^https:\/\/l\.instagram\.com\//.test(url);
   if (svc.popupHosts && !redirect && hostMatches(url, svc.popupHosts)) {
     return {

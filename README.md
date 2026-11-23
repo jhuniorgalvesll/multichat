@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.25.1
+
+- **Llamadas de WhatsApp Web**: las ventanas que WhatsApp abre para sí mismo (como la de una llamada) se abren dentro de la app con la misma sesión, en lugar de bloquearse. Se permite elegir parlante o audífonos y compartir pantalla, con un selector para elegir qué pantalla o ventana compartir.
+
 ## Novedades v1.25.0
 
 - **Agencias Shalom al instante**: la app trae la lista oficial completa (501 agencias), así que los resultados salen mientras escribes, en menos de 1 segundo, aunque la PC todavía no haya descargado la lista del día. En segundo plano se pregunta a la página de Shalom (máximo 8 segundos) y se suman las agencias que falten (p. ej. Sapallanga al buscar Huancayo). Si un lugar no está en la lista, *Buscar* pregunta a Shalom con 8 segundos como máximo. La actualización diaria ya no bloquea las búsquedas, y si falla se muestra el motivo y se sigue usando la lista anterior.

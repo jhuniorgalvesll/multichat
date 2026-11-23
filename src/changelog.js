@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.25.1',
+    items: ['📞 Llamadas de WhatsApp: MultiChat ya no bloquea la ventana de la llamada y permite elegir parlante o audífonos y compartir pantalla (tú eliges qué pantalla). Las llamadas desde el navegador las está activando WhatsApp poco a poco: si los botones siguen grises, tu cuenta todavía no las tiene.'],
+  },
+  {
     version: '1.25.0',
     items: ['⚡ Agencias Shalom al instante: la app ya trae las 501 agencias del Perú, así que aparecen mientras escribes (Huancayo, Surco, Junín…) sin esperar. En segundo plano revisa la página de Shalom (máx. 8 s) y suma las que falten; la lista se sigue actualizando sola cada día.'],
   },
