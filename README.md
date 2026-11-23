@@ -40,6 +40,14 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.22.0
+
+- **✅ Confirmar pago en 1 clic**: cuando un Yape o Plin se reconoce con el chat del cliente, el aviso trae *✅ Confirmar pago* (y *💬 Abrir chat*); también en Pagos de hoy. Abre el chat y pega "✅ ¡Recibimos tu pago de S/ 45.00 por Yape! Muchas gracias 🙌"; tú presionas Enter.
+- **🧾 Constancia al chat**: en Pagos de hoy, una imagen "Pago recibido · Constancia del negocio" con monto, nombre, medio, fecha, hora y código de seguridad, con tu logo; se pega en el chat del cliente.
+- **⚠ Enlace Móvil cerrado**: si se cierra (y en esta PC ya se usaba), aviso y voz "Los Yape no van a llegar", con botón para abrirlo; como mucho cada 30 minutos. Opción en ⚙ → Pagos.
+- **🔎 Buscar en Impresiones de hoy** por nombre, DNI, celular, N° de pedido o destino.
+- **Cuentas pesadas**: una cuenta que no estás mirando y usa más de 1,2 GB de memoria se recarga sola (la sesión sigue iniciada). Opción en ⚙ → Sistema.
+
 ## Novedades v1.21.6
 
 - **Seguridad**:

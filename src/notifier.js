@@ -100,6 +100,13 @@ function register(nextHandlers) {
     close(toast);
     handlers.open(toast.data);
   });
+  // Botón extra del aviso (p. ej. "✅ Confirmar pago").
+  ipcMain.on('toast:action', (event, action) => {
+    const toast = find(event);
+    if (!toast) return;
+    close(toast);
+    handlers.open({ ...toast.data, action: String(action || '') });
+  });
   ipcMain.handle('toast:reply', async (event, text) => {
     const toast = find(event);
     if (!toast) return { sent: false };

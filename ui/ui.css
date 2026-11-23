@@ -1628,3 +1628,8 @@ body.compact .info-bar { font-size: 11px; gap: 8px; }
 /* Botón de ventanas: cuántas cuentas se ven */
 #layout { position: relative; }
 #layout[data-n]:not([data-n=""])::after { content: attr(data-n); position: absolute; right: 1px; bottom: 1px; min-width: 13px; height: 13px; padding: 0 3px; border-radius: 7px; background: var(--acc2l, #ec4899); color: #fff; font-size: 9.5px; font-weight: 800; line-height: 13px; text-align: center; }
+.pay-confirm { display: inline-block; margin-top: 4px; padding: 3px 8px; border-radius: 8px; border: 0; background: #16a34a; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+.prints-search { width: 100%; margin: 4px 0 8px; }
+.prints-search[hidden] { display: none; }
+.print-row[hidden] { display: none; }

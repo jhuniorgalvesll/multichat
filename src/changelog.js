@@ -3,6 +3,16 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.22.0',
+    items: [
+      '✅ Confirmar pago en 1 clic: en el aviso del Yape y en Pagos de hoy, abre el chat del cliente y pega "¡Recibimos tu pago!".',
+      '🧾 Constancia al chat: imagen con monto, nombre, hora y código del pago, para mandarla al cliente.',
+      '⚠ Aviso si Enlace Móvil se cierra (los Yape no llegarían), con voz.',
+      '🔎 Buscar en Impresiones de hoy por nombre, DNI, celular o N° de pedido.',
+      'Las cuentas que usan mucha memoria y no estás usando se recargan solas (la PC no se pone lenta).',
+    ],
+  },
+  {
     version: '1.21.6',
     items: ['Más seguridad: los enlaces de los chats solo abren páginas web, correo o teléfono (no programas de Windows); sin ventanas emergentes de publicidad en SUNAT, eldni y Shalom; el programa ya no se puede usar para correr otro código.'],
   },

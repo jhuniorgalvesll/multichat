@@ -21,16 +21,24 @@ api.onData((data) => {
     document.body.classList.add('vip');
     vipSound();
   }
+  if (data.kind === 'phone-off') {
+    document.body.classList.add('update');
+    $('open-btn').textContent = 'Abrir Enlace Móvil';
+    $('reply-btn').hidden = true;
+  }
   if (data.kind === 'vip-info') {
     $('open-btn').hidden = true;
     $('actions').hidden = true;
   }
   if (data.kind === 'payment') {
     document.body.classList.add('payment', { Yape: 'yape', Plin: 'plin', BBVA: 'bbva' }[data.payApp] || 'plin');
-    $('open-btn').hidden = true;
-    $('actions').hidden = true;
+    // Pago con el chat del cliente reconocido: abrir su chat o confirmarle el pago en un clic.
+    const conChat = Boolean(data.chat);
+    $('open-btn').hidden = !conChat;
+    $('actions').hidden = !conChat;
+    $('confirm-btn').hidden = !conChat;
   }
-  $('open-btn').textContent = { reminder: 'Abrir cuenta', update: 'Ver detalles', updated: 'Ver novedades', shipdata: data.confirmed ? '🖨 Imprimir ticket' : '📦 Abrir ticket' }[data.kind] || 'Abrir chat';
+  $('open-btn').textContent = { payment: '💬 Abrir chat', 'phone-off': 'Abrir Enlace Móvil', reminder: 'Abrir cuenta', update: 'Ver detalles', updated: 'Ver novedades', shipdata: data.confirmed ? '🖨 Imprimir ticket' : '📦 Abrir ticket' }[data.kind] || 'Abrir chat';
   if (data.kind === 'shipdata') document.body.classList.add('update');
   if (data.kind === 'update' || data.kind === 'updated') document.body.classList.add('update');
   reportSize();
@@ -45,6 +53,7 @@ document.addEventListener('mouseleave', () => {
 $('close').addEventListener('click', () => api.close());
 $('content').addEventListener('click', () => api.open());
 $('open-btn').addEventListener('click', () => api.open());
+$('confirm-btn').addEventListener('click', (e) => { e.stopPropagation(); api.action('confirm'); });
 
 $('reply-btn').addEventListener('click', () => {
   api.hold(true);

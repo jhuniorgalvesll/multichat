@@ -1734,6 +1734,7 @@ async function loadPrints() {
   $('prints-list').replaceChildren(...(data.list.length ? data.list.map((p) => {
     const row = document.createElement('div');
     row.className = 'print-row';
+    row.dataset.search = [p.name, p.dni, p.phone, p.orderNumber, p.place, p.carrier].join(' ');
     const badge = Object.assign(document.createElement('span'), { className: `print-carrier ${String(p.carrier).toLowerCase()}`, textContent: p.carrier });
     const info = Object.assign(document.createElement('div'), { className: 'pay-who', textContent: p.name });
     info.append(Object.assign(document.createElement('small'), {
@@ -1760,7 +1761,25 @@ async function loadPrints() {
     row.append(badge, info, actions);
     return row;
   }) : [Object.assign(document.createElement('p'), { className: 'drawer-empty', textContent: 'Todavía no imprimiste tickets hoy.' })]));
+  $('prints-search').hidden = data.list.length < 2;
+  filterPrints();
 }
+
+// Buscar en las impresiones de hoy (sin tildes ni mayúsculas; números sin espacios).
+const sinTildes = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function filterPrints() {
+  const q = sinTildes($('prints-search').value).trim();
+  const qNum = q.replace(/\s+/g, '');
+  let visibles = 0;
+  for (const row of document.querySelectorAll('#prints-list .print-row')) {
+    const t = sinTildes(row.dataset.search);
+    const ok = !q || q.split(/\s+/).every((w) => t.includes(w)) || (qNum.length >= 3 && /^\d+$/.test(qNum) && t.replace(/\s+/g, '').includes(qNum));
+    row.hidden = !ok;
+    if (ok) visibles += 1;
+  }
+  $('prints-none').hidden = !q || visibles > 0;
+}
+$('prints-search').addEventListener('input', filterPrints);
 
 // -- Conectar el celular (Android o iPhone) --
 
@@ -2234,8 +2253,22 @@ async function loadPayments() {
       open.textContent = `💬 ${p.chat.why === 'foto' ? '¿' : ''}${p.chat.title}${p.chat.why === 'foto' ? '?' : ''}`;
       open.title = `Abrir el chat en ${p.chat.account}${p.chat.why === 'foto' ? ' (sugerido: mandó una foto justo antes del pago)' : ''}`;
       open.addEventListener('click', () => { closeDrawer(); api.openPayChat(p.at); });
-      who.append(open);
+      const ok = Object.assign(document.createElement('button'), { type: 'button', className: 'pay-confirm', textContent: '✅ Confirmar pago' });
+      ok.title = 'Abre su chat y pega "¡Recibimos tu pago!" (tú presionas Enter)';
+      ok.addEventListener('click', () => { closeDrawer(); api.confirmPay(p.at); });
+      who.append(open, ok);
     }
+    const recibo = Object.assign(document.createElement('button'), { type: 'button', className: 'pay-chat', textContent: '🧾 Constancia al chat' });
+    recibo.title = p.chat ? `Pega en el chat de ${p.chat.title} una imagen con el pago recibido (tú presionas Enter)` : 'Pega en el chat abierto una imagen con el pago recibido (tú presionas Enter)';
+    recibo.addEventListener('click', async () => {
+      recibo.disabled = true;
+      const dataUrl = await makePayReceipt(p);
+      const r = await api.payReceipt(p.at, dataUrl);
+      recibo.disabled = false;
+      if (r && r.ok && !r.copied) closeDrawer();
+      else recibo.textContent = r && r.copied ? '✓ Copiada: abre el chat y pégala con Ctrl+V' : '⚠ No se pudo crear la constancia';
+    });
+    who.append(recibo);
     const amount = document.createElement('div');
     amount.className = 'pay-amount';
     amount.textContent = soles(p.amount);
@@ -2891,3 +2924,73 @@ api.onSettingsRefresh(async () => {
     renderSettings(panel);
   }
 });
+
+// -- Constancia de pago recibido (imagen para el cliente). No imita el comprobante de Yape ni del banco:
+//    dice claramente que la emite el negocio. --
+let receiptBrand = null;
+async function receiptBrandInfo() {
+  if (receiptBrand) return receiptBrand;
+  const list = await api.ticketProfiles().catch(() => []);
+  const p = (list && list[0]) || {};
+  receiptBrand = { name: p.name || '', logo: p.logoUrl || '' };
+  setTimeout(() => { receiptBrand = null; }, 60000);
+  return receiptBrand;
+}
+const loadImg = (src) => new Promise((resolve) => { if (!src) return resolve(null); const i = new Image(); i.onload = () => resolve(i); i.onerror = () => resolve(null); i.src = src; });
+async function makePayReceipt(p) {
+  const brand = await receiptBrandInfo();
+  const W = 720;
+  const H = 860;
+  const c = Object.assign(document.createElement('canvas'), { width: W, height: H });
+  const g = c.getContext('2d');
+  const color = { Yape: ['#742284', '#a855f7'], Plin: ['#0e7490', '#06b6d4'], BBVA: ['#1d4ed8', '#0ea5e9'] }[p.app] || ['#4c1d95', '#7c3aed'];
+  g.fillStyle = '#ffffff';
+  g.fillRect(0, 0, W, H);
+  const grad = g.createLinearGradient(0, 0, W, 0);
+  grad.addColorStop(0, color[0]);
+  grad.addColorStop(1, color[1]);
+  g.fillStyle = grad;
+  g.fillRect(0, 0, W, 230);
+  g.fillStyle = '#ffffff';
+  g.textAlign = 'center';
+  g.font = '700 46px Inter, "Segoe UI", sans-serif';
+  g.fillText('✓ Pago recibido', W / 2, 105);
+  g.font = '500 26px Inter, "Segoe UI", sans-serif';
+  g.fillText('Constancia del negocio', W / 2, 155);
+  g.fillStyle = '#111827';
+  g.font = '800 92px Inter, "Segoe UI", sans-serif';
+  g.fillText(`S/ ${Number(p.amount).toFixed(2)}`, W / 2, 360);
+  const filas = [
+    ['De', String(p.name || '').replace(/\s+/g, ' ')],
+    ['Medio', p.app === 'BBVA' ? 'Plin / transferencia' : p.app],
+    ['Fecha', new Date(p.at).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })],
+    ['Hora', new Date(p.at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })],
+    ...(p.code ? [['Código de seguridad', p.code]] : []),
+  ];
+  g.textAlign = 'left';
+  let y = 450;
+  for (const [k, v] of filas) {
+    g.fillStyle = '#6b7280';
+    g.font = '500 26px Inter, "Segoe UI", sans-serif';
+    g.fillText(k, 70, y);
+    g.fillStyle = '#111827';
+    g.font = '700 30px Inter, "Segoe UI", sans-serif';
+    g.textAlign = 'right';
+    g.fillText(v.length > 30 ? `${v.slice(0, 29)}…` : v, W - 70, y);
+    g.textAlign = 'left';
+    g.strokeStyle = '#e5e7eb';
+    g.beginPath(); g.moveTo(70, y + 22); g.lineTo(W - 70, y + 22); g.stroke();
+    y += 66;
+  }
+  const logo = await loadImg(brand.logo);
+  g.textAlign = 'center';
+  if (logo) {
+    const h = 70;
+    const w = Math.min(320, (logo.width / logo.height) * h);
+    g.drawImage(logo, (W - w) / 2, H - 170, w, h);
+  }
+  g.fillStyle = '#6b7280';
+  g.font = '500 24px Inter, "Segoe UI", sans-serif';
+  g.fillText(brand.name ? `Gracias por tu compra · ${brand.name}` : 'Gracias por tu compra', W / 2, H - 60);
+  return c.toDataURL('image/png');
+}

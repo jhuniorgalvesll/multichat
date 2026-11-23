@@ -302,6 +302,28 @@ function hibernateIdle() {
   }
 }
 
+// Cuentas pesadas: si una cuenta que no estás mirando usa demasiada memoria (WhatsApp Web abierto muchos días),
+// se recarga sola. La sesión sigue iniciada; solo se vuelve a cargar la página. Nunca la que estás usando.
+const HEAVY_MB = 1200;
+const heavyReloadedAt = new Map();
+function reloadHeavyTabs() {
+  if (store.get().settings.heavyReload === false || locked) return;
+  const memoria = new Map(app.getAppMetrics().map((m) => [m.pid, (m.memory && m.memory.workingSetSize) || 0])); // KB
+  const visibles = new Set(tiles.map((t) => t.id));
+  const now = Date.now();
+  for (const [id, view] of views) {
+    if (visibles.has(id) || id === activeId) continue;
+    const wc = view.webContents;
+    if (wc.isDestroyed() || wc.isLoading()) continue;
+    const mb = (memoria.get(wc.getOSProcessId()) || 0) / 1024;
+    const usadaHace = now - (lastUsed.get(id) || 0);
+    if (mb > HEAVY_MB && usadaHace > 10 * 60_000 && now - (heavyReloadedAt.get(id) || 0) > 60 * 60_000) {
+      heavyReloadedAt.set(id, now);
+      wc.reload();
+    }
+  }
+}
+
 function setActive(id) {
   const acc = findAccount(id);
   if (!acc || acc.closed || !SERVICES[acc.service] || locked) return;
@@ -839,19 +861,19 @@ function announceUpdated() {
 async function openPayChat(data) {
   const accountId = data.chatAccountId || data.accountId;
   const title = String(data.chat || data.title || '');
-  if (!accountId || !findAccount(accountId) || !title || locked) return showTodayPayments();
+  if (!accountId || !findAccount(accountId) || !title || locked) { showTodayPayments(); return false; }
   showWindow();
   setActive(accountId);
   const view = views.get(accountId);
-  if (!view) return;
+  if (!view) return false;
   const wc = view.webContents;
   const isOpen = async () => (await openChatTitle(wc)).toLowerCase() === title.toLowerCase();
-  if (await isOpen()) return;
+  if (await isOpen()) return true;
   const notifId = data.chatNotifId ?? data.notifId;
   if (Number.isInteger(notifId)) {
     wc.send('notify-open', notifId);
     await sleep(900);
-    if (await isOpen()) return;
+    if (await isOpen()) return true;
   }
   try {
     await wc.executeJavaScript(`(() => {
@@ -864,10 +886,68 @@ async function openPayChat(data) {
       return true;
     })()`, true);
   } catch { /* la cuenta queda abierta igual */ }
+  await sleep(900);
+  return isOpen();
+}
+
+// "✅ Confirmar pago": abre el chat del cliente y pega el mensaje de pago recibido (el vendedor presiona Enter).
+const money2 = (n) => `S/ ${Number(n).toFixed(2)}`;
+function confirmText(p) {
+  const plantilla = store.get().settings.payConfirmText || '✅ ¡Recibimos tu pago de {monto} por {app}! Muchas gracias 🙌';
+  return plantilla
+    .replace(/\{monto\}/gi, money2(p.amount))
+    .replace(/\{app\}/gi, p.app === 'BBVA' ? 'Plin' : p.app)
+    .replace(/\{nombre\}/gi, String(p.name || '').replace(/\*/g, '').split(' ')[0]);
+}
+async function confirmPayment(data) {
+  const abierto = await openPayChat(data);
+  const view = views.get(data.chatAccountId || data.accountId);
+  const texto = confirmText(data);
+  if (!abierto || !view) {
+    await copyText(texto);
+    notifier.show({ kind: 'vip-info', accountName: 'MultiChat Pro', title: 'Mensaje copiado', body: 'No se pudo abrir el chat del cliente: ábrelo y pega con Ctrl+V.', canReply: false });
+    return;
+  }
+  view.webContents.focus();
+  await pasteText(view.webContents, texto);
+}
+
+// ---------- Aviso de celular desconectado: si Enlace Móvil se cierra, los Yape no llegan ----------
+let phoneOffSince = 0;
+let phoneOffWarnedAt = 0;
+async function checkPhoneLink() {
+  const { settings } = store.get();
+  if (process.platform !== 'win32' || locked || !settings.paymentAlerts || settings.phoneWatch === false) return;
+  const running = await payments.phoneLinkRunning();
+  if (running === null) return;
+  if (running) {
+    if (!settings.phoneLinkSeen) { settings.phoneLinkSeen = true; store.save(); }
+    if (phoneOffSince) {
+      phoneOffSince = 0;
+      notifier.show({ kind: 'vip-info', accountName: 'MultiChat Pro', title: '📱 Enlace Móvil conectado de nuevo', body: 'Los avisos de Yape y Plin vuelven a llegar.', canReply: false });
+    }
+    return;
+  }
+  // Solo si en esta PC ya se usó Enlace Móvil (si nunca se conectó, no se molesta).
+  if (!settings.phoneLinkSeen) return;
+  const now = Date.now();
+  if (!phoneOffSince) phoneOffSince = now;
+  if (now - phoneOffWarnedAt < 30 * 60 * 1000) return; // como mucho cada 30 minutos
+  phoneOffWarnedAt = now;
+  notifier.show({
+    kind: 'phone-off',
+    accountName: 'MultiChat Pro',
+    title: '⚠ Enlace Móvil está cerrado',
+    body: 'Los avisos de Yape y Plin del celular no van a llegar. Clic para abrir Enlace Móvil.',
+    canReply: false,
+  });
+  if (settings.paymentVoice) sayAloud('Atención. Enlace Móvil está cerrado. Los Yape no van a llegar.');
 }
 
 function openFromNotification(data) {
   showWindow();
+  if (data.kind === 'phone-off') { shell.openExternal('ms-phone:').catch(() => {}); return; }
+  if (data.kind === 'payment' && data.chat && data.action === 'confirm') return confirmPayment(data);
   if (data.kind === 'payment' && data.chat) return openPayChat(data);
   if (data.kind === 'payment') return showTodayPayments();
   if (data.kind === 'update') return win.webContents.send('ui:update-ready', { version: data.version, items: changesFor(data.version) });
@@ -1486,6 +1566,8 @@ function printsState() {
       name: ticket.name,
       place: [ticket.destination, ticket.agent, ticket.district].filter(Boolean).join(' · ') || ticket.address || '',
       orderNumber: ticket.orderNumber,
+      dni: ticket.dni || '',
+      phone: ticket.phone || '',
     })),
   };
 }
@@ -2353,6 +2435,7 @@ function settingsPanel() {
         items: [
           action('paymentsPanel', 'Ver pagos de hoy y notificaciones del celular'),
           action('onboarding', '🚀 Guía de inicio (4 pasos)'),
+          toggle('phoneWatch', 'Avisar si Enlace Móvil se cierra (los Yape no llegarían)', s.phoneWatch !== false),
           action('phoneGuide', '📱 Conectar mi celular (Android o iPhone)', s.phoneType === 'iphone' ? 'iPhone' : s.phoneType === 'android' ? 'Android' : 'Elige tu celular'),
           toggle('paymentAlerts', 'Avisar cuando llegue un pago', s.paymentAlerts),
           toggle('paymentVoice', 'Decir los pagos en voz alta', s.paymentVoice),
@@ -2419,6 +2502,7 @@ function settingsPanel() {
           toggle('closeToTray', 'Al cerrar, seguir en la bandeja', s.closeToTray),
           toggle('alwaysOnTop', 'Mantener siempre encima', s.alwaysOnTop, 'No se esconde al hacer clic en otro programa'),
           { id: 'hibernateMinutes', type: 'choice', label: 'Suspender cuentas inactivas', value: s.hibernateMinutes, options: minutes([0, 5, 15, 30, 60], 'Nunca', (v) => (v === 60 ? 'Después de 1 hora' : `Después de ${v} minutos`)) },
+          toggle('heavyReload', 'Recargar sola una cuenta que usa mucha memoria (solo si no la estás usando)', s.heavyReload !== false, 'Evita que la PC se ponga lenta cuando WhatsApp Web lleva muchos días abierto'),
           action('exportBackup', 'Exportar copia de seguridad'),
           action('importBackup', 'Importar copia de seguridad'),
           action('memory', 'Ver uso de memoria'),
@@ -2491,6 +2575,8 @@ function settingsDo(id, value) {
     passwordRemove: () => send('ui:password', 'remove'),
     paymentsPanel: () => send('ui:payments-panel'),
     phoneGuide: () => send('ui:phone-guide'),
+    phoneWatch: () => flip('phoneWatch'),
+    heavyReload: () => flip('heavyReload'),
     onboarding: () => send('ui:onboarding'),
     rucSunat: () => send('ui:ruc', { status: 'pedir' }),
     syncFolder: () => chooseSyncFolder(),
@@ -2956,6 +3042,27 @@ function registerIpc() {
     store.get().settings.ticketPrinter = String(name || '').slice(0, 200);
     store.save();
   });
+  // Constancia del pago (imagen hecha por MultiChat) pegada en el chat del cliente; el vendedor presiona Enter.
+  ipcMain.handle('payments:receipt', async (_e, at, dataUrl) => {
+    if (locked) return { ok: false };
+    const p = paylog.read().payments.find((x) => x.at === Number(at));
+    const image = flyerImage(dataUrl);
+    if (!p || !image || image.isEmpty()) return { ok: false };
+    let view = views.get(activeId);
+    if (p.chat && findAccount(p.chat.accountId)) {
+      const abierto = await openPayChat({ chatAccountId: p.chat.accountId, chat: p.chat.title, chatNotifId: p.chat.notifId });
+      view = abierto ? views.get(p.chat.accountId) : null;
+    }
+    await copyImage(image);
+    if (!view) return { ok: true, copied: true };
+    view.webContents.focus();
+    view.webContents.paste();
+    return { ok: true };
+  });
+  ipcMain.on('payments:confirm', (_e, at) => {
+    const p = paylog.read().payments.find((x) => x.at === Number(at));
+    if (p && p.chat && !locked) confirmPayment({ chatAccountId: p.chat.accountId, chat: p.chat.title, chatNotifId: p.chat.notifId, amount: p.amount, app: p.app, name: p.name });
+  });
   ipcMain.on('payments:open-chat', (_e, at) => {
     const p = paylog.read().payments.find((x) => x.at === Number(at));
     if (p && p.chat) openPayChat({ chatAccountId: p.chat.accountId, chat: p.chat.title, chatNotifId: p.chat.notifId });
@@ -3116,7 +3223,7 @@ function onPayment(payment) {
         : payment.chat ? `💬 ${payment.chat.why === 'foto' ? '¿Es de' : 'Chat:'} ${payment.chat.title}${payment.chat.why === 'foto' ? '? (mandó una foto)' : ''} · ${findAccount(payment.chat.accountId).name} — clic para abrirlo`
           : `Hoy: ${list.length} pago${list.length === 1 ? '' : 's'} · ${money(list.reduce((t, p) => t + p.amount, 0))}`,
     canReply: false,
-    ...(payment.chat && !locked ? { chatAccountId: payment.chat.accountId, chat: payment.chat.title, chatNotifId: payment.chat.notifId } : {}),
+    ...(payment.chat && !locked ? { chatAccountId: payment.chat.accountId, chat: payment.chat.title, chatNotifId: payment.chat.notifId, amount: payment.amount, app: payment.app, name: payment.name } : {}),
   });
   announcePayment(payment);
   if (!locked) bubble.showPayment(`${payment.app === 'Yape' ? '💜' : '💚'} + ${money(payment.amount)} · ${payment.name.split(' ')[0]}`);
@@ -3410,6 +3517,9 @@ function init() {
   setTimeout(() => { if (!maybeOnboarding()) maybeWelcome(); }, 2500);
   startSync();
   fx.start({ store, onChange: pushState }); // dólar del día (SUNAT)
+  setTimeout(checkPhoneLink, 60_000);
+  setInterval(reloadHeavyTabs, 10 * 60_000);
+  setInterval(checkPhoneLink, 2 * 60_000);
   setTimeout(maybeRatePrompt, 20_000); // después de la bienvenida del día
   setInterval(maybeRatePrompt, 30 * 60 * 1000);
   setTimeout(updateReminder, 60_000);

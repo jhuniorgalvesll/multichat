@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld('toast', {
   hold: (hold) => ipcRenderer.send('toast:hold', hold),
   close: () => ipcRenderer.send('toast:close'),
   open: () => ipcRenderer.send('toast:open'),
+  action: (a) => ipcRenderer.send('toast:action', a),
   reply: (text) => ipcRenderer.invoke('toast:reply', text),
 });

@@ -138,3 +138,5 @@ html, body {
 /* Cliente VIP: borde dorado y fondo cálido */
 body.vip .toast { border: 2px solid #f59e0b; background: linear-gradient(180deg, rgb(245 158 11 / 0.12), transparent 60%); }
 body.vip .title { color: #b45309; }
+
+.actions button.confirm { background: #16a34a; color: #fff; border-color: transparent; font-weight: 700; }
