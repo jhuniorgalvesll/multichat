@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.21.1
+
+- **Pestañas movibles**: arrastra una pestaña (WhatsApp, Telegram, Instagram…) a la izquierda o a la derecha y queda guardada en ese lugar. O clic derecho en la pestaña → *⬅ Mover a la izquierda* / *Mover a la derecha ➡*.
+
 ## Novedades v1.21.0
 
 - **Clientes VIP**: clic derecho dentro del chat → *⭐ Marcar a … como VIP*. Sus mensajes avisan con "⭐ VIP", borde dorado y un sonido especial de cuatro notas. Se quita igual.

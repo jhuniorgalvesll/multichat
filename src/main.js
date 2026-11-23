@@ -2063,12 +2063,28 @@ function showAddMenu() {
   Menu.buildFromTemplate(template).popup({ window: win });
 }
 
+// Mueve una pestaña un lugar a la izquierda (-1) o a la derecha (+1).
+function moveTab(id, dir) {
+  const open = openAccounts();
+  const i = open.findIndex((a) => a.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= open.length) return;
+  [open[i], open[j]] = [open[j], open[i]];
+  const rest = accounts().filter((a) => !open.includes(a));
+  store.get().accounts = [...open, ...rest];
+  store.save();
+  applyLayout();
+  pushState();
+}
+
 function showTabMenu(id) {
   const acc = findAccount(id);
   if (!acc) return;
   const loaded = views.has(id);
   Menu.buildFromTemplate([
     { label: 'Renombrar', click: () => win.webContents.send('tab:start-rename', id) },
+    { label: '⬅ Mover a la izquierda', enabled: openAccounts().indexOf(acc) > 0, click: () => moveTab(id, -1) },
+    { label: 'Mover a la derecha ➡', enabled: openAccounts().indexOf(acc) < openAccounts().length - 1, click: () => moveTab(id, 1) },
     { label: '🖨 Imprimir ticket de envío…', click: () => openTicketFor(id) },
     { label: 'Recordarme de esta cuenta…', click: () => openReminderDialog(id) },
     { label: 'Recargar', enabled: loaded, click: () => views.get(id)?.webContents.reload() },

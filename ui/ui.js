@@ -32,6 +32,7 @@ let state = { accounts: [], activeId: null, total: 0, tiles: [], locked: false }
 let renamingId = null;
 let renameDraft = null;
 let draggedId = null;
+let dragStartOrder = '';
 let lastBadge = -1;
 let wasLocked = null;
 
@@ -174,24 +175,29 @@ function renderTab(acc) {
 
   tab.addEventListener('dragstart', (e) => {
     draggedId = acc.id;
+    dragStartOrder = [...tabsEl.children].map((el) => el.dataset.id).join(',');
     tab.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', acc.id); // necesario para que el arrastre funcione en todos los sistemas
   });
+  // Al soltar (sobre cualquier pestaña, también sobre la misma) se guarda el nuevo orden.
   tab.addEventListener('dragend', () => {
-    draggedId = null;
     tab.classList.remove('dragging');
+    const order = [...tabsEl.children].map((el) => el.dataset.id);
+    draggedId = null;
+    if (order.join(',') !== dragStartOrder) api.reorder(order);
+    else render();
   });
   tab.addEventListener('dragover', (e) => {
-    if (!draggedId || draggedId === acc.id) return;
+    if (!draggedId) return;
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedId === acc.id) return;
     const dragged = tabsEl.querySelector(`[data-id="${draggedId}"]`);
     const { left, width } = tab.getBoundingClientRect();
     tab.parentNode.insertBefore(dragged, e.clientX < left + width / 2 ? tab : tab.nextSibling);
   });
-  tab.addEventListener('drop', (e) => {
-    e.preventDefault();
-    api.reorder([...tabsEl.children].map((el) => el.dataset.id));
-  });
+  tab.addEventListener('drop', (e) => e.preventDefault());
 
   return tab;
 }
@@ -272,7 +278,8 @@ function applyLook() {
 
 function render() {
   applyLook();
-  tabsEl.replaceChildren(...state.accounts.map(renderTab));
+  // Mientras se arrastra una pestaña no se redibuja la barra (si no, vuelve a su lugar en medio del arrastre).
+  if (!draggedId) tabsEl.replaceChildren(...state.accounts.map(renderTab));
   // Animación al cambiar de pestaña (solo cuando cambia, no en cada actualización).
   if (state.activeId !== lastActiveId) {
     tabsEl.querySelector('.tab.active')?.classList.add('just-active');

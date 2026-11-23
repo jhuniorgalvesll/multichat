@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.21.1',
+    items: ['Pestañas movibles: arrástralas a la izquierda o a la derecha y quedan en ese orden. También: clic derecho en la pestaña → "Mover a la izquierda / derecha".'],
+  },
+  {
     version: '1.21.0',
     items: [
       'Clientes VIP: clic derecho en el chat → "⭐ Marcar como VIP". Sus mensajes avisan con estrella, borde dorado y un sonido especial.',
