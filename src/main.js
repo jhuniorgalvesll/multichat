@@ -948,6 +948,7 @@ async function checkPhoneLink() {
 function openFromNotification(data) {
   showWindow();
   if (data.kind === 'phone-off') { shell.openExternal('ms-phone:').catch(() => {}); return; }
+  if (data.kind === 'agencias') { win.webContents.send('ui:agencias', { cambios: true }); return; }
   if (data.kind === 'payment' && data.chat && data.action === 'confirm') return confirmPayment(data);
   if (data.kind === 'payment' && data.chat) return openPayChat(data);
   if (data.kind === 'payment') return showTodayPayments();
@@ -2031,6 +2032,24 @@ function checkAutoLock() {
 
 // ---------- Menús ----------
 
+// ---------- Agencias Shalom: lista completa al día (nuevas y cerradas) ----------
+async function revisarAgenciasShalom(forzar = false) {
+  const cambios = await shalomagencias.actualizarIndice({ forzar }).catch(() => null);
+  if (win && !win.isDestroyed()) win.webContents.send('ui:agencias-estado', shalomagencias.estado());
+  if (!cambios || (!cambios.nuevas.length && !cambios.cerradas.length)) return;
+  const partes = [];
+  if (cambios.nuevas.length) partes.push(`${cambios.nuevas.length} nueva${cambios.nuevas.length === 1 ? '' : 's'}`);
+  if (cambios.cerradas.length) partes.push(`${cambios.cerradas.length} cerrada${cambios.cerradas.length === 1 ? '' : 's'}`);
+  const ejemplos = [...cambios.nuevas.slice(0, 2).map((a) => `🆕 ${a.nombre} (${a.dep})`), ...cambios.cerradas.slice(0, 2).map((a) => `❌ ${a.nombre} (${a.dep})`)];
+  notifier.show({
+    kind: 'agencias',
+    accountName: 'MultiChat Pro',
+    title: `🏢 Agencias Shalom: ${partes.join(', ')}`,
+    body: ejemplos.join(' · '),
+    canReply: false,
+  });
+}
+
 // ---------- Mismos ajustes en varias PCs (carpeta de OneDrive / Google Drive) ----------
 function startSync() {
   sync.start({
@@ -3099,6 +3118,8 @@ function registerIpc() {
   ipcMain.handle('ship:detect', (_e, text) => shalomtrack.detectar(text));
   ipcMain.handle('agencias:buscar', (_e, lugar) => (locked ? { ok: false } : shalomagencias.buscar(lugar)));
   ipcMain.handle('agencias:tardara', (_e, lugar) => shalomagencias.tardara(lugar));
+  ipcMain.handle('agencias:estado', () => shalomagencias.estado());
+  ipcMain.handle('agencias:actualizar', async () => { await revisarAgenciasShalom(true); return shalomagencias.estado(); });
   // Agencias elegidas → mensaje en el chat abierto (el vendedor presiona Enter).
   ipcMain.handle('agencias:pegar', async (_e, lugar, agencias) => {
     if (locked || !Array.isArray(agencias) || !agencias.length) return { ok: false };
@@ -3550,8 +3571,9 @@ function init() {
   fx.start({ store, onChange: pushState }); // dólar del día (SUNAT)
   setTimeout(checkPhoneLink, 60_000);
   setInterval(reloadHeavyTabs, 10 * 60_000);
-  // Lista de agencias Shalom de Lima y Callao lista de antemano (búsquedas por distrito al instante).
-  setTimeout(() => shalomagencias.prepararLima().catch(() => {}), 90_000);
+  // Lista completa de agencias Shalom: se renueva una vez al día en segundo plano y avisa nuevas o cerradas.
+  setTimeout(revisarAgenciasShalom, 90_000);
+  setInterval(revisarAgenciasShalom, 6 * 60 * 60_000);
   setInterval(checkPhoneLink, 2 * 60_000);
   setTimeout(maybeRatePrompt, 20_000); // después de la bienvenida del día
   setInterval(maybeRatePrompt, 30 * 60 * 1000);

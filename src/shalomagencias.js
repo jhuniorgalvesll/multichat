@@ -8,28 +8,34 @@
 // El buscador de Shalom solo entiende el nombre oficial ("Santiago de Surco", no "Surco") y, si el nombre se repite
 // en otra región ("Miraflores", "San Miguel"), muestra solo uno. Por eso:
 //  1) se traducen nombres cortos y siglas de Lima (Surco, SJL, SJM, SMP, VES, VMT, Chosica…);
-//  2) para distritos de Lima y Callao, además se revisa la lista completa de agencias de Lima y Callao y se suman las
-//     que tienen ese distrito en su dirección;
-//  3) todo se junta sin repetir. Cada lugar se recuerda 1 día; la lista de Lima y Callao, 3 días.
+//  2) se guarda en la PC la LISTA COMPLETA de agencias del Perú (se recorre la página departamento por departamento,
+//     unas 500 agencias en 1 minuto). Se actualiza sola una vez al día: las agencias que Shalom cierra salen de la
+//     lista y las nuevas entran. Si una actualización sale incompleta (sin internet, página lenta), se conserva la
+//     anterior para no dar por cerradas agencias que siguen abiertas;
+//  3) al buscar se juntan la búsqueda en vivo de Shalom y la lista completa (por departamento, por nombre y por
+//     distrito en la dirección), sin repetir.
 const fs = require('fs');
 const path = require('path');
 const { app, BrowserWindow } = require('electron');
 
 const URL_AGENCIAS = process.env.MULTICHAT_SHALOM_AGENCIAS_URL || 'https://shalom.com.pe/agencias';
-const CACHE_MS = 24 * 60 * 60 * 1000;
-const LIMA_MS = 3 * 24 * 60 * 60 * 1000;
+const CACHE_MS = 6 * 60 * 60 * 1000;
+const INDICE_MS = 20 * 60 * 60 * 1000; // la lista completa se renueva si tiene más de 20 horas
+const DEPARTAMENTOS = ['Amazonas', 'Áncash', 'Apurímac', 'Arequipa', 'Ayacucho', 'Cajamarca', 'Callao', 'Cusco',
+  'Huancavelica', 'Huánuco', 'Ica', 'Junín', 'La Libertad', 'Lambayeque', 'Lima', 'Loreto', 'Madre de Dios', 'Moquegua',
+  'Pasco', 'Piura', 'Puno', 'San Martín', 'Tacna', 'Tumbes', 'Ucayali'];
 const cache = new Map();
-let limaIndex = null; // { at, agencias } (también guardada en la PC, para no esperar cada vez)
-const limaFile = () => path.join(app.getPath('userData'), 'shalom-agencias-lima.json');
-function cargarLima() {
-  if (limaIndex) return;
+let indice = null; // { at, agencias: [{ nombre, direccion, tipo, dep }], cambios: { at, nuevas, cerradas } }
+const indiceFile = () => path.join(app.getPath('userData'), 'shalom-agencias.json');
+function cargarIndice() {
+  if (indice) return;
   try {
-    const d = JSON.parse(fs.readFileSync(limaFile(), 'utf8'));
-    if (d && Array.isArray(d.agencias) && d.agencias.length) limaIndex = d;
+    const d = JSON.parse(fs.readFileSync(indiceFile(), 'utf8'));
+    if (d && Array.isArray(d.agencias) && d.agencias.length) indice = d;
   } catch { /* aún no se guardó */ }
 }
-function guardarLima() {
-  try { fs.writeFileSync(limaFile(), JSON.stringify(limaIndex)); } catch { /* sin espacio o sin permiso */ }
+function guardarIndice() {
+  try { fs.writeFileSync(indiceFile(), JSON.stringify(indice)); } catch { /* sin espacio o sin permiso */ }
 }
 let busy = Promise.resolve();
 
@@ -171,6 +177,19 @@ function porDireccion(distrito, agencias) {
   });
 }
 
+// Agencias de la lista completa que corresponden a un lugar: su departamento, su nombre o su dirección.
+function buscarEnIndice(lugar) {
+  cargarIndice();
+  if (!indice) return [];
+  const n = norm(lugar);
+  const distrito = distritoLima(lugar);
+  if (distrito) return porDireccion(distrito, indice.agencias.filter((a) => ['lima', 'callao'].includes(norm(a.dep))));
+  const dep = DEPARTAMENTOS.find((d) => norm(d) === n);
+  if (dep) return indice.agencias.filter((a) => norm(a.dep) === n);
+  const tiene = (t) => new RegExp(`(^| )${n}( |$)`).test(t);
+  return indice.agencias.filter((a) => tiene(norm(`${a.nombre} ${a.direccion}`)));
+}
+
 // { ok: true, lugar, agencias: [{ nombre, direccion, tipo, fuente }] } o { ok: false, error }.
 function buscar(lugarIn) {
   const lugar = String(lugarIn || '').replace(/\s+/g, ' ').trim().slice(0, 60);
@@ -180,21 +199,14 @@ function buscar(lugarIn) {
   if (hit && Date.now() - hit.at < CACHE_MS) return Promise.resolve(hit.result);
   const run = busy.then(async () => {
     const distrito = distritoLima(lugar);
-    if (distrito) cargarLima();
     const consultas = consultasPara(lugar);
-    const necesitaLima = Boolean(distrito) && (!limaIndex || Date.now() - limaIndex.at > LIMA_MS);
-    if (necesitaLima) consultas.push('Lima', 'Callao');
-    const r = await consultar(consultas);
-    if (r.estado !== 'ok') return { ok: false, error: r.estado === 'sin_buscador' ? 'pagina_cambio' : 'sin_respuesta' };
-    if (necesitaLima) {
-      const todas = unicas([...(r.resultado.Lima || []), ...(r.resultado.Callao || [])]);
-      if (todas.length) { limaIndex = { at: Date.now(), agencias: todas }; guardarLima(); }
-    }
-    const deShalom = consultasPara(lugar).flatMap((q) => r.resultado[q] || []).map((a) => ({ ...a, fuente: 'shalom' }));
-    const deLima = distrito && limaIndex ? porDireccion(distrito, limaIndex.agencias).map((a) => ({ ...a, fuente: 'direccion' })) : [];
-    const agencias = unicas([...deShalom, ...deLima]).slice(0, 60);
+    const r = consultas.length ? await consultar(consultas) : { estado: 'ok', resultado: {} };
+    const enVivo = r.estado === 'ok' ? consultas.flatMap((q) => r.resultado[q] || []).map((a) => ({ ...a, fuente: 'shalom' })) : [];
+    const deLista = buscarEnIndice(lugar).map((a) => ({ ...a, fuente: distrito ? 'direccion' : 'lista' }));
+    if (r.estado !== 'ok' && !deLista.length) return { ok: false, error: r.estado === 'sin_buscador' ? 'pagina_cambio' : 'sin_respuesta' };
+    const agencias = unicas([...enVivo, ...deLista]).slice(0, 80);
     const result = { ok: true, lugar: distrito && norm(distrito) !== norm(lugar) ? `${lugar} (${distrito})` : lugar, agencias };
-    cache.set(key, { at: Date.now(), result });
+    if (r.estado === 'ok') cache.set(key, { at: Date.now(), result });
     return result;
   });
   busy = run.catch(() => {});
@@ -239,27 +251,53 @@ function lugarDeTexto(texto) {
   return { lugar: lugar.slice(0, 60), direccion: partes[0].trim().slice(0, 200) };
 }
 
-// Prepara en segundo plano la lista de Lima y Callao (al abrir la app), para que buscar un distrito sea rápido.
-function prepararLima() {
-  cargarLima();
-  if (limaIndex && Date.now() - limaIndex.at < LIMA_MS) return Promise.resolve(true);
+// Renueva la lista completa (todas las agencias del Perú, departamento por departamento). Devuelve los cambios
+// respecto a la lista anterior: { nuevas: [...], cerradas: [...] } o null si no se pudo o no hacía falta.
+const claveAgencia = (a) => norm(`${a.nombre}|${a.direccion}`);
+function actualizarIndice({ forzar = false } = {}) {
+  cargarIndice();
+  if (!forzar && indice && Date.now() - indice.at < INDICE_MS) return Promise.resolve(null);
   const run = busy.then(async () => {
-    if (limaIndex && Date.now() - limaIndex.at < LIMA_MS) return true;
-    const r = await consultar(['Lima', 'Callao']);
-    if (r.estado !== 'ok') return false;
-    const todas = unicas([...(r.resultado.Lima || []), ...(r.resultado.Callao || [])]);
-    if (todas.length) { limaIndex = { at: Date.now(), agencias: todas }; guardarLima(); }
-    return true;
+    const r = await consultar(DEPARTAMENTOS);
+    if (r.estado !== 'ok') return null;
+    const agencias = [];
+    for (const dep of DEPARTAMENTOS) for (const a of r.resultado[dep] || []) agencias.push({ ...a, dep });
+    const nueva = unicas(agencias);
+    const anterior = indice ? indice.agencias : [];
+    // Lista incompleta (página lenta o sin internet): no se reemplaza, para no "cerrar" agencias que siguen abiertas.
+    if (nueva.length < 300 || (anterior.length && nueva.length < anterior.length * 0.85)) return null;
+    const antes = new Set(anterior.map(claveAgencia));
+    const ahora = new Set(nueva.map(claveAgencia));
+    const cambios = anterior.length ? {
+      at: Date.now(),
+      nuevas: nueva.filter((a) => !antes.has(claveAgencia(a))),
+      cerradas: anterior.filter((a) => !ahora.has(claveAgencia(a))),
+    } : null;
+    indice = { at: Date.now(), agencias: nueva, cambios: cambios && (cambios.nuevas.length || cambios.cerradas.length) ? cambios : (indice && indice.cambios) || null };
+    guardarIndice();
+    cache.clear();
+    return cambios;
   });
   busy = run.catch(() => {});
   return run;
 }
 
-// ¿Esta búsqueda tardará más (primera vez en un distrito de Lima)?
-function tardara(lugar) {
-  if (!distritoLima(lugar)) return false;
-  cargarLima();
-  return !limaIndex || Date.now() - limaIndex.at > LIMA_MS;
+// Resumen de la lista para la ventana: cuántas agencias, de cuándo y los últimos cambios.
+function estado() {
+  cargarIndice();
+  if (!indice) return null;
+  const c = indice.cambios;
+  return {
+    total: indice.agencias.length,
+    at: indice.at,
+    cambios: c ? { at: c.at, nuevas: c.nuevas.slice(0, 20), cerradas: c.cerradas.slice(0, 20), nNuevas: c.nuevas.length, nCerradas: c.cerradas.length } : null,
+  };
 }
 
-module.exports = { buscar, mensaje, lugarDeTexto, consultasPara, distritoLima, porDireccion, tardara, prepararLima };
+// ¿Esta búsqueda tardará más? (todavía no hay lista completa en la PC)
+function tardara() {
+  cargarIndice();
+  return !indice;
+}
+
+module.exports = { buscar, mensaje, lugarDeTexto, consultasPara, distritoLima, porDireccion, tardara, actualizarIndice, estado, buscarEnIndice };

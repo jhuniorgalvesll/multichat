@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.24.0
+
+- **Lista completa de agencias Shalom, al día**: MultiChat recorre la página oficial departamento por departamento (25 departamentos, unas 500 agencias en 1 minuto) y guarda la lista en la PC. Se actualiza sola una vez al día en segundo plano y avisa "🏢 Agencias Shalom: 2 nuevas, 1 cerrada" con el detalle; las cerradas dejan de salir en las búsquedas y las nuevas aparecen. Si la actualización sale incompleta (sin internet, página lenta), se conserva la lista anterior. En la ventana de agencias se ve "Lista oficial: 501 agencias · actualizada hoy", los últimos cambios y *🔄 Actualizar ahora*. Las búsquedas juntan la búsqueda en vivo de Shalom con la lista completa.
+
 ## Novedades v1.23.2
 
 - **Agencias de todo el distrito**: el buscador de Shalom solo entiende el nombre oficial y, con nombres repetidos, muestra uno. Ahora MultiChat traduce nombres cortos y siglas de Lima (Surco → Santiago de Surco, SJL, SJM, SMP, VES, VMT, Magdalena, Chosica, Cercado…) y, para distritos de Lima y Callao, suma las agencias cuya dirección menciona el distrito (revisa la lista completa de Lima y Callao; se guarda 3 días, la primera vez tarda unos 20 segundos). Departamentos (Junín, Ayacucho…) y provincias (Huancayo, Cañete…) traen todas sus agencias.

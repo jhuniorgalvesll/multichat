@@ -3003,8 +3003,40 @@ async function makePayReceipt(p) {
 let agOpen = false;
 let agResult = null;
 let agDireccion = ''; // dirección del cliente (para poner primero la agencia que coincide)
-function openAgencias(lugar, direccion = '') {
+// Estado de la lista completa: "501 agencias · actualizada hoy 08:15 · 2 nuevas, 1 cerrada" + Actualizar.
+function pintarEstadoAgencias(e, verCambios = false) {
+  const box = $('ag-info');
+  box.replaceChildren();
+  if (!e) {
+    box.append('Lista completa de agencias: todavía no se descargó (se hace sola en segundo plano). ');
+  } else {
+    const dia = new Date(e.at).toDateString() === new Date().toDateString() ? 'hoy' : new Date(e.at).toLocaleDateString('es-PE');
+    box.append(`Lista oficial: ${e.total} agencias · actualizada ${dia} ${hhmm(e.at)}`);
+    if (e.cambios) {
+      const c = e.cambios;
+      const t = [c.nNuevas && `${c.nNuevas} nueva${c.nNuevas === 1 ? '' : 's'}`, c.nCerradas && `${c.nCerradas} cerrada${c.nCerradas === 1 ? '' : 's'}`].filter(Boolean).join(', ');
+      const ver = Object.assign(document.createElement('button'), { type: 'button', className: 'link-btn', textContent: `· últimos cambios: ${t}` });
+      const det = Object.assign(document.createElement('div'), { className: 'ag-cambios' });
+      det.hidden = !verCambios;
+      for (const a of c.nuevas) det.append(Object.assign(document.createElement('div'), { textContent: `🆕 ${a.nombre} — ${a.direccion} (${a.dep})` }));
+      for (const a of c.cerradas) det.append(Object.assign(document.createElement('div'), { textContent: `❌ ${a.nombre} — ${a.direccion} (${a.dep}) · ya no figura en la página de Shalom` }));
+      ver.addEventListener('click', () => { det.hidden = !det.hidden; });
+      box.append(' ', ver, det);
+    }
+  }
+  const act = Object.assign(document.createElement('button'), { type: 'button', className: 'link-btn', textContent: '🔄 Actualizar ahora' });
+  act.addEventListener('click', async () => {
+    act.disabled = true;
+    act.textContent = 'Actualizando la lista de todo el Perú… (1 a 2 minutos)';
+    pintarEstadoAgencias(await api.agenciasActualizar(), true);
+  });
+  box.append(' ', act);
+}
+api.onAgenciasEstado((e) => { if (agOpen) pintarEstadoAgencias(e); });
+
+function openAgencias(lugar, direccion = '', verCambios = false) {
   agDireccion = direccion || '';
+  api.agenciasEstado().then((e) => pintarEstadoAgencias(e, verCambios));
   if (state.locked || passwordMode) return;
   closeCoffee();
   if (drawerOpen) closeDrawer();
@@ -3084,6 +3116,7 @@ async function buscarAgencias() {
     const text = document.createElement('div');
     text.append(Object.assign(document.createElement('b'), { textContent: a.nombre }), Object.assign(document.createElement('small'), { textContent: a.direccion }));
     if (a.tipo) text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: a.tipo }));
+    if (a.fuente === 'lista') text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: 'De la lista completa' }));
     if (a.fuente === 'direccion') text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: 'Por su dirección' }));
     if (i === 0 && cercana === 0) text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo ag-cerca', textContent: '📍 Cerca de la dirección del cliente' }));
     row.append(check, text);
@@ -3099,4 +3132,4 @@ $('ag-paste').addEventListener('click', async () => {
 });
 $('ag-close').addEventListener('click', closeAgencias);
 $('ag-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAgencias(); });
-api.onAgencias((d) => openAgencias(d && d.lugar, d && d.direccion));
+api.onAgencias((d) => openAgencias(d && d.lugar, d && d.direccion, Boolean(d && d.cambios)));

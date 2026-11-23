@@ -26,6 +26,10 @@ api.onData((data) => {
     $('open-btn').textContent = 'Abrir Enlace Móvil';
     $('reply-btn').hidden = true;
   }
+  if (data.kind === 'agencias') {
+    document.body.classList.add('update');
+    $('reply-btn').hidden = true;
+  }
   if (data.kind === 'vip-info') {
     $('open-btn').hidden = true;
     $('actions').hidden = true;
@@ -38,7 +42,7 @@ api.onData((data) => {
     $('actions').hidden = !conChat;
     $('confirm-btn').hidden = !conChat;
   }
-  $('open-btn').textContent = { payment: '💬 Abrir chat', 'phone-off': 'Abrir Enlace Móvil', reminder: 'Abrir cuenta', update: 'Ver detalles', updated: 'Ver novedades', shipdata: data.confirmed ? '🖨 Imprimir ticket' : '📦 Abrir ticket' }[data.kind] || 'Abrir chat';
+  $('open-btn').textContent = { payment: '💬 Abrir chat', 'phone-off': 'Abrir Enlace Móvil', agencias: 'Ver cambios', reminder: 'Abrir cuenta', update: 'Ver detalles', updated: 'Ver novedades', shipdata: data.confirmed ? '🖨 Imprimir ticket' : '📦 Abrir ticket' }[data.kind] || 'Abrir chat';
   if (data.kind === 'shipdata') document.body.classList.add('update');
   if (data.kind === 'update' || data.kind === 'updated') document.body.classList.add('update');
   reportSize();

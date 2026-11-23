@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.24.0',
+    items: ['🏢 Agencias Shalom al día: MultiChat guarda la lista completa de la página oficial (unas 500 agencias de todo el Perú), la actualiza sola cada día y avisa qué agencias son nuevas y cuáles cerraron.'],
+  },
+  {
     version: '1.23.3',
     items: ['Agencias Shalom más rápidas: "SURCO" ya no se queda buscando. La lista de Lima y Callao se prepara sola al abrir la app, y mientras busca se ven los segundos.'],
   },
