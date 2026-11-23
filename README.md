@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.23.2
+
+- **Agencias de todo el distrito**: el buscador de Shalom solo entiende el nombre oficial y, con nombres repetidos, muestra uno. Ahora MultiChat traduce nombres cortos y siglas de Lima (Surco → Santiago de Surco, SJL, SJM, SMP, VES, VMT, Magdalena, Chosica, Cercado…) y, para distritos de Lima y Callao, suma las agencias cuya dirección menciona el distrito (revisa la lista completa de Lima y Callao; se guarda 3 días, la primera vez tarda unos 20 segundos). Departamentos (Junín, Ayacucho…) y provincias (Huancayo, Cañete…) traen todas sus agencias.
+
 ## Novedades v1.23.1
 
 - **Agencias Shalom desde el mensaje del cliente**: selecciona el mensaje con su dirección (por ejemplo "Av. San Juan Mz A, Santiago de Surco 15058") → clic derecho → *🏢 Agencias Shalom cerca de "Santiago de Surco"*. También entiende "envío a Ayacucho" o "para Huancayo". La agencia cuya dirección coincide con la del cliente sale primero ("📍 Cerca de la dirección del cliente").

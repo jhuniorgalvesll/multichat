@@ -3036,7 +3036,9 @@ async function buscarAgencias() {
   const lugar = $('ag-lugar').value.trim();
   if (lugar.length < 3) { $('ag-state').textContent = 'Escribe al menos 3 letras.'; return; }
   $('ag-go').disabled = true;
-  $('ag-state').textContent = `🔎 Buscando agencias en ${lugar}…`;
+  $('ag-state').textContent = (await api.agenciasTardara(lugar))
+    ? `🔎 Buscando agencias en ${lugar}… La primera vez en Lima revisa todas las agencias de Lima y Callao (unos 20 segundos); luego es rápido.`
+    : `🔎 Buscando agencias en ${lugar}…`;
   $('ag-list').replaceChildren();
   $('ag-paste').hidden = true;
   agResult = await api.buscarAgencias(lugar);
@@ -3076,6 +3078,7 @@ async function buscarAgencias() {
     const text = document.createElement('div');
     text.append(Object.assign(document.createElement('b'), { textContent: a.nombre }), Object.assign(document.createElement('small'), { textContent: a.direccion }));
     if (a.tipo) text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: a.tipo }));
+    if (a.fuente === 'direccion') text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: 'Por su dirección' }));
     if (i === 0 && cercana === 0) text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo ag-cerca', textContent: '📍 Cerca de la dirección del cliente' }));
     row.append(check, text);
     return row;

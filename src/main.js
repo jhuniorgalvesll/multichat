@@ -3098,6 +3098,7 @@ function registerIpc() {
   // Envío por Shalom: consulta el rastreo público y la IA propone 3 respuestas solo con ese resultado.
   ipcMain.handle('ship:detect', (_e, text) => shalomtrack.detectar(text));
   ipcMain.handle('agencias:buscar', (_e, lugar) => (locked ? { ok: false } : shalomagencias.buscar(lugar)));
+  ipcMain.handle('agencias:tardara', (_e, lugar) => shalomagencias.tardara(lugar));
   // Agencias elegidas → mensaje en el chat abierto (el vendedor presiona Enter).
   ipcMain.handle('agencias:pegar', async (_e, lugar, agencias) => {
     if (locked || !Array.isArray(agencias) || !agencias.length) return { ok: false };
