@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.20.0',
+    items: ['📝 Pedir datos de envío → "📋 Opciones de envío (para que el cliente elija)": pega en el chat la información de Olva y Shalom ordenada para WhatsApp. Se edita en "Editar formularios".'],
+  },
+  {
     version: '1.19.8',
     items: ['Consulta RUC → "Pegar en el chat": solo la razón social (o nombre) y el RUC.'],
   },

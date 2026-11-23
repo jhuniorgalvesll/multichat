@@ -128,6 +128,58 @@ const DEFAULT_FORMS = {
     '*Agencia Cruz del Sur donde recoges:* ',
   ].join('\n'),
 };
+// "Opciones de envío": mensaje informativo para el cliente que todavía no elige entre Olva y Shalom.
+// Las PCs nuevas reciben una plantilla sin datos del negocio; se edita en "Editar formularios".
+const INFO_KEY = 'Opciones de envío';
+const DEFAULT_INFO = [
+  '🚚 *ENVÍOS A TODO EL PERÚ*',
+  'Tenemos dos opciones para que elija la más conveniente:',
+  '',
+  '*1. OLVA COURIER – ENTREGA A DOMICILIO* 🏠',
+  '✅ *Lima:* entrega aproximada en 24 horas después del despacho.',
+  '✅ *Provincias:* el tiempo varía según el destino.',
+  '💳 *Pago del producto:* 100% por adelantado.',
+  '💰 *Pago del flete:* por adelantado.',
+  '📌 El costo del envío se calcula según destino, peso y tamaño.',
+  '',
+  '*2. SHALOM – RECOJO EN AGENCIA* 📦',
+  '✅ Recoge su pedido en la agencia Shalom de su localidad.',
+  '✅ *Lima:* aproximadamente 2 días.',
+  '✅ *Provincias:* aproximadamente 3 a 4 días, según el destino.',
+  '💳 *Pago del producto:* 100% por adelantado.',
+  '💰 *Pago del flete:* en destino, al recoger en la agencia Shalom.',
+  '',
+  '📌 Los tiempos de entrega son referenciales.',
+  '📲 *¿En qué distrito o provincia se encuentra?* Así le ayudamos a elegir la mejor opción.',
+].join('\n');
+// Texto de Fertisem (para la PC que ya tiene el remitente Fertisem).
+const FERTISEM_INFO = [
+  '🚚 *FERTISEM | ENVÍOS A TODO EL PERÚ* 🌱',
+  'Contamos con dos opciones de transporte para que elija la más conveniente:',
+  '',
+  '*1. OLVA COURIER – ENTREGA A DOMICILIO* 🏠',
+  '✅ *Lima:* entrega aproximada en 24 horas después del despacho.',
+  '✅ *Provincias:* el tiempo de entrega varía según el destino.',
+  '💳 *Pago del producto:* 100% por adelantado.',
+  '💰 *Pago del flete:* por adelantado.',
+  '📌 *Importante:* el costo del envío se calcula según el destino, peso y tamaño del paquete.',
+  '',
+  '*2. SHALOM – ENTREGA EN AGENCIA* 📦',
+  '✅ *Modalidad:* recojo de su pedido en la agencia Shalom de su localidad.',
+  '✅ *Lima:* entrega aproximada en 2 días.',
+  '✅ *Provincias:* entrega aproximada de 3 a 4 días, según el destino y la distancia.',
+  '💳 *Pago del producto:*',
+  '   • Opción 1: adelanto del 50% para gestionar su pedido y el 50% restante cuando llegue a la agencia de destino.',
+  '   • Opción 2: pago del 100% por adelantado.',
+  '💰 *Pago del flete:* en destino, directamente en la agencia Shalom al recoger su pedido.',
+  '',
+  '📌 *Importante:* los tiempos de entrega son referenciales y pueden variar según la empresa de transporte.',
+  '',
+  '🌱 *FERTISEM – Soluciones Agrícolas*',
+  '🌐 www.fertisem.pe',
+  '📲 *¡Indíquenos su distrito o provincia para ayudarle a elegir la mejor opción de envío!*',
+].join('\n');
+
 // Empresas con formulario propio (el orden es el del menú 📝).
 const FORM_CARRIERS = Object.keys(DEFAULT_FORMS);
 
@@ -275,5 +327,5 @@ function missingFields(data, carrier) {
 }
 
 module.exports = {
-  CARRIERS, CHANNELS, PAGE_MM, DEFAULT_FORMS, FORM_CARRIERS, sanitizeProfile, sanitizeTicket, parseSelection, parseShalomAgency, missingFields,
+  CARRIERS, CHANNELS, PAGE_MM, DEFAULT_FORMS, FORM_CARRIERS, INFO_KEY, DEFAULT_INFO, FERTISEM_INFO, sanitizeProfile, sanitizeTicket, parseSelection, parseShalomAgency, missingFields,
 };

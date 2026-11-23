@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.20.0
+
+- **Opciones de envío para el cliente**: en 📝 *Pedir datos de envío* → *📋 Opciones de envío (para que el cliente elija)* se pega un mensaje ordenado (con negritas de WhatsApp) que explica Olva (domicilio) y Shalom (agencia): tiempos, pago del producto y del flete. Es informativo: el chat no queda esperando datos. Se edita en *Editar formularios*. Las PCs nuevas reciben una plantilla sin datos del negocio.
+
 ## Novedades v1.19.6
 
 - **Destinatario automático**: en el ticket de envío, si hay un DNI de 8 dígitos (detectado o escrito) y el destinatario está vacío, MultiChat busca el nombre por DNI y llena *Destinatario* ("✓ Nombre encontrado por DNI: revísalo"). No cambia un nombre que ya escribiste.

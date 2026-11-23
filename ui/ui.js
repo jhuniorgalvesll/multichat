@@ -1553,10 +1553,10 @@ async function openForms() {
   closeProfiles();
   const { forms, defaults } = await api.getForms();
   formDefaults = defaults;
-  const label = { Shalom: 'Shalom (agencia)', Olva: 'Olva (domicilio)' };
+  const label = { Shalom: 'Shalom (agencia)', Olva: 'Olva (domicilio)', 'Opciones de envío': '📋 Opciones de envío (mensaje para que el cliente elija; no espera datos)' };
   $('forms-list').replaceChildren(...Object.keys(defaults).map((carrier) => {
     const wrap = document.createElement('label');
-    const area = Object.assign(document.createElement('textarea'), { rows: carrier === 'Olva' ? 11 : 9, value: forms[carrier] || defaults[carrier] });
+    const area = Object.assign(document.createElement('textarea'), { rows: carrier === 'Olva' ? 11 : carrier === 'Opciones de envío' ? 14 : 9, value: forms[carrier] || defaults[carrier] });
     area.dataset.carrier = carrier;
     wrap.append(`${label[carrier] || `${carrier} (agencia)`} `, area);
     return wrap;

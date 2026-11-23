@@ -1277,8 +1277,29 @@ function openShipTicket(entry) {
   });
 }
 
+// Mensaje "Opciones de envío" (informativo: el chat NO queda esperando datos).
+function shippingInfo() {
+  const settings = store.get().settings;
+  if (typeof settings.shippingInfo !== 'string' || !settings.shippingInfo.trim()) {
+    // La PC con el remitente Fertisem recibe su propio texto; las demás, la plantilla general.
+    const fertisem = store.get().ticketProfiles.some((p) => /fertisem/i.test(`${p.name} ${p.sender}`));
+    settings.shippingInfo = fertisem ? tickets.FERTISEM_INFO : tickets.DEFAULT_INFO;
+    store.save();
+  }
+  return settings.shippingInfo;
+}
+
+async function pasteShippingInfo() {
+  const view = views.get(activeId);
+  if (!view || locked) return;
+  view.webContents.focus();
+  await pasteText(view.webContents, shippingInfo());
+}
+
 function shippingFormItems() {
   return [
+    { label: '📋 Opciones de envío (para que el cliente elija)', click: () => pasteShippingInfo() },
+    { type: 'separator' },
     { label: 'Formulario Shalom (agencia)', click: () => pasteShippingForm('Shalom') },
     { label: 'Formulario Olva (domicilio)', click: () => pasteShippingForm('Olva') },
     { label: 'Otras empresas', submenu: tickets.FORM_CARRIERS.filter((c) => !['Shalom', 'Olva'].includes(c)).map((c) => ({ label: `Formulario ${c} (agencia)`, click: () => pasteShippingForm(c) })) },
@@ -1294,6 +1315,9 @@ function saveShippingForms(forms) {
     clean[carrier] = String(forms[carrier] || '').slice(0, 2000).trim() || tickets.DEFAULT_FORMS[carrier];
   }
   store.get().settings.shippingForms = clean;
+  if (typeof forms[tickets.INFO_KEY] === 'string') {
+    store.get().settings.shippingInfo = forms[tickets.INFO_KEY].slice(0, 3000).trim() || tickets.DEFAULT_INFO;
+  }
   store.save();
   return { ok: true };
 }
@@ -2663,7 +2687,10 @@ function registerIpc() {
   ipcMain.on('forms:menu', () => {
     if (!locked) Menu.buildFromTemplate(shippingFormItems()).popup({ window: win });
   });
-  ipcMain.handle('forms:get', () => ({ forms: { ...shippingForms() }, defaults: tickets.DEFAULT_FORMS }));
+  ipcMain.handle('forms:get', () => ({
+    forms: { [tickets.INFO_KEY]: shippingInfo(), ...shippingForms() },
+    defaults: { [tickets.INFO_KEY]: store.get().ticketProfiles.some((p) => /fertisem/i.test(`${p.name} ${p.sender}`)) ? tickets.FERTISEM_INFO : tickets.DEFAULT_INFO, ...tickets.DEFAULT_FORMS },
+  }));
   ipcMain.handle('forms:save', (_e, forms) => (locked ? { ok: false } : saveShippingForms(forms)));
   ipcMain.handle('ticket:printers', async () => {
     const printers = await win.webContents.getPrintersAsync();
