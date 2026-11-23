@@ -3131,11 +3131,16 @@ function registerIpc() {
     win.webContents.send('ui:verify', { status: 'reading' });
     readClipboardImage().then(verifyImage);
   });
-  ipcMain.on('verify:manual', (_e, amount, time) => {
+  ipcMain.on('verify:manual', (_e, amount, time, ref) => {
     if (locked) return;
     const value = Number(String(amount).replace(',', '.'));
     const m = /^(\d{1,2}):(\d{2})$/.exec(String(time || ''));
-    sendVerifyResult({ amount: value > 0 ? value : null, time: m ? { h: Number(m[1]), m: Number(m[2]) } : null, date: null, operation: '', app: '' }, { manual: true });
+    // Código de seguridad (3 dígitos) o N° de operación (6 a 12 dígitos), escrito a mano.
+    const r = String(ref || '').replace(/\D/g, '');
+    sendVerifyResult({
+      amount: value > 0 ? value : null, time: m ? { h: Number(m[1]), m: Number(m[2]) } : null, date: null,
+      operation: r.length >= 6 ? r : '', code: r.length === 3 ? r : '', app: '',
+    }, { manual: true });
   });
   ipcMain.on('payments:set', (_e, key, value) => { if (!locked) setPaymentOption(key, value); });
   ipcMain.on('payments:test', () => { if (!locked) onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }); });
@@ -3317,7 +3322,7 @@ function sendVerifyResult(info, extra = {}) {
   win.webContents.send('ui:verify', {
     ...result,
     info,
-    matches: result.matches.map((p) => ({ app: p.app, label: payLabel(p), name: p.name, amount: p.amount, at: p.at, diffMin: p.diffMin })),
+    matches: result.matches.map((p) => ({ app: p.app, label: payLabel(p), name: p.name, amount: p.amount, at: p.at, diffMin: p.diffMin, code: p.code || '', operation: p.operation || '' })),
     ...extra,
   });
 }

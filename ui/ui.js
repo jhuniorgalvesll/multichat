@@ -2320,6 +2320,7 @@ const VERIFY = {
   ask: ['🛡️', 'Verificar un pago', 'Haz clic derecho sobre la captura que te mandó el cliente → "Verificar pago de esta captura". O escribe el monto aquí abajo.'],
   confirmed: ['✅', 'Pago confirmado', 'Este pago sí llegó a tu cuenta.'],
   probable: ['🟡', 'Hay un pago de ese monto', 'Revisa que el nombre y la hora coincidan antes de despachar.'],
+  mismatch: ['⚠️', 'El código NO coincide', 'Hay un pago de ese monto, pero el código de seguridad o el N° de operación de la captura es distinto. Puede ser una captura editada o de otro pago: revisa tu app de Yape o del banco antes de despachar.'],
   'not-found': ['❌', 'Este pago NO llegó', 'No hay ningún pago de ese monto. Puede ser una captura falsa: revisa tu app de Yape o BBVA antes de despachar.'],
   unreadable: ['❓', 'No pude leer el monto', 'Escribe el monto de la captura aquí abajo para buscarlo.'],
 };
@@ -2332,12 +2333,15 @@ function showVerify(result) {
   $('verify-icon').textContent = icon;
   $('verify-title').textContent = result.status === 'not-found' && result.info && result.info.amount
     ? `No llegó ningún pago de ${soles(result.info.amount)}` : title;
-  $('verify-text').textContent = result.reason ? `${result.reason} ${text}` : text;
+  const porQue = result.status === 'confirmed' && result.check === 'code' ? ' ✓ El código de seguridad coincide.'
+    : result.status === 'confirmed' && result.check === 'operation' ? ' ✓ El N° de operación coincide.' : '';
+  $('verify-text').textContent = `${result.reason ? `${result.reason} ` : ''}${text}${porQue}`;
   const info = result.info || {};
   const read = [];
   if (info.amount && !result.manual) read.push(`Monto ${soles(info.amount)}`);
   if (info.time && !result.manual) read.push(`Hora ${String(info.time.h).padStart(2, '0')}:${String(info.time.m).padStart(2, '0')}`);
   if (info.operation) read.push(`Operación ${info.operation}`);
+  if (info.code) read.push(`Código ${info.code}`);
   if (info.app) read.push(info.app);
   $('verify-read').textContent = read.length ? `En la captura: ${read.join(' · ')}` : '';
   $('verify-read').hidden = !read.length;
@@ -2348,7 +2352,7 @@ function showVerify(result) {
     const who = Object.assign(document.createElement('div'), { className: 'pay-who', textContent: p.name });
     const when = document.createElement('small');
     const day = new Date(p.at).toDateString() === new Date().toDateString() ? 'hoy' : new Date(p.at).toLocaleDateString('es-PE');
-    when.textContent = `${p.label} · ${day} ${hhmm(p.at)}`;
+    when.textContent = `${p.label} · ${day} ${hhmm(p.at)}${p.code ? ` · Cód. ${p.code}` : ''}${p.operation ? ` · Op. ${p.operation}` : ''}`;
     who.append(when);
     const amount = Object.assign(document.createElement('div'), { className: 'pay-amount', textContent: soles(p.amount) });
     row.append(badge, who, amount);
@@ -2372,7 +2376,7 @@ $('verify-close').addEventListener('click', closeVerify);
 $('verify-modal').addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeVerify();
 });
-$('verify-check').addEventListener('click', () => api.verifyManual($('verify-amount').value, $('verify-time').value.trim()));
+$('verify-check').addEventListener('click', () => api.verifyManual($('verify-amount').value, $('verify-time').value.trim(), $('verify-ref').value.trim()));
 $('verify-amount').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') $('verify-check').click();
 });

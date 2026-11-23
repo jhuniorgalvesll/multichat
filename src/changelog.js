@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.22.1',
+    items: ['Verificador de pagos: compara también el código de seguridad (Yape) y el N° de operación (Yape y Plin). Si no coinciden avisa "⚠ El código NO coincide" (posible captura editada).'],
+  },
+  {
     version: '1.22.0',
     items: [
       '✅ Confirmar pago en 1 clic: en el aviso del Yape y en Pagos de hoy, abre el chat del cliente y pega "¡Recibimos tu pago!".',

@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.22.1
+
+- **Verificar con código y N° de operación**: al llegar un pago se guardan su código de seguridad (Yape) y su número de operación si el aviso los trae. El verificador lee de la captura del cliente el código de seguridad y el N° de operación: si coincide → "✅ Pago confirmado · ✓ El código de seguridad coincide"; si hay un pago de ese monto pero el código u operación es distinto → "⚠️ El código NO coincide" (posible captura editada o de otro pago). También se puede escribir el código o la operación a mano.
+
 ## Novedades v1.22.0
 
 - **✅ Confirmar pago en 1 clic**: cuando un Yape o Plin se reconoce con el chat del cliente, el aviso trae *✅ Confirmar pago* (y *💬 Abrir chat*); también en Pagos de hoy. Abre el chat y pega "✅ ¡Recibimos tu pago de S/ 45.00 por Yape! Muchas gracias 🙌"; tú presionas Enter.

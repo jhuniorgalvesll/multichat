@@ -44,6 +44,11 @@ function securityCode(text) {
   return (String(text || '').match(/c[oó]d(?:igo|\.)?\s*(?:de\s*)?seguridad(?:\s*es)?\s*:?\s*(\d{3})\b/i) || [])[1] || '';
 }
 
+// Número de operación en el texto de un aviso o captura ("Nro. de operación: 12345678", "N° Operación 12345678"), o ''.
+function operationNumber(text) {
+  return (String(text || '').match(/(?:n(?:ro|[°º])?\.?\s*(?:de\s*)?)?operaci[oó]n\s*(?:n(?:ro|[°º])?\.?)?\s*:?\s*#?\s*(\d{6,12})\b/i) || [])[1] || '';
+}
+
 function parsePayment(texts) {
   const all = texts.join('\n');
   // Yape avisa "Confirmación de Pago · Fulano* te envió un pago por S/ 45. El cód. de seguridad es: 217"
@@ -88,7 +93,8 @@ function parsePayment(texts) {
   const app = isYape ? 'Yape' : /plin/i.test(all) ? 'Plin' : 'BBVA';
   // Código de seguridad de Yape (3 dígitos): "El cód. de seguridad es: 427" / "Código de seguridad: 427".
   const code = securityCode(all);
-  return { app, name: cap(name), amount, ...(code ? { code } : {}), text: texts.join(' · ').slice(0, 300) };
+  const operation = operationNumber(all);
+  return { app, name: cap(name), amount, ...(code ? { code } : {}), ...(operation ? { operation } : {}), text: texts.join(' · ').slice(0, 300) };
 }
 
 // ArrivalTime de Windows (FILETIME: décimas de microsegundo desde 1601) → milisegundos desde 1970.
@@ -247,4 +253,4 @@ function phoneLinkRunning() {
   });
 }
 
-module.exports = { createWatcher, phoneLinkRunning, parsePayment, toastTexts, databasePath, securityCode };
+module.exports = { createWatcher, phoneLinkRunning, parsePayment, toastTexts, databasePath, securityCode, operationNumber };

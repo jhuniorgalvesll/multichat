@@ -60,7 +60,7 @@ const MONTHS = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7,
 // Datos de la captura: monto, hora, fecha, número de operación y app.
 function parseReceipt(text) {
   const t = String(text || '').replace(/\r/g, '');
-  const info = { amount: null, time: null, date: null, operation: '', app: '' };
+  const info = { amount: null, time: null, date: null, operation: '', code: '', app: '' };
   if (/yape/i.test(t)) info.app = 'Yape';
   else if (/plin|bbva|interbank|scotiabank/i.test(t)) info.app = 'Plin';
   // Monto: "S/ 50", "S/50.00", y lo que el lector suele confundir ("SI 50", "S/. 50").
@@ -89,6 +89,9 @@ function parseReceipt(text) {
   if (numeric) info.date = { d: Number(numeric[1]), mo: Number(numeric[2]) - 1, y: Number(numeric[3]) };
   const op = t.match(/(?:operaci[oó]n|c[oó]d(?:igo)?\.?\s*de\s*operaci[oó]n|n[°º]?\s*de\s*operaci[oó]n)\D{0,6}(\d{5,12})/i);
   if (op) info.operation = op[1];
+  // Código de seguridad de Yape (3 dígitos; en la captura a veces viene separado: "4 2 7").
+  const code = t.match(/c[oó]d(?:igo|\.)?\s*(?:de\s*)?seguridad\D{0,8}(\d)\s?(\d)\s?(\d)(?!\d)/i);
+  if (code) info.code = code[1] + code[2] + code[3];
   return info;
 }
 
@@ -96,9 +99,25 @@ function parseReceipt(text) {
 // Resultado: 'confirmed' (monto y hora coinciden), 'probable' (monto coincide; hora no se leyó o difiere un poco),
 // 'not-found' (ningún pago de ese monto) o 'unreadable' (no se leyó el monto).
 function match(info, payments) {
-  if (!info.amount) return { status: 'unreadable', matches: [] };
+  // 1) Código de seguridad o N° de operación: si coincide con un pago, es ese pago (aunque no se haya leído el monto).
+  const porCodigo = info.code ? payments.filter((p) => p.code && p.code === info.code) : [];
+  const porOperacion = info.operation ? payments.filter((p) => p.operation && p.operation.replace(/^0+/, '') === info.operation.replace(/^0+/, '')) : [];
+  const exacto = [...porOperacion, ...porCodigo].filter((p) => !info.amount || Math.abs(p.amount - info.amount) < 0.005);
+  if (exacto.length) {
+    return { status: 'confirmed', matches: [...new Set(exacto)].slice(0, 3), check: porOperacion.length ? 'operation' : 'code' };
+  }
+  if (!info.amount) {
+    if (info.code || info.operation) return { status: 'not-found', matches: [], check: info.operation ? 'operation' : 'code' };
+    return { status: 'unreadable', matches: [] };
+  }
   const sameAmount = payments.filter((p) => Math.abs(p.amount - info.amount) < 0.005);
   if (!sameAmount.length) return { status: 'not-found', matches: [] };
+  // 2) Hay pagos de ese monto con código/operación conocidos, pero ninguno coincide con la captura: sospechoso.
+  const codigoDistinto = info.code && sameAmount.some((p) => p.code) && !sameAmount.some((p) => p.code === info.code);
+  const operacionDistinta = info.operation && sameAmount.some((p) => p.operation) && !sameAmount.some((p) => p.operation === info.operation);
+  if (codigoDistinto || operacionDistinta) {
+    return { status: 'mismatch', matches: sameAmount.slice(-3).reverse(), check: operacionDistinta ? 'operation' : 'code' };
+  }
   if (info.time) {
     const ref = new Date();
     if (info.date) ref.setFullYear(info.date.y, info.date.mo, info.date.d);

@@ -103,7 +103,7 @@ contextBridge.exposeInMainWorld('multichat', {
   trackAndReply: (data) => ipcRenderer.invoke('ship:track-reply', data),
   pasteReply: (text) => ipcRenderer.invoke('ai:paste', text),
   verifyClipboard: () => ipcRenderer.send('verify:clipboard'),
-  verifyManual: (amount, time) => ipcRenderer.send('verify:manual', amount, time),
+  verifyManual: (amount, time, ref) => ipcRenderer.send('verify:manual', amount, time, ref),
   setPaymentOption: (key, value) => ipcRenderer.send('payments:set', key, value),
   testPayment: () => ipcRenderer.send('payments:test'),
   sendRating: (data) => ipcRenderer.send('rate:send', data),
