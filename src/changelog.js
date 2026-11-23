@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.21.5',
+    items: ['Barra más limpia: los botones ✨ IA y ⏰ Recordatorios se quitaron (más espacio para las pestañas). Siguen en ⚙ → Herramientas y en el clic derecho del chat.'],
+  },
+  {
     version: '1.21.4',
     items: ['Corregido: el dólar del día ya aparece en la barra. Ahora es el tipo de cambio de SUNAT (compra y venta).'],
   },

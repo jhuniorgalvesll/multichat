@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.21.5
+
+- **Barra más limpia**: se ocultaron los botones ✨ IA y ⏰ Recordatorios para dar espacio a las pestañas. Siguen en ⚙ → *Herramientas* (✨ Asistente con IA, ⏰ Recordatorios) y en el clic derecho del chat. Para volver a verlos: ⚙ → Apariencia → *Mostrar los botones ✨ IA y ⏰ Recordatorios en la barra*.
+
 ## Novedades v1.21.4
 
 - **Dólar del día corregido**: ahora sí aparece en la barra y es el **tipo de cambio de SUNAT** del día: "$ C 3.447 · V 3.453" (compra y venta). Si SUNAT no responde, se muestra un valor referencial "$ ≈ 3.443".

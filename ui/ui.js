@@ -334,6 +334,9 @@ function render() {
   $('theme-moon').hidden = state.dark;
   $('theme-sun').hidden = !state.dark;
   $('theme').title = state.dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+  // ✨ IA y ⏰ Recordatorios: ocultos en la barra (están en ⚙ y en el clic derecho), salvo que se activen.
+  $('ai-btn').hidden = !state.extraButtons;
+  $('reminders').hidden = !state.extraButtons;
   $('reminder-count').hidden = !state.reminderCount;
   $('reminder-count').textContent = state.reminderCount;
 
