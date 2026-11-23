@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.23.1',
+    items: ['Agencias Shalom: corregido "no muestra agencias" en lugares como Santiago de Surco. Ahora se puede seleccionar el mensaje del cliente con su dirección → clic derecho → "Agencias Shalom cerca de…", y la agencia de su misma calle sale primero.'],
+  },
+  {
     version: '1.23.0',
     items: ['🏢 Agencias Shalom por lugar: escribe Huancayo, Ayacucho o San Juan de Miraflores y salen las agencias de la página oficial de Shalom; marcas las que quieres y se pegan en el chat para que el cliente elija.'],
   },

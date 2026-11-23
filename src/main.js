@@ -2177,6 +2177,11 @@ async function showEditMenu(wc, params) {
       label: `🏢 Ver agencias Shalom en "${selection.slice(0, 30)}"`,
       click: () => win.webContents.send('ui:agencias', { lugar: selection }),
     }] : []),
+    // Mensaje del cliente con su dirección ("Av. San Juan Mz A, Santiago de Surco 15058"): agencias de su distrito.
+    ...(selection && (selection.length > 40 || /\d/.test(selection)) && shalomagencias.lugarDeTexto(selection) ? [{
+      label: `🏢 Agencias Shalom cerca de "${shalomagencias.lugarDeTexto(selection).lugar.slice(0, 30)}"`,
+      click: () => win.webContents.send('ui:agencias', shalomagencias.lugarDeTexto(selection)),
+    }] : []),
     ...(sunatruc.detectar(selection) ? [{
       label: sunatruc.detectar(selection).tipo === 'ruc'
         ? `🔎 Consultar RUC ${sunatruc.detectar(selection).numero} en SUNAT`

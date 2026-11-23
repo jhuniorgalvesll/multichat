@@ -32,14 +32,15 @@ function pageScript(lugar) {
       .filter((l) => l.length >= 2)
       .map((l) => ({ nombre: l[0], direccion: l[1], tipo: l[2] || '' }));
     // Espera a que la lista se actualice (o quede vacía) y abre "Ver todo" para traer todas.
+    // Shalom a veces tarda en filtrar: se espera hasta 10 s a que aparezcan agencias y a que la lista deje de cambiar.
     let anterior = -1;
     let estable = 0;
-    for (let i = 0; i < 24; i++) {
+    for (let i = 0; i < 25; i++) {
       await sleep(400);
       const n = leer().length;
       if (n === anterior) estable += 1; else estable = 0;
       anterior = n;
-      if (estable >= 3) break;
+      if (n > 0 && estable >= 3) break;
     }
     const ver = [...document.querySelectorAll('button, a, span, div')].find((el) => el.children.length === 0 && /^ver todo$/i.test((el.textContent || '').trim()));
     if (ver) { ver.click(); await sleep(1200); }
@@ -102,4 +103,28 @@ function mensaje(lugar, agencias) {
   return lineas.join('\n');
 }
 
-module.exports = { buscar, mensaje };
+// Lugar y dirección dentro del mensaje del cliente ("Av. San Juan Mz A, Santiago de Surco 15058."):
+// el distrito es lo que va después de la última coma de la línea de la dirección (sin código postal ni números).
+const DIRECCION = /\b(av\.?|avenida|jr\.?|jir[oó]n|calle|ca\.|psje\.?|pasaje|mz\.?|manzana|lote|lt\.?|urb\.?|aa\.?hh|asoc\.?|prolong|carretera|km)\b/i;
+function lugarDeTexto(texto) {
+  const lineas = String(texto || '').split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  const linea = lineas.find((l) => DIRECCION.test(l) && l.includes(',')) || lineas.find((l) => l.includes(',') && /[a-záéíóúñ]{4,}/i.test(l)) || '';
+  if (!linea) {
+    // "Quiero envío a Ayacucho", "para Huancayo", "agencia en Ica"
+    const m = String(texto || '').match(/\b(?:env[ií]o|enviar|env[ií]a|m[aá]ndalo|mandar|agencia|recojo|recoger|vivo|estoy)\s+(?:a|para|en|de)\s+([a-záéíóúñ][a-záéíóúñ ]{2,30}?)(?=[.,!?\n]|$)/i);
+    if (!m) return null;
+    const lugar = m[1].replace(/\s+(por favor|porfa|gracias|please|pls|nomas|nom[aá]s|amigo|amiga)\b.*$/i, '').trim();
+    return lugar.length >= 3 ? { lugar: lugar.slice(0, 60), direccion: '' } : null;
+  }
+  const partes = linea.split(',');
+  const limpiar = (s) => s.replace(/\b\d+\b/g, ' ').replace(/[.#°º]/g, ' ').replace(/\b(per[uú]|lima metropolitana)\b/gi, ' ').replace(/\s+/g, ' ').trim();
+  let lugar = '';
+  for (let i = partes.length - 1; i >= 1 && !lugar; i--) {
+    const c = limpiar(partes[i]);
+    if (/[a-záéíóúñ]{3,}/i.test(c) && !DIRECCION.test(c)) lugar = c;
+  }
+  if (!lugar) return null;
+  return { lugar: lugar.slice(0, 60), direccion: partes[0].trim().slice(0, 200) };
+}
+
+module.exports = { buscar, mensaje, lugarDeTexto };

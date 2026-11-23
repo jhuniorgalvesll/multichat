@@ -40,6 +40,11 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.23.1
+
+- **Agencias Shalom desde el mensaje del cliente**: selecciona el mensaje con su dirección (por ejemplo "Av. San Juan Mz A, Santiago de Surco 15058") → clic derecho → *🏢 Agencias Shalom cerca de "Santiago de Surco"*. También entiende "envío a Ayacucho" o "para Huancayo". La agencia cuya dirección coincide con la del cliente sale primero ("📍 Cerca de la dirección del cliente").
+- Corregido: algunos lugares (como Santiago de Surco) decían "no muestra agencias" porque Shalom tardaba en filtrar; ahora se espera hasta 10 segundos.
+
 ## Novedades v1.23.0
 
 - **🏢 Agencias Shalom por lugar**: 📝 Pedir datos de envío → *🏢 Buscar agencias Shalom por lugar…* (también en ⚙ o seleccionando el lugar en el chat → clic derecho → *Ver agencias Shalom en "Huancayo"*). Se busca en la página oficial de Shalom y aparecen las agencias con nombre, dirección, referencia y tamaño. Marcas hasta 10 y se pegan en el chat, numeradas, con "¿En cuál agencia prefieres recoger tu pedido?". Tú presionas Enter.
