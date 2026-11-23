@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.23.3',
+    items: ['Agencias Shalom más rápidas: "SURCO" ya no se queda buscando. La lista de Lima y Callao se prepara sola al abrir la app, y mientras busca se ven los segundos.'],
+  },
+  {
     version: '1.23.2',
     items: ['Agencias Shalom: ahora encuentra todas las agencias del distrito aunque escribas el nombre corto (Surco, SJL, SJM, SMP, VES, VMT, Magdalena, Chosica…) o un distrito de Lima con nombre repetido en provincias (San Miguel, Miraflores). Departamentos y provincias traen todas sus agencias.'],
   },

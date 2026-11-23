@@ -3036,12 +3036,18 @@ async function buscarAgencias() {
   const lugar = $('ag-lugar').value.trim();
   if (lugar.length < 3) { $('ag-state').textContent = 'Escribe al menos 3 letras.'; return; }
   $('ag-go').disabled = true;
-  $('ag-state').textContent = (await api.agenciasTardara(lugar))
-    ? `🔎 Buscando agencias en ${lugar}… La primera vez en Lima revisa todas las agencias de Lima y Callao (unos 20 segundos); luego es rápido.`
-    : `🔎 Buscando agencias en ${lugar}…`;
+  const largo = await api.agenciasTardara(lugar);
+  const inicio = Date.now();
+  const mostrar = () => {
+    const s = Math.round((Date.now() - inicio) / 1000);
+    $('ag-state').textContent = `🔎 Buscando agencias en ${lugar}… ${s} s${largo ? ' · la primera vez en Lima revisa todas las agencias de Lima y Callao (hasta 1 minuto); luego es rápido' : ''}`;
+  };
+  mostrar();
+  const reloj = setInterval(mostrar, 1000);
   $('ag-list').replaceChildren();
   $('ag-paste').hidden = true;
   agResult = await api.buscarAgencias(lugar);
+  clearInterval(reloj);
   $('ag-go').disabled = false;
   if (!agResult || !agResult.ok) {
     $('ag-state').textContent = 'No se pudo consultar la página de Shalom. Revisa tu internet e inténtalo de nuevo.';

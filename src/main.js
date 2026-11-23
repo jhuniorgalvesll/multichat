@@ -3550,6 +3550,8 @@ function init() {
   fx.start({ store, onChange: pushState }); // dólar del día (SUNAT)
   setTimeout(checkPhoneLink, 60_000);
   setInterval(reloadHeavyTabs, 10 * 60_000);
+  // Lista de agencias Shalom de Lima y Callao lista de antemano (búsquedas por distrito al instante).
+  setTimeout(() => shalomagencias.prepararLima().catch(() => {}), 90_000);
   setInterval(checkPhoneLink, 2 * 60_000);
   setTimeout(maybeRatePrompt, 20_000); // después de la bienvenida del día
   setInterval(maybeRatePrompt, 30 * 60 * 1000);

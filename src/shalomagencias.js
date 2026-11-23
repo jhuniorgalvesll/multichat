@@ -78,10 +78,10 @@ function distritoLima(lugar) {
 
 // Qué escribir en el buscador de Shalom para un lugar (el nombre oficial primero).
 function consultasPara(lugar) {
-  const q = [lugar];
   const d = distritoLima(lugar);
-  if (d && norm(d) !== norm(lugar) && d !== 'Cercado de Lima') q.unshift(d);
-  return [...new Set(q)];
+  // Nombre corto o sigla (SURCO, SJL…): solo el nombre oficial (el corto no da resultados en Shalom).
+  if (d && norm(d) !== norm(lugar)) return d === 'Cercado de Lima' ? [] : [d];
+  return [lugar];
 }
 
 const conLimite = (promesa, ms) => Promise.race([promesa, new Promise((_, rej) => setTimeout(() => rej(new Error('tiempo')), ms))]);
@@ -121,6 +121,7 @@ function pageScript(consultas) {
         if (n === anterior) estable += 1; else estable = 0;
         anterior = n;
         if (n > 0 && estable >= 3) break;
+        if (n === 0 && i >= 12) break; // 5 s sin resultados: este lugar no tiene agencias con ese nombre
       }
       const ver = [...document.querySelectorAll('button, a, span, div')].find((el) => el.children.length === 0 && /^ver todo$/i.test((el.textContent || '').trim()));
       if (ver) { ver.click(); await sleep(1500); }
@@ -238,6 +239,22 @@ function lugarDeTexto(texto) {
   return { lugar: lugar.slice(0, 60), direccion: partes[0].trim().slice(0, 200) };
 }
 
+// Prepara en segundo plano la lista de Lima y Callao (al abrir la app), para que buscar un distrito sea rápido.
+function prepararLima() {
+  cargarLima();
+  if (limaIndex && Date.now() - limaIndex.at < LIMA_MS) return Promise.resolve(true);
+  const run = busy.then(async () => {
+    if (limaIndex && Date.now() - limaIndex.at < LIMA_MS) return true;
+    const r = await consultar(['Lima', 'Callao']);
+    if (r.estado !== 'ok') return false;
+    const todas = unicas([...(r.resultado.Lima || []), ...(r.resultado.Callao || [])]);
+    if (todas.length) { limaIndex = { at: Date.now(), agencias: todas }; guardarLima(); }
+    return true;
+  });
+  busy = run.catch(() => {});
+  return run;
+}
+
 // ¿Esta búsqueda tardará más (primera vez en un distrito de Lima)?
 function tardara(lugar) {
   if (!distritoLima(lugar)) return false;
@@ -245,4 +262,4 @@ function tardara(lugar) {
   return !limaIndex || Date.now() - limaIndex.at > LIMA_MS;
 }
 
-module.exports = { buscar, mensaje, lugarDeTexto, consultasPara, distritoLima, porDireccion, tardara };
+module.exports = { buscar, mensaje, lugarDeTexto, consultasPara, distritoLima, porDireccion, tardara, prepararLima };
