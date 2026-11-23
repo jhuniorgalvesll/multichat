@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.21.4',
+    items: ['Corregido: el dólar del día ya aparece en la barra. Ahora es el tipo de cambio de SUNAT (compra y venta).'],
+  },
+  {
     version: '1.21.3',
     items: ['Botón de ventanas de una en una: un clic muestra 2 cuentas, otro clic 3, y así hasta todas; el siguiente vuelve a una. El botón muestra cuántas se ven.'],
   },

@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.21.4
+
+- **Dólar del día corregido**: ahora sí aparece en la barra y es el **tipo de cambio de SUNAT** del día: "$ C 3.447 · V 3.453" (compra y venta). Si SUNAT no responde, se muestra un valor referencial "$ ≈ 3.443".
+
 ## Novedades v1.21.3
 
 - **Ventanas de una en una**: el botón de cuadrícula (o Ctrl+G) agrega una cuenta por clic: 2 → 3 → … → todas → vuelve a una. Se ven la cuenta activa y las siguientes en el orden de tus pestañas; el botón muestra el número.

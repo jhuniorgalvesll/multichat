@@ -1961,7 +1961,6 @@ async function chooseSyncFolder() {
   settings.syncAppliedAt = 0;
   store.save();
   startSync();
-  fx.start({ store, onChange: pushState });
   win.webContents.send('ui:settings-refresh');
 }
 
@@ -2379,7 +2378,7 @@ function settingsPanel() {
           { id: 'theme', type: 'choice', label: 'Modo', value: s.theme, options: [{ value: 'light', label: 'Claro' }, { value: 'dark', label: 'Oscuro' }, { value: 'system', label: 'Igual que Windows' }] },
           toggle('animations', 'Animaciones', s.animations !== false),
           toggle('compact', 'Modo compacto (barra y pestañas más pequeñas, para laptops)', Boolean(s.compact)),
-          toggle('infoBar', 'Dólar del día y próxima fecha especial en la barra', s.infoBar !== false, 'Tipo de cambio oficial del BCRP (compra y venta) y cuántos días faltan para Navidad, Fiestas Patrias…'),
+          toggle('infoBar', 'Dólar del día y próxima fecha especial en la barra', s.infoBar !== false, 'Tipo de cambio de SUNAT (compra y venta) y cuántos días faltan para Navidad, Fiestas Patrias…'),
           toggle('seasonal', 'Tema por temporada (Navidad, Fiestas Patrias, Día de la Madre…)', s.seasonal !== false, 'Cambia los colores y el saludo en fechas especiales; vuelve solo a tu color'),
           toggle('spellcheck', 'Corrector de ortografía al escribir', s.spellcheck !== false, 'Subraya en rojo lo mal escrito; clic derecho para ver sugerencias'),
           toggle('welcome', 'Bienvenida del día al abrir', s.welcome !== false),
@@ -3392,6 +3391,7 @@ function init() {
   setTimeout(announceUpdated, 4000);
   setTimeout(() => { if (!maybeOnboarding()) maybeWelcome(); }, 2500);
   startSync();
+  fx.start({ store, onChange: pushState }); // dólar del día (SUNAT)
   setTimeout(maybeRatePrompt, 20_000); // después de la bienvenida del día
   setInterval(maybeRatePrompt, 30 * 60 * 1000);
   setTimeout(updateReminder, 60_000);

@@ -268,10 +268,13 @@ function renderInfoBar() {
   const partes = [];
   if (info && info.fx) {
     const f = info.fx;
+    const sunat = f.fuente === 'SUNAT';
     partes.push(Object.assign(document.createElement('span'), {
       className: 'info-fx',
-      textContent: `$ ${Number(f.venta).toFixed(3)}`,
-      title: `Dólar (BCRP, interbancario) del ${f.dia}\nCompra: S/ ${Number(f.compra).toFixed(3)} · Venta: S/ ${Number(f.venta).toFixed(3)}`,
+      textContent: sunat ? `$ C ${Number(f.compra).toFixed(3)} · V ${Number(f.venta).toFixed(3)}` : `$ ≈ ${Number(f.venta).toFixed(3)}`,
+      title: sunat
+        ? `Dólar SUNAT del ${f.dia}\nCompra: S/ ${Number(f.compra).toFixed(3)} · Venta: S/ ${Number(f.venta).toFixed(3)}`
+        : `Dólar referencial del ${f.dia} (SUNAT no respondió): S/ ${Number(f.venta).toFixed(3)}`,
     }));
   }
   if (info && info.next) {
