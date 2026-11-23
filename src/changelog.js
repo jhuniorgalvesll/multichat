@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.21.6',
+    items: ['Más seguridad: los enlaces de los chats solo abren páginas web, correo o teléfono (no programas de Windows); sin ventanas emergentes de publicidad en SUNAT, eldni y Shalom; el programa ya no se puede usar para correr otro código.'],
+  },
+  {
     version: '1.21.5',
     items: ['Barra más limpia: los botones ✨ IA y ⏰ Recordatorios se quitaron (más espacio para las pestañas). Siguen en ⚙ → Herramientas y en el clic derecho del chat.'],
   },

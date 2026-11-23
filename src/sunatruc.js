@@ -80,6 +80,7 @@ function consultar({ tipo, numero, parent, onResult }) {
     autoHideMenuBar: true,
     webPreferences: { partition: 'persist:sunat', sandbox: true, contextIsolation: true },
   });
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' })); // sin ventanas emergentes (publicidad)
   ventana = win;
   let llenado = false;
   let terminado = false;
@@ -186,6 +187,7 @@ function abrirEldni({ dni, parent, onName }) {
     autoHideMenuBar: true,
     webPreferences: { partition: 'persist:eldni', sandbox: true, contextIsolation: true },
   });
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' })); // sin ventanas emergentes (publicidad)
   ventanaDni = win;
   let llenado = false;
   // Intenta escribir el DNI apenas aparece el buscador (si la página tarda o pide verificación, sigue intentando).

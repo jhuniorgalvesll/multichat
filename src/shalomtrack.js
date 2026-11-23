@@ -114,6 +114,7 @@ async function consultar(orden, codigo) {
     height: 900,
     webPreferences: { partition: 'persist:shalom-rastreo', sandbox: true, contextIsolation: true, backgroundThrottling: false },
   });
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' })); // sin ventanas emergentes (publicidad)
   try {
     await abrirPagina(win);
     const leido = await conLimite(win.webContents.executeJavaScript(pageScript(orden, codigo), true), 45000);

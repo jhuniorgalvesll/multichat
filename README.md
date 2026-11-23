@@ -40,6 +40,14 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.21.6
+
+- **Seguridad**:
+  - "Abrir enlace en el navegador" y los enlaces de los chats solo abren direcciones web (http/https), correo y teléfono; se bloquean enlaces que abren programas o archivos de Windows (file:, ms-…, search-ms:…).
+  - Las ventanas de SUNAT, eldni.com y Shalom no pueden abrir ventanas emergentes (publicidad).
+  - La ventana de MultiChat no puede cambiar a otra página.
+  - El ejecutable quedó cerrado a usos de desarrollador (correr código con él o depurarlo desde afuera).
+
 ## Novedades v1.21.5
 
 - **Barra más limpia**: se ocultaron los botones ✨ IA y ⏰ Recordatorios para dar espacio a las pestañas. Siguen en ⚙ → *Herramientas* (✨ Asistente con IA, ⏰ Recordatorios) y en el clic derecho del chat. Para volver a verlos: ⚙ → Apariencia → *Mostrar los botones ✨ IA y ⏰ Recordatorios en la barra*.

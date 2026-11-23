@@ -240,6 +240,16 @@ function createView(acc) {
   return view;
 }
 
+// Solo se abren afuera (en el navegador) enlaces web, de correo y de teléfono. Un enlace de un chat con otro tipo
+// de dirección (file:, ms-…, search-ms:, smb:…) podría abrir programas de Windows: se bloquea.
+function safeOpenExternal(url) {
+  let u;
+  try { u = new URL(String(url || '')); } catch { return false; }
+  if (!['http:', 'https:', 'mailto:', 'tel:'].includes(u.protocol)) return false;
+  shell.openExternal(u.href).catch(() => {});
+  return true;
+}
+
 function hostMatches(url, hosts) {
   try {
     const { protocol, hostname } = new URL(url);
@@ -259,7 +269,7 @@ function handleWindowOpen(svc, { url }) {
       overrideBrowserWindowOptions: { width: 900, height: 720, autoHideMenuBar: true, icon: ICON, parent: win },
     };
   }
-  if (/^https?:\/\//.test(url)) shell.openExternal(url);
+  safeOpenExternal(url);
   return { action: 'deny' };
 }
 
@@ -1566,7 +1576,7 @@ function trackShipment(id) {
   const url = store.get().settings.trackingUrls[sale.carrier];
   if (!url) return { ok: false, needUrl: sale.carrier === 'Shalom' || sale.carrier === 'Olva', carrier: sale.carrier };
   if (sale.orderNumber) copyText(sale.orderNumber);
-  shell.openExternal(url);
+  if (!safeOpenExternal(url)) return { ok: false, needUrl: true, carrier: sale.carrier };
   return { ok: true, copied: Boolean(sale.orderNumber) };
 }
 
@@ -1759,6 +1769,9 @@ function createWindow() {
   // Bienvenida del día: la primera vez que se ve la ventana en el día.
   win.on('show', () => setTimeout(maybeWelcome, 1500));
   win.on('focus', () => setTimeout(maybeWelcome, 1500));
+  // La ventana de MultiChat no puede irse a otra página ni abrir ventanas: los enlaces van al navegador.
+  win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith('file:')) { e.preventDefault(); safeOpenExternal(url); } });
+  win.webContents.setWindowOpenHandler(({ url }) => { safeOpenExternal(url); return { action: 'deny' }; });
   win.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
   win.once('ready-to-show', () => {
     if (!startHidden) win.show();
@@ -2051,7 +2064,7 @@ async function showEditMenu(wc, params) {
   }
   if (params.linkURL) {
     template.push(
-      { label: 'Abrir enlace en el navegador', click: () => shell.openExternal(params.linkURL) },
+      { label: 'Abrir enlace en el navegador', click: () => safeOpenExternal(params.linkURL) },
       { label: 'Copiar enlace', click: () => copyText(params.linkURL) },
       { type: 'separator' },
     );
