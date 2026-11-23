@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.21.3
+
+- **Ventanas de una en una**: el botón de cuadrícula (o Ctrl+G) agrega una cuenta por clic: 2 → 3 → … → todas → vuelve a una. Se ven la cuenta activa y las siguientes en el orden de tus pestañas; el botón muestra el número.
+
 ## Novedades v1.21.2
 
 - **Dólar del día y próxima fecha** en la barra, en letra fina: tipo de cambio interbancario oficial del BCRP (pasa el mouse para ver compra y venta; se actualiza cada 3 horas) y "🎄 en 32 días" para la próxima fecha especial (aparece 45 días antes). Se quita en ⚙ → Apariencia. En pantallas angostas se oculta.

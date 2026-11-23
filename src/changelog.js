@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.21.3',
+    items: ['Botón de ventanas de una en una: un clic muestra 2 cuentas, otro clic 3, y así hasta todas; el siguiente vuelve a una. El botón muestra cuántas se ven.'],
+  },
+  {
     version: '1.21.2',
     items: ['En la barra, en letra fina: dólar del día (oficial del BCRP; pasa el mouse para ver compra y venta) y cuántos días faltan para la próxima fecha especial (Navidad, Fiestas Patrias, Día de la Madre…).'],
   },

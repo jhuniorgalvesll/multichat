@@ -317,9 +317,16 @@ function render() {
   renderTileHeads();
 
   const grid = state.layout === 'grid';
-  $('layout-grid').hidden = grid;
-  $('layout-single').hidden = !grid;
-  $('layout').title = grid ? 'Ver una cuenta a la vez (Ctrl+G)' : 'Ver varias cuentas a la vez (Ctrl+G)';
+  const shown = grid ? state.gridShown || 2 : 1;
+  const total = state.gridTotal || 0;
+  const full = grid && shown >= total;
+  // Cada clic agrega una ventana más (2, 3, … todas); con todas a la vista, el siguiente vuelve a una.
+  $('layout-grid').hidden = full;
+  $('layout-single').hidden = !full;
+  $('layout').dataset.n = grid ? String(shown) : '';
+  $('layout').title = full ? 'Ver una cuenta a la vez (Ctrl+G)'
+    : total < 2 ? 'Agrega otra cuenta para ver varias a la vez'
+      : `Ver ${shown + 1} cuentas a la vez (Ctrl+G)`;
   $('lock-btn').hidden = !state.hasPassword;
   $('theme-moon').hidden = state.dark;
   $('theme-sun').hidden = !state.dark;

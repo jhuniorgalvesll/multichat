@@ -1624,3 +1624,7 @@ body.compact .bar .icon-btn.add svg { width: 14px; height: 14px; }
 .info-fx { color: rgb(190 242 200 / 0.9); }
 @media (max-width: 1150px) { .info-bar { display: none; } }
 body.compact .info-bar { font-size: 11px; gap: 8px; }
+
+/* Botón de ventanas: cuántas cuentas se ven */
+#layout { position: relative; }
+#layout[data-n]:not([data-n=""])::after { content: attr(data-n); position: absolute; right: 1px; bottom: 1px; min-width: 13px; height: 13px; padding: 0 3px; border-radius: 7px; background: var(--acc2l, #ec4899); color: #fff; font-size: 9.5px; font-weight: 800; line-height: 13px; text-align: center; }

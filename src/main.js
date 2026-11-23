@@ -116,6 +116,38 @@ function isGrid() {
   return store.get().settings.layout === 'grid';
 }
 
+// Cuántas cuentas se ven en la vista de varias (2, 3, … hasta todas).
+function gridCount() {
+  const total = openAccounts().length;
+  const n = Number(store.get().settings.gridCount) || total;
+  return Math.max(2, Math.min(total, n));
+}
+
+// Cuentas que se ven en la vista de varias: la activa y las que siguen en el orden de las pestañas.
+function gridIds() {
+  const open = openAccounts();
+  const k = gridCount();
+  if (k >= open.length) return open.map((a) => a.id);
+  const start = Math.max(0, open.findIndex((a) => a.id === activeId));
+  return Array.from({ length: k }, (_, i) => open[(start + i) % open.length].id);
+}
+
+// Botón de ventanas: 1 → 2 → 3 → … → todas → 1 (de una en una).
+function cycleLayout() {
+  const total = openAccounts().length;
+  const settings = store.get().settings;
+  if (!isGrid()) {
+    if (total < 2) return;
+    settings.gridCount = 2;
+    setLayout('grid');
+  } else if (gridCount() < total) {
+    settings.gridCount = gridCount() + 1;
+    setLayout('grid');
+  } else {
+    setLayout('single');
+  }
+}
+
 // Corrector de ortografía en español (subraya en rojo; clic derecho → sugerencias). Se activa o no en ⚙.
 const SPELL_LANGS = ['es-PE', 'es-419', 'es-ES', 'es'];
 function syncSpellcheck(ses) {
@@ -399,7 +431,7 @@ function applyLayout() {
   if (!win || win.isDestroyed()) return;
   let ids = [];
   if (!locked && !overlayOpen) {
-    ids = isGrid() ? openAccounts().map((a) => a.id) : activeId ? [activeId] : [];
+    ids = isGrid() ? gridIds() : activeId ? [activeId] : [];
   }
   tiles = computeTiles(ids);
   const now = Date.now();
@@ -1777,6 +1809,8 @@ function pushState() {
     activeId,
     total,
     layout: data.settings.layout,
+    gridShown: isGrid() ? gridCount() : 1,
+    gridTotal: openAccounts().length,
     tiles: tiles.filter((t) => t.header),
     locked,
     dnd: dndActive(),
@@ -2432,7 +2466,7 @@ function settingsDo(id, value) {
     blackScreenMinutes: () => { settings.blackScreenMinutes = Math.max(1, Number(value) || 5); store.save(); screensaver.sync(); },
     themeToggle: () => setTheme(nativeTheme.shouldUseDarkColors ? 'light' : 'dark'),
     dndToggle: () => updateDnd({ enabled: !settings.dnd.enabled }),
-    layoutToggle: () => setLayout(isGrid() ? 'single' : 'grid'),
+    layoutToggle: () => cycleLayout(),
   };
   const windows = {
     lockNow: lockApp,
@@ -2719,7 +2753,7 @@ function handleShortcut(event, input) {
   } else if (key === 'l') {
     lockApp();
   } else if (key === 'g') {
-    setLayout(isGrid() ? 'single' : 'grid');
+    cycleLayout();
   } else if (key === 'r' && input.shift) {
     showQuickMenu();
   } else if (key === 'p') {
@@ -2753,7 +2787,7 @@ function registerIpc() {
   ipcMain.on('settings:menu', showSettingsMenu);
   ipcMain.handle('settings:panel', () => (locked ? null : settingsPanel()));
   ipcMain.handle('settings:do', (_e, id, value) => (locked ? null : settingsDo(String(id), value)));
-  ipcMain.on('layout:toggle', () => setLayout(isGrid() ? 'single' : 'grid'));
+  ipcMain.on('layout:toggle', () => cycleLayout());
   ipcMain.on('lock:now', lockApp);
   ipcMain.on('quick:menu', showQuickMenu);
   ipcMain.on('ui:panel', (_e, width) => {
