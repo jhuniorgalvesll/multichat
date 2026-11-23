@@ -256,7 +256,11 @@ window.addEventListener('resize', fitTabs);
 let lastActiveId = null;
 
 function applyLook() {
-  const [a, b] = ACCENT_COLORS[state.accent] || ACCENT_COLORS.violeta;
+  // En fechas especiales (si está activado) se usan los colores de la temporada.
+  const [a, b] = (state.season && state.season.colors) || ACCENT_COLORS[state.accent] || ACCENT_COLORS.violeta;
+  document.body.dataset.season = state.season ? state.season.id : '';
+  const pro = document.querySelector('.brand-name .pro');
+  if (pro) pro.textContent = state.season ? `PRO ${state.season.emoji}` : 'PRO';
   document.documentElement.style.setProperty('--acc1', a);
   document.documentElement.style.setProperty('--acc2', b);
   document.body.classList.toggle('no-anim', state.animations === false);
@@ -1909,8 +1913,9 @@ function countUp(el, to, format) {
 api.onWelcome((data) => {
   if (state.locked || passwordMode) return;
   closeCoffee();
-  $('wel-icon').textContent = data.icon;
+  $('wel-icon').textContent = data.season ? data.season.emoji : data.icon;
   $('wel-title').textContent = data.name ? `${data.greeting}, ${data.name}` : `${data.greeting}`;
+  if (data.season) $('wel-title').textContent += ` · ${data.season.saludo}`;
   $('wel-date').textContent = data.date;
   const money = (n) => `S/ ${Math.round(n).toLocaleString('es-PE')}`;
   countUp($('wel-yesterday'), data.prints, (n) => String(Math.round(n)));
@@ -2830,4 +2835,13 @@ api.onDniName(({ dni, name }) => {
     updateTicketPreview();
   }
   $('ticket-dni-hint').textContent = '✓ Nombre encontrado por DNI: revísalo';
+});
+
+// Ajustes que cambian después (por ejemplo, al elegir la carpeta compartida): se vuelve a dibujar la lista.
+api.onSettingsRefresh(async () => {
+  const panel = await api.settingsPanel();
+  if (panel) {
+    if (drawerOpen !== 'settings') openDrawer('settings');
+    renderSettings(panel);
+  }
 });

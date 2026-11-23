@@ -3,6 +3,15 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.21.0',
+    items: [
+      'Clientes VIP: clic derecho en el chat → "⭐ Marcar como VIP". Sus mensajes avisan con estrella, borde dorado y un sonido especial.',
+      'Corrector de ortografía en español al escribir: clic derecho sobre la palabra subrayada para ver sugerencias.',
+      'Mismos ajustes en varias PCs: eliges una carpeta de OneDrive o Google Drive y las respuestas rápidas, remitentes y formularios se comparten solos.',
+      'Tema por temporada: colores y saludo en Navidad, Año Nuevo, Fiestas Patrias, Día de la Madre y más.',
+    ],
+  },
+  {
     version: '1.20.0',
     items: ['📝 Pedir datos de envío → "📋 Opciones de envío (para que el cliente elija)": pega en el chat la información de Olva y Shalom ordenada para WhatsApp. Se edita en "Editar formularios".'],
   },

@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('multichat', {
   addService: (service) => ipcRenderer.send('add:service', service),
   settingsMenu: () => ipcRenderer.send('settings:menu'),
   settingsPanel: () => ipcRenderer.invoke('settings:panel'),
+  onSettingsRefresh: (fn) => ipcRenderer.on('ui:settings-refresh', () => fn()),
   settingsDo: (id, value) => ipcRenderer.invoke('settings:do', id, value),
   toggleLayout: () => ipcRenderer.send('layout:toggle'),
   lockNow: () => ipcRenderer.send('lock:now'),

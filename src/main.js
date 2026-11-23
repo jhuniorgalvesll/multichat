@@ -20,6 +20,7 @@ const paymatch = require('./paymatch');
 const shalomtrack = require('./shalomtrack');
 const localreply = require('./localreply');
 const sunatruc = require('./sunatruc');
+const sync = require('./sync');
 const voice = require('./voice');
 const screensaver = require('./screensaver');
 const bubble = require('./bubble');
@@ -82,7 +83,7 @@ const unread = new Map();    // id -> número de mensajes sin leer
 const favicons = new Map();  // id -> url del favicon
 const waitingSince = new Map(); // id -> desde cuándo tiene mensajes sin leer (semáforo de respuesta)
 const lastUsed = new Map();  // id -> timestamp de la última vez que estuvo visible
-const configuredSessions = new WeakSet();
+const configuredSessions = new Set(); // pocas sesiones (una por cuenta); se recorren para el corrector
 const blurKeys = new Map();  // id -> promesa con la clave del CSS de difuminado
 
 let startHidden = process.argv.includes('--hidden');
@@ -114,9 +115,22 @@ function isGrid() {
   return store.get().settings.layout === 'grid';
 }
 
+// Corrector de ortografía en español (subraya en rojo; clic derecho → sugerencias). Se activa o no en ⚙.
+const SPELL_LANGS = ['es-PE', 'es-419', 'es-ES', 'es'];
+function syncSpellcheck(ses) {
+  const on = store.get().settings.spellcheck !== false;
+  try {
+    ses.setSpellCheckerEnabled(on);
+    const available = ses.availableSpellCheckerLanguages || [];
+    const langs = SPELL_LANGS.filter((l) => available.includes(l)).slice(0, 1);
+    if (on && langs.length) ses.setSpellCheckerLanguages(langs);
+  } catch { /* sin corrector en este sistema */ }
+}
+
 function setupSession(ses) {
   if (configuredSessions.has(ses)) return;
   configuredSessions.add(ses);
+  syncSpellcheck(ses);
   ses.setUserAgent(CHROME_UA);
   ses.setPermissionRequestHandler((_wc, permission, callback) => {
     callback(ALLOWED_PERMISSIONS.has(permission));
@@ -142,7 +156,7 @@ function createView(acc) {
       preload: path.join(__dirname, 'preload-service.js'),
       contextIsolation: true,
       sandbox: true,
-      spellcheck: false,
+      spellcheck: true,
     },
   });
   const wc = view.webContents;
@@ -740,12 +754,14 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 function showServiceNotification(id, payload) {
   const acc = findAccount(id);
   if (!acc) return;
+  const vip = !locked && isVip(id, payload.title);
   notifier.show({
     kind: 'message',
     accountId: id,
     accountName: acc.name,
     notifId: payload.id,
-    title: locked ? 'Mensaje nuevo' : payload.title,
+    vip,
+    title: locked ? 'Mensaje nuevo' : `${vip ? '⭐ VIP · ' : ''}${payload.title}`,
     body: locked ? 'Desbloquea MultiChat Pro para verlo' : payload.body,
     icon: locked ? '' : payload.icon,
     canReply: !locked,
@@ -1777,6 +1793,7 @@ function pushState() {
     accent: data.settings.accent || 'violeta',
     animations: data.settings.animations !== false,
     compact: Boolean(data.settings.compact),
+    season: seasonForUi(),
   });
   bubble.update();
 }
@@ -1880,8 +1897,102 @@ function checkAutoLock() {
 
 // ---------- Menús ----------
 
-function showEditMenu(wc, params) {
+// ---------- Mismos ajustes en varias PCs (carpeta de OneDrive / Google Drive) ----------
+function startSync() {
+  sync.start({
+    store,
+    onApplied: (pc) => {
+      pushState();
+      notifier.show({
+        kind: 'vip-info',
+        accountName: 'MultiChat Pro',
+        title: '🔄 Ajustes actualizados',
+        body: `Se tomaron las respuestas rápidas, remitentes y formularios de ${pc}.`,
+        canReply: false,
+      });
+    },
+  });
+}
+
+async function chooseSyncFolder() {
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    title: 'Elige la carpeta compartida (OneDrive, Google Drive o Dropbox)',
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  if (canceled || !filePaths[0]) return;
+  const settings = store.get().settings;
+  settings.syncFolder = filePaths[0];
+  settings.syncAppliedAt = 0;
+  store.save();
+  startSync();
+  win.webContents.send('ui:settings-refresh');
+}
+
+// ---------- Tema por temporada (colores y saludo en fechas especiales del Perú) ----------
+function nthSunday(year, month, n) {
+  const d = new Date(year, month, 1);
+  const first = (7 - d.getDay()) % 7; // días hasta el primer domingo
+  return new Date(year, month, 1 + first + (n - 1) * 7);
+}
+function currentSeason(now = new Date()) {
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const day = now.getDate();
+  const within = (from, to) => now >= from && now <= to;
+  const madre = nthSunday(y, 4, 2); // 2.º domingo de mayo
+  const padre = nthSunday(y, 5, 3); // 3.er domingo de junio
+  const semanaAntes = (d) => [new Date(d.getFullYear(), d.getMonth(), d.getDate() - 6), new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59)];
+  if ((m === 11 && day >= 31) || (m === 0 && day <= 6)) return { id: 'anionuevo', emoji: '🎆', saludo: '¡Feliz Año Nuevo!', colors: ['#b45309', '#f59e0b'] };
+  if (m === 1 && day >= 10 && day <= 14) return { id: 'sanvalentin', emoji: '💘', saludo: '¡Feliz Día del Amor y la Amistad!', colors: ['#be123c', '#f43f5e'] };
+  if (within(...semanaAntes(madre))) return { id: 'madre', emoji: '💐', saludo: '¡Feliz Día de la Madre!', colors: ['#be185d', '#a855f7'] };
+  if (within(...semanaAntes(padre))) return { id: 'padre', emoji: '👔', saludo: '¡Feliz Día del Padre!', colors: ['#1d4ed8', '#0ea5e9'] };
+  if (m === 6 && day >= 20) return { id: 'patrias', emoji: '🇵🇪', saludo: '¡Felices Fiestas Patrias!', colors: ['#c8102e', '#ef4444'] };
+  if (m === 9 && day >= 25) return { id: 'criolla', emoji: '🎸', saludo: '¡Feliz Día de la Canción Criolla!', colors: ['#c2410c', '#7c3aed'] };
+  if (m === 11 && day <= 30) return { id: 'navidad', emoji: '🎄', saludo: '¡Feliz Navidad!', colors: ['#b91c1c', '#15803d'] };
+  return null;
+}
+function seasonForUi() {
+  return store.get().settings.seasonal === false ? null : currentSeason();
+}
+
+// ---------- Clientes VIP: sus mensajes avisan con un sonido especial y una estrella ----------
+const vipKey = (accountId, chat) => `${accountId}|${String(chat || '').replace(/\s+/g, ' ').trim().toLowerCase()}`;
+function isVip(accountId, chat) {
+  const list = store.get().settings.vipChats;
+  return Array.isArray(list) && Boolean(chat) && list.includes(vipKey(accountId, chat));
+}
+function toggleVip(accountId, chat) {
+  if (!accountId || !chat) return;
+  const settings = store.get().settings;
+  const list = Array.isArray(settings.vipChats) ? settings.vipChats : [];
+  const key = vipKey(accountId, chat);
+  settings.vipChats = list.includes(key) ? list.filter((k) => k !== key) : [...list, key].slice(-200);
+  store.save();
+  notifier.show({
+    kind: 'vip-info',
+    accountName: 'MultiChat Pro',
+    title: settings.vipChats.includes(key) ? `⭐ ${chat} ahora es cliente VIP` : `${chat} ya no es VIP`,
+    body: settings.vipChats.includes(key) ? 'Sus mensajes te avisarán con un sonido especial.' : 'Sus mensajes avisan como los demás.',
+    canReply: false,
+    vip: settings.vipChats.includes(key),
+  });
+}
+
+async function showEditMenu(wc, params) {
   const template = [];
+  const accountId = idForWebContents(wc);
+  const chatAbierto = accountId ? await openChatTitle(wc) : '';
+  // Palabra mal escrita: sugerencias del corrector arriba de todo.
+  if (params.misspelledWord) {
+    const sugerencias = (params.dictionarySuggestions || []).slice(0, 5);
+    template.push(
+      ...(sugerencias.length
+        ? sugerencias.map((s) => ({ label: `✏️ ${s}`, click: () => wc.replaceMisspelling(s) }))
+        : [{ label: 'Sin sugerencias', enabled: false }]),
+      { label: `Agregar "${params.misspelledWord}" al diccionario`, click: () => wc.session.addWordToSpellCheckerDictionary(params.misspelledWord) },
+      { type: 'separator' },
+    );
+  }
   if (params.linkURL) {
     template.push(
       { label: 'Abrir enlace en el navegador', click: () => shell.openExternal(params.linkURL) },
@@ -1915,6 +2026,10 @@ function showEditMenu(wc, params) {
       click: () => consultarSunat(sunatruc.detectar(selection)),
     }] : []),
     { label: 'Recordarme de este chat…', click: () => openReminderDialog(idForWebContents(wc), selection.slice(0, 300)) },
+    ...(chatAbierto ? [{
+      label: isVip(accountId, chatAbierto) ? `⭐ Quitar VIP a ${chatAbierto.slice(0, 30)}` : `⭐ Marcar a ${chatAbierto.slice(0, 30)} como VIP`,
+      click: () => toggleVip(accountId, chatAbierto),
+    }] : []),
     { type: 'separator' },
     { label: 'Cortar', role: 'cut', enabled: params.editFlags.canCut },
     { label: 'Copiar', role: 'copy', enabled: params.editFlags.canCopy },
@@ -2103,7 +2218,9 @@ function maybeWelcome() {
     return { at: r.at, note: r.note || 'Revisar este chat', account: acc ? acc.name : '' };
   });
   const profile = store.get().ticketProfiles[0];
+  const season = seasonForUi();
   win.webContents.send('ui:welcome', {
+    season,
     greeting,
     icon,
     name: profile ? profile.name : '',
@@ -2190,6 +2307,8 @@ function settingsPanel() {
           { id: 'theme', type: 'choice', label: 'Modo', value: s.theme, options: [{ value: 'light', label: 'Claro' }, { value: 'dark', label: 'Oscuro' }, { value: 'system', label: 'Igual que Windows' }] },
           toggle('animations', 'Animaciones', s.animations !== false),
           toggle('compact', 'Modo compacto (barra y pestañas más pequeñas, para laptops)', Boolean(s.compact)),
+          toggle('seasonal', 'Tema por temporada (Navidad, Fiestas Patrias, Día de la Madre…)', s.seasonal !== false, 'Cambia los colores y el saludo en fechas especiales; vuelve solo a tu color'),
+          toggle('spellcheck', 'Corrector de ortografía al escribir', s.spellcheck !== false, 'Subraya en rojo lo mal escrito; clic derecho para ver sugerencias'),
           toggle('welcome', 'Bienvenida del día al abrir', s.welcome !== false),
         ],
       },
@@ -2223,6 +2342,8 @@ function settingsPanel() {
           action('about', 'Acerca de, novedades y actualizaciones', `Versión ${app.getVersion()}`),
           action('checkUpdates', 'Buscar actualizaciones'),
           action('rate', '⭐ Calificar MultiChat'),
+          action('syncFolder', '🔄 Mismos ajustes en varias PCs', s.syncFolder ? `Carpeta: ${s.syncFolder}${s.syncLastAt ? ` · último cambio ${new Date(s.syncLastAt).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}` : 'Elige una carpeta de OneDrive o Google Drive'),
+          ...(s.syncFolder ? [action('syncOff', 'Dejar de compartir ajustes en esta PC')] : []),
           action('rucSunat', '🔎 Consultar RUC (SUNAT) o DNI (gratis)'),
           action('coffee', '☕ Invítale un cafecito al creador'),
           action('quit', `Salir de ${APP_NAME}`),
@@ -2256,6 +2377,8 @@ function settingsDo(id, value) {
     alwaysOnTop: () => flip('alwaysOnTop', () => win.setAlwaysOnTop(settings.alwaysOnTop)),
     animations: () => flip('animations', pushState),
     compact: () => flip('compact', () => { pushState(); applyLayout(); }),
+    seasonal: () => flip('seasonal', pushState),
+    spellcheck: () => flip('spellcheck', () => { for (const ses of configuredSessions) syncSpellcheck(ses); }),
     welcome: () => flip('welcome'),
     accent: () => {
       if (ACCENTS.includes(value)) settings.accent = value;
@@ -2280,6 +2403,13 @@ function settingsDo(id, value) {
     phoneGuide: () => send('ui:phone-guide'),
     onboarding: () => send('ui:onboarding'),
     rucSunat: () => send('ui:ruc', { status: 'pedir' }),
+    syncFolder: () => chooseSyncFolder(),
+    syncOff: () => {
+      settings.syncFolder = '';
+      store.save();
+      sync.start({ store });
+      send('ui:settings-refresh');
+    },
     rate: () => send('ui:rate-now'),
     testPayment: () => onPayment({ app: 'Yape', name: 'Melissa Galvez', amount: 50, at: Date.now(), test: true }),
     verifyPayment: () => send('ui:verify', { status: 'ask' }),
@@ -3187,6 +3317,7 @@ function init() {
   setInterval(pollShipChats, 3000);
   setTimeout(announceUpdated, 4000);
   setTimeout(() => { if (!maybeOnboarding()) maybeWelcome(); }, 2500);
+  startSync();
   setTimeout(maybeRatePrompt, 20_000); // después de la bienvenida del día
   setInterval(maybeRatePrompt, 30 * 60 * 1000);
   setTimeout(updateReminder, 60_000);

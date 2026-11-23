@@ -16,6 +16,15 @@ api.onData((data) => {
     $('avatar').onerror = () => { $('avatar').hidden = true; };
   }
   $('reply-btn').hidden = !data.canReply;
+  // Cliente VIP: borde dorado y un sonido especial (tres notas que suben).
+  if (data.vip) {
+    document.body.classList.add('vip');
+    vipSound();
+  }
+  if (data.kind === 'vip-info') {
+    $('open-btn').hidden = true;
+    $('actions').hidden = true;
+  }
   if (data.kind === 'payment') {
     document.body.classList.add('payment', { Yape: 'yape', Plin: 'plin', BBVA: 'bbva' }[data.payApp] || 'plin');
     $('open-btn').hidden = true;
@@ -68,3 +77,23 @@ $('reply-form').addEventListener('submit', async (e) => {
     ? '✓ Respuesta enviada'
     : 'Abrimos el chat con tu respuesta escrita: revisa y presiona Enter para enviarla.';
 });
+
+function vipSound() {
+  try {
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    for (const [freq, at] of [[784, 0], [988, 0.12], [1319, 0.24], [1568, 0.36]]) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + at);
+      gain.gain.linearRampToValueAtTime(0.8, now + at + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + at + 0.4);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + at);
+      osc.stop(now + at + 0.45);
+    }
+    setTimeout(() => ctx.close(), 1500);
+  } catch { /* sin sonido */ }
+}

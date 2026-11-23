@@ -40,6 +40,13 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.21.0
+
+- **Clientes VIP**: clic derecho dentro del chat → *⭐ Marcar a … como VIP*. Sus mensajes avisan con "⭐ VIP", borde dorado y un sonido especial de cuatro notas. Se quita igual.
+- **Corrector de ortografía** en español mientras escribes (subrayado rojo); clic derecho sobre la palabra → sugerencias o "Agregar al diccionario". Se apaga en ⚙ → Apariencia.
+- **Mismos ajustes en varias PCs**: ⚙ → *🔄 Mismos ajustes en varias PCs* → eliges una carpeta de OneDrive, Google Drive o Dropbox (la misma en cada PC). Se comparten respuestas rápidas (con fotos), remitentes (logo y QR), formularios, opciones de envío, datos del negocio y páginas de rastreo. Gana el último cambio. No se comparten cuentas, chats, pagos ni claves.
+- **Tema por temporada**: colores, emoji y saludo en Navidad, Año Nuevo, San Valentín, Día de la Madre, Día del Padre, Fiestas Patrias y Canción Criolla; luego vuelve tu color. Se apaga en ⚙ → Apariencia.
+
 ## Novedades v1.20.0
 
 - **Opciones de envío para el cliente**: en 📝 *Pedir datos de envío* → *📋 Opciones de envío (para que el cliente elija)* se pega un mensaje ordenado (con negritas de WhatsApp) que explica Olva (domicilio) y Shalom (agencia): tiempos, pago del producto y del flete. Es informativo: el chat no queda esperando datos. Se edita en *Editar formularios*. Las PCs nuevas reciben una plantilla sin datos del negocio.
