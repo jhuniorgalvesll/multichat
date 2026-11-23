@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.25.2',
+    items: ['🏢 Ventana de agencias: "Cerrar" y "Pegar en el chat" se ven siempre, aunque la pantalla sea baja (la lista se achica y tiene su propio scroll). Se puede mover arrastrando el título; doble clic la centra. Arreglada la actualización diaria de la lista en Windows ("mostró solo 0 agencias").'],
+  },
+  {
     version: '1.25.1',
     items: ['📞 Llamadas de WhatsApp: MultiChat ya no bloquea la ventana de la llamada y permite elegir parlante o audífonos y compartir pantalla (tú eliges qué pantalla). Las llamadas desde el navegador las está activando WhatsApp poco a poco: si los botones siguen grises, tu cuenta todavía no las tiene.'],
   },

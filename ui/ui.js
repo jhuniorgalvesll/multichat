@@ -3163,5 +3163,27 @@ $('ag-paste').addEventListener('click', async () => {
   else if (r && r.copied) $('ag-state').textContent = 'Copiado: abre el chat del cliente y pégalo con Ctrl+V.';
 });
 $('ag-close').addEventListener('click', closeAgencias);
+// La ventana de agencias se puede mover arrastrando el título (doble clic la vuelve al centro).
+(() => {
+  const card = $('ag-form');
+  const titulo = card.querySelector('h2');
+  let dx = 0; let dy = 0; let inicio = null;
+  const mover = () => { card.style.transform = dx || dy ? `translate(${dx}px, ${dy}px)` : ''; };
+  titulo.title = 'Arrastra para mover · doble clic para centrar';
+  titulo.addEventListener('pointerdown', (e) => {
+    inicio = { x: e.clientX - dx, y: e.clientY - dy };
+    titulo.setPointerCapture(e.pointerId);
+  });
+  titulo.addEventListener('pointermove', (e) => {
+    if (!inicio) return;
+    // Siempre queda a la vista al menos el título.
+    const { innerWidth: w, innerHeight: h } = window;
+    dx = Math.max(-w / 2 + 80, Math.min(w / 2 - 80, e.clientX - inicio.x));
+    dy = Math.max(-(h - card.offsetHeight) / 2 - 10, Math.min(h / 2 - 60, e.clientY - inicio.y));
+    mover();
+  });
+  titulo.addEventListener('pointerup', () => { inicio = null; });
+  titulo.addEventListener('dblclick', () => { dx = 0; dy = 0; mover(); });
+})();
 $('ag-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAgencias(); });
 api.onAgencias((d) => openAgencias(d && d.lugar, d && d.direccion, Boolean(d && d.cambios)));

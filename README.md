@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.25.2
+
+- **Ventana de agencias Shalom**: los botones *Cerrar* y *Pegar en el chat* quedan siempre a la vista en pantallas bajas (la lista se achica y tiene su propio scroll). La ventana se mueve arrastrando el título (doble clic la centra). La actualización diaria de la lista ahora dibuja la página fuera de pantalla, porque en Windows la ventana oculta mostraba 0 agencias.
+
 ## Novedades v1.25.1
 
 - **Llamadas de WhatsApp Web**: las ventanas que WhatsApp abre para sí mismo (como la de una llamada) se abren dentro de la app con la misma sesión, en lugar de bloquearse. Se permite elegir parlante o audífonos y compartir pantalla, con un selector para elegir qué pantalla o ventana compartir.

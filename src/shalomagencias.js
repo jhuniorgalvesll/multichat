@@ -152,8 +152,11 @@ async function consultar(consultas, maxMs = 0) {
     show: false,
     width: 1366,
     height: 900,
-    webPreferences: { partition: 'persist:shalom-agencias', sandbox: true, contextIsolation: true, backgroundThrottling: false },
+    // En Windows una ventana oculta normal no "pinta" la página y la lista de Shalom sale vacía (0 agencias).
+    // Con dibujo fuera de pantalla (offscreen) la página se comporta como visible, sin mostrarse.
+    webPreferences: { partition: 'persist:shalom-agencias', sandbox: true, contextIsolation: true, backgroundThrottling: false, offscreen: true },
   });
+  try { win.webContents.setFrameRate(10); } catch { /* opcional */ }
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   const t0 = Date.now();
   try {

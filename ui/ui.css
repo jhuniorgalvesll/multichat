@@ -1639,8 +1639,13 @@ body.compact .info-bar { font-size: 11px; gap: 8px; }
 .verify-card[data-status="mismatch"] { box-shadow: 0 20px 60px rgb(234 88 12 / 0.35), 0 0 0 2px rgb(234 88 12 / 0.55); }
 
 /* ---- Agencias Shalom ---- */
-.ag-card { width: 560px; }
-.ag-list { display: flex; flex-direction: column; gap: 6px; max-height: calc(100vh - 360px); overflow-y: auto; text-align: left; }
+.ag-card { width: 560px; max-height: calc(100vh - var(--bar-h, 56px) - 32px); overflow: hidden; }
+.backdrop#ag-modal { padding: 16px; }
+/* La lista se achica para que "Cerrar" y "Pegar en el chat" se vean siempre, aunque la pantalla sea baja. */
+.ag-list { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 90px; overflow-y: auto; text-align: left; }
+.ag-card > :not(.ag-list) { flex: 0 0 auto; }
+.ag-card h2 { cursor: move; user-select: none; }
+.ag-card .actions { padding-top: 4px; }
 .card label.ag-row { flex-direction: row; align-items: flex-start; gap: 10px; padding: 9px 12px; border: 1px solid var(--line, #e5e1ef); border-radius: 12px; cursor: pointer; }
 .ag-row input { width: auto; margin-top: 3px; flex: 0 0 auto; }
 .ag-row div { display: flex; flex-direction: column; gap: 2px; }
