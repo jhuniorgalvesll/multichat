@@ -2998,3 +2998,79 @@ async function makePayReceipt(p) {
   g.fillText(brand.name ? `Gracias por tu compra · ${brand.name}` : 'Gracias por tu compra', W / 2, H - 60);
   return c.toDataURL('image/png');
 }
+
+// -- Agencias Shalom por lugar --
+let agOpen = false;
+let agResult = null;
+function openAgencias(lugar) {
+  if (state.locked || passwordMode) return;
+  closeCoffee();
+  if (drawerOpen) closeDrawer();
+  $('ag-modal').hidden = false;
+  if (!agOpen) api.setOverlay(true);
+  agOpen = true;
+  if (lugar) {
+    $('ag-lugar').value = lugar;
+    buscarAgencias();
+  } else {
+    setTimeout(() => $('ag-lugar').focus(), 50);
+  }
+}
+function closeAgencias() {
+  if (!agOpen) return;
+  agOpen = false;
+  $('ag-modal').hidden = true;
+  api.setOverlay(false);
+}
+function marcadas() {
+  return [...document.querySelectorAll('#ag-list input[type=checkbox]:checked')].map((c) => agResult.agencias[Number(c.dataset.i)]);
+}
+function actualizarBotonAg() {
+  const n = agResult && agResult.ok ? marcadas().length : 0;
+  $('ag-paste').hidden = !n;
+  $('ag-paste').textContent = `💬 Pegar ${n} agencia${n === 1 ? '' : 's'} en el chat`;
+}
+async function buscarAgencias() {
+  const lugar = $('ag-lugar').value.trim();
+  if (lugar.length < 3) { $('ag-state').textContent = 'Escribe al menos 3 letras.'; return; }
+  $('ag-go').disabled = true;
+  $('ag-state').textContent = `🔎 Buscando agencias en ${lugar}…`;
+  $('ag-list').replaceChildren();
+  $('ag-paste').hidden = true;
+  agResult = await api.buscarAgencias(lugar);
+  $('ag-go').disabled = false;
+  if (!agResult || !agResult.ok) {
+    $('ag-state').textContent = 'No se pudo consultar la página de Shalom. Revisa tu internet e inténtalo de nuevo.';
+    return;
+  }
+  if (!agResult.agencias.length) {
+    $('ag-state').textContent = `Shalom no muestra agencias para "${lugar}". Prueba con la provincia o el departamento.`;
+    return;
+  }
+  $('ag-state').textContent = `${agResult.agencias.length} agencia${agResult.agencias.length === 1 ? '' : 's'} en ${agResult.lugar}. Marca las que quieres mandar (hasta 10).`;
+  $('ag-list').replaceChildren(...agResult.agencias.map((a, i) => {
+    const row = document.createElement('label');
+    row.className = 'ag-row';
+    const check = Object.assign(document.createElement('input'), { type: 'checkbox', checked: i < 5 });
+    check.dataset.i = String(i);
+    check.addEventListener('change', () => {
+      if (marcadas().length > 10) check.checked = false;
+      actualizarBotonAg();
+    });
+    const text = document.createElement('div');
+    text.append(Object.assign(document.createElement('b'), { textContent: a.nombre }), Object.assign(document.createElement('small'), { textContent: a.direccion }));
+    if (a.tipo) text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: a.tipo }));
+    row.append(check, text);
+    return row;
+  }));
+  actualizarBotonAg();
+}
+$('ag-form').addEventListener('submit', (e) => { e.preventDefault(); buscarAgencias(); });
+$('ag-paste').addEventListener('click', async () => {
+  const r = await api.pegarAgencias(agResult.lugar, marcadas());
+  if (r && r.ok && !r.copied) closeAgencias();
+  else if (r && r.copied) $('ag-state').textContent = 'Copiado: abre el chat del cliente y pégalo con Ctrl+V.';
+});
+$('ag-close').addEventListener('click', closeAgencias);
+$('ag-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAgencias(); });
+api.onAgencias((d) => openAgencias(d && d.lugar));

@@ -22,6 +22,7 @@ const localreply = require('./localreply');
 const sunatruc = require('./sunatruc');
 const sync = require('./sync');
 const fx = require('./fx');
+const shalomagencias = require('./shalomagencias');
 const voice = require('./voice');
 const screensaver = require('./screensaver');
 const bubble = require('./bubble');
@@ -1438,6 +1439,7 @@ async function pasteShippingInfo() {
 function shippingFormItems() {
   return [
     { label: '📋 Opciones de envío (para que el cliente elija)', click: () => pasteShippingInfo() },
+    { label: '🏢 Buscar agencias Shalom por lugar…', click: () => win.webContents.send('ui:agencias', {}) },
     { type: 'separator' },
     { label: 'Formulario Shalom (agencia)', click: () => pasteShippingForm('Shalom') },
     { label: 'Formulario Olva (domicilio)', click: () => pasteShippingForm('Olva') },
@@ -2170,6 +2172,11 @@ async function showEditMenu(wc, params) {
       click: () => openTicketFor(idForWebContents(wc), selection),
     },
     { label: '📝 Pedir datos de envío', submenu: shippingFormItems() },
+    // Texto corto seleccionado sin números (p. ej. "Huancayo"): ver las agencias Shalom de ese lugar.
+    ...(selection && selection.length <= 40 && !/\d/.test(selection) && /[a-záéíóúñ]{3,}/i.test(selection) ? [{
+      label: `🏢 Ver agencias Shalom en "${selection.slice(0, 30)}"`,
+      click: () => win.webContents.send('ui:agencias', { lugar: selection }),
+    }] : []),
     ...(sunatruc.detectar(selection) ? [{
       label: sunatruc.detectar(selection).tipo === 'ruc'
         ? `🔎 Consultar RUC ${sunatruc.detectar(selection).numero} en SUNAT`
@@ -2516,6 +2523,7 @@ function settingsPanel() {
           action('rate', '⭐ Calificar MultiChat'),
           action('syncFolder', '🔄 Mismos ajustes en varias PCs', s.syncFolder ? `Carpeta: ${s.syncFolder}${s.syncLastAt ? ` · último cambio ${new Date(s.syncLastAt).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}` : 'Elige una carpeta de OneDrive o Google Drive'),
           ...(s.syncFolder ? [action('syncOff', 'Dejar de compartir ajustes en esta PC')] : []),
+          action('agencias', '🏢 Buscar agencias Shalom por lugar'),
           action('rucSunat', '🔎 Consultar RUC (SUNAT) o DNI (gratis)'),
           action('coffee', '☕ Invítale un cafecito al creador'),
           action('quit', `Salir de ${APP_NAME}`),
@@ -2579,6 +2587,7 @@ function settingsDo(id, value) {
     heavyReload: () => flip('heavyReload'),
     onboarding: () => send('ui:onboarding'),
     rucSunat: () => send('ui:ruc', { status: 'pedir' }),
+    agencias: () => send('ui:agencias', {}),
     syncFolder: () => chooseSyncFolder(),
     syncOff: () => {
       settings.syncFolder = '';
@@ -3083,6 +3092,17 @@ function registerIpc() {
   });
   // Envío por Shalom: consulta el rastreo público y la IA propone 3 respuestas solo con ese resultado.
   ipcMain.handle('ship:detect', (_e, text) => shalomtrack.detectar(text));
+  ipcMain.handle('agencias:buscar', (_e, lugar) => (locked ? { ok: false } : shalomagencias.buscar(lugar)));
+  // Agencias elegidas → mensaje en el chat abierto (el vendedor presiona Enter).
+  ipcMain.handle('agencias:pegar', async (_e, lugar, agencias) => {
+    if (locked || !Array.isArray(agencias) || !agencias.length) return { ok: false };
+    const texto = shalomagencias.mensaje(String(lugar || ''), agencias.slice(0, 10).map((a) => ({ nombre: String(a.nombre || '').slice(0, 80), direccion: String(a.direccion || '').slice(0, 300) })));
+    const view = views.get(activeId);
+    if (!view) { await copyText(texto); return { ok: true, copied: true }; }
+    view.webContents.focus();
+    await pasteText(view.webContents, texto);
+    return { ok: true };
+  });
   // Solo páginas permitidas, en el navegador de la persona.
   ipcMain.on('app:open-url', (_e, url) => {
     if (url === 'https://eldni.com/pe/buscar-datos-por-dni') shell.openExternal(url).catch(() => {});

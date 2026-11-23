@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.23.0',
+    items: ['🏢 Agencias Shalom por lugar: escribe Huancayo, Ayacucho o San Juan de Miraflores y salen las agencias de la página oficial de Shalom; marcas las que quieres y se pegan en el chat para que el cliente elija.'],
+  },
+  {
     version: '1.22.1',
     items: ['Verificador de pagos: compara también el código de seguridad (Yape) y el N° de operación (Yape y Plin). Si no coinciden avisa "⚠ El código NO coincide" (posible captura editada).'],
   },

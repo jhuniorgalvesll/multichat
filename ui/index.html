@@ -649,6 +649,24 @@
     </div>
   </section>
 
+  <!-- Agencias Shalom por lugar (página oficial de Shalom) -->
+  <section class="backdrop" id="ag-modal" hidden>
+    <form class="card modal ag-card" id="ag-form" autocomplete="off">
+      <h2>🏢 Agencias Shalom</h2>
+      <p class="note">Escribe el departamento, provincia o distrito del cliente. Se buscan en la página oficial de Shalom.</p>
+      <div class="ruc-row">
+        <input id="ag-lugar" maxlength="60" placeholder="Ej.: Huancayo, Ayacucho, San Juan de Miraflores">
+        <button type="submit" class="primary" id="ag-go">Buscar</button>
+      </div>
+      <p class="note" id="ag-state"></p>
+      <div class="ag-list" id="ag-list"></div>
+      <div class="actions">
+        <button type="button" id="ag-close">Cerrar</button>
+        <button type="button" class="primary" id="ag-paste" hidden>💬 Pegar en el chat</button>
+      </div>
+    </form>
+  </section>
+
   <!-- Consulta RUC / DNI en SUNAT (gratis, en la página oficial) -->
   <section class="backdrop" id="ruc-modal" hidden>
     <form class="card modal ruc-card" id="ruc-form" autocomplete="off">

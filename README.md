@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.23.0
+
+- **🏢 Agencias Shalom por lugar**: 📝 Pedir datos de envío → *🏢 Buscar agencias Shalom por lugar…* (también en ⚙ o seleccionando el lugar en el chat → clic derecho → *Ver agencias Shalom en "Huancayo"*). Se busca en la página oficial de Shalom y aparecen las agencias con nombre, dirección, referencia y tamaño. Marcas hasta 10 y se pegan en el chat, numeradas, con "¿En cuál agencia prefieres recoger tu pedido?". Tú presionas Enter.
+
 ## Novedades v1.22.1
 
 - **Verificar con código y N° de operación**: al llegar un pago se guardan su código de seguridad (Yape) y su número de operación si el aviso los trae. El verificador lee de la captura del cliente el código de seguridad y el N° de operación: si coincide → "✅ Pago confirmado · ✓ El código de seguridad coincide"; si hay un pago de ese monto pero el código u operación es distinto → "⚠️ El código NO coincide" (posible captura editada o de otro pago). También se puede escribir el código o la operación a mano.
