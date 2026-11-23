@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.21.2
+
+- **Dólar del día y próxima fecha** en la barra, en letra fina: tipo de cambio interbancario oficial del BCRP (pasa el mouse para ver compra y venta; se actualiza cada 3 horas) y "🎄 en 32 días" para la próxima fecha especial (aparece 45 días antes). Se quita en ⚙ → Apariencia. En pantallas angostas se oculta.
+
 ## Novedades v1.21.1
 
 - **Pestañas movibles**: arrastra una pestaña (WhatsApp, Telegram, Instagram…) a la izquierda o a la derecha y queda guardada en ese lugar. O clic derecho en la pestaña → *⬅ Mover a la izquierda* / *Mover a la derecha ➡*.

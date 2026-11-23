@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.21.2',
+    items: ['En la barra, en letra fina: dólar del día (oficial del BCRP; pasa el mouse para ver compra y venta) y cuántos días faltan para la próxima fecha especial (Navidad, Fiestas Patrias, Día de la Madre…).'],
+  },
+  {
     version: '1.21.1',
     items: ['Pestañas movibles: arrástralas a la izquierda o a la derecha y quedan en ese orden. También: clic derecho en la pestaña → "Mover a la izquierda / derecha".'],
   },

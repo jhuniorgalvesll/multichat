@@ -21,6 +21,7 @@ const shalomtrack = require('./shalomtrack');
 const localreply = require('./localreply');
 const sunatruc = require('./sunatruc');
 const sync = require('./sync');
+const fx = require('./fx');
 const voice = require('./voice');
 const screensaver = require('./screensaver');
 const bubble = require('./bubble');
@@ -1794,6 +1795,7 @@ function pushState() {
     animations: data.settings.animations !== false,
     compact: Boolean(data.settings.compact),
     season: seasonForUi(),
+    infoBar: data.settings.infoBar === false ? null : { fx: data.settings.fx || null, next: nextSpecialDate() },
   });
   bubble.update();
 }
@@ -1925,6 +1927,7 @@ async function chooseSyncFolder() {
   settings.syncAppliedAt = 0;
   store.save();
   startSync();
+  fx.start({ store, onChange: pushState });
   win.webContents.send('ui:settings-refresh');
 }
 
@@ -1951,6 +1954,25 @@ function currentSeason(now = new Date()) {
   if (m === 11 && day <= 30) return { id: 'navidad', emoji: '🎄', saludo: '¡Feliz Navidad!', colors: ['#b91c1c', '#15803d'] };
   return null;
 }
+// Próxima fecha especial (para la barra): nombre, emoji y días que faltan (solo si faltan 45 días o menos).
+function nextSpecialDate(now = new Date()) {
+  const hoy = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const fechas = [];
+  for (const y of [now.getFullYear(), now.getFullYear() + 1]) {
+    fechas.push(
+      { nombre: 'Año Nuevo', emoji: '🎆', d: new Date(y, 0, 1) },
+      { nombre: 'San Valentín', emoji: '💘', d: new Date(y, 1, 14) },
+      { nombre: 'Día de la Madre', emoji: '💐', d: nthSunday(y, 4, 2) },
+      { nombre: 'Día del Padre', emoji: '👔', d: nthSunday(y, 5, 3) },
+      { nombre: 'Fiestas Patrias', emoji: '🇵🇪', d: new Date(y, 6, 28) },
+      { nombre: 'Canción Criolla', emoji: '🎸', d: new Date(y, 9, 31) },
+      { nombre: 'Navidad', emoji: '🎄', d: new Date(y, 11, 25) },
+    );
+  }
+  const prox = fechas.map((f) => ({ ...f, dias: Math.round((f.d - hoy) / 86400000) })).filter((f) => f.dias >= 0).sort((a, b) => a.dias - b.dias)[0];
+  return prox && prox.dias <= 45 ? { nombre: prox.nombre, emoji: prox.emoji, dias: prox.dias } : null;
+}
+
 function seasonForUi() {
   return store.get().settings.seasonal === false ? null : currentSeason();
 }
@@ -2323,6 +2345,7 @@ function settingsPanel() {
           { id: 'theme', type: 'choice', label: 'Modo', value: s.theme, options: [{ value: 'light', label: 'Claro' }, { value: 'dark', label: 'Oscuro' }, { value: 'system', label: 'Igual que Windows' }] },
           toggle('animations', 'Animaciones', s.animations !== false),
           toggle('compact', 'Modo compacto (barra y pestañas más pequeñas, para laptops)', Boolean(s.compact)),
+          toggle('infoBar', 'Dólar del día y próxima fecha especial en la barra', s.infoBar !== false, 'Tipo de cambio oficial del BCRP (compra y venta) y cuántos días faltan para Navidad, Fiestas Patrias…'),
           toggle('seasonal', 'Tema por temporada (Navidad, Fiestas Patrias, Día de la Madre…)', s.seasonal !== false, 'Cambia los colores y el saludo en fechas especiales; vuelve solo a tu color'),
           toggle('spellcheck', 'Corrector de ortografía al escribir', s.spellcheck !== false, 'Subraya en rojo lo mal escrito; clic derecho para ver sugerencias'),
           toggle('welcome', 'Bienvenida del día al abrir', s.welcome !== false),
@@ -2394,6 +2417,7 @@ function settingsDo(id, value) {
     animations: () => flip('animations', pushState),
     compact: () => flip('compact', () => { pushState(); applyLayout(); }),
     seasonal: () => flip('seasonal', pushState),
+    infoBar: () => flip('infoBar', pushState),
     spellcheck: () => flip('spellcheck', () => { for (const ses of configuredSessions) syncSpellcheck(ses); }),
     welcome: () => flip('welcome'),
     accent: () => {

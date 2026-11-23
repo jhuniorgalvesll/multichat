@@ -261,7 +261,33 @@ window.addEventListener('resize', fitTabs);
 
 let lastActiveId = null;
 
+// Línea fina en la barra: dólar del día (BCRP) y próxima fecha especial.
+function renderInfoBar() {
+  const box = $('info-bar');
+  const info = state.infoBar;
+  const partes = [];
+  if (info && info.fx) {
+    const f = info.fx;
+    partes.push(Object.assign(document.createElement('span'), {
+      className: 'info-fx',
+      textContent: `$ ${Number(f.venta).toFixed(3)}`,
+      title: `Dólar (BCRP, interbancario) del ${f.dia}\nCompra: S/ ${Number(f.compra).toFixed(3)} · Venta: S/ ${Number(f.venta).toFixed(3)}`,
+    }));
+  }
+  if (info && info.next) {
+    const n = info.next;
+    partes.push(Object.assign(document.createElement('span'), {
+      className: 'info-next',
+      textContent: `${n.emoji} ${n.dias === 0 ? 'hoy' : n.dias === 1 ? 'mañana' : `en ${n.dias} días`}`,
+      title: n.dias === 0 ? `Hoy es ${n.nombre}` : `Faltan ${n.dias} día${n.dias === 1 ? '' : 's'} para ${n.nombre}: prepara tus ofertas`,
+    }));
+  }
+  box.replaceChildren(...partes);
+  box.hidden = !partes.length;
+}
+
 function applyLook() {
+  renderInfoBar();
   // En fechas especiales (si está activado) se usan los colores de la temporada.
   const [a, b] = (state.season && state.season.colors) || ACCENT_COLORS[state.accent] || ACCENT_COLORS.violeta;
   document.body.dataset.season = state.season ? state.season.id : '';
