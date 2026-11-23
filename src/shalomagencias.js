@@ -12,8 +12,11 @@
 //     unas 500 agencias en 1 minuto). Se actualiza sola una vez al día: las agencias que Shalom cierra salen de la
 //     lista y las nuevas entran. Si una actualización sale incompleta (sin internet, página lenta), se conserva la
 //     anterior para no dar por cerradas agencias que siguen abiertas;
-//  3) al buscar se juntan la búsqueda en vivo de Shalom y la lista completa (por departamento, por nombre y por
-//     distrito en la dirección), sin repetir.
+//  3) la app trae la lista completa del día en que se publicó, así que buscar es INSTANTÁNEO desde el primer uso
+//     (por departamento, por nombre y por distrito en la dirección). Solo si un lugar no aparece en la lista se
+//     pregunta en vivo a la página de Shalom (máximo 8 segundos).
+// Los datos que la página recibe vienen cifrados y protegidos con reCAPTCHA: no se tocan; se lee lo que la página
+// muestra, igual que una persona.
 const fs = require('fs');
 const path = require('path');
 const { app, BrowserWindow } = require('electron');
@@ -25,19 +28,26 @@ const DEPARTAMENTOS = ['Amazonas', 'Áncash', 'Apurímac', 'Arequipa', 'Ayacucho
   'Huancavelica', 'Huánuco', 'Ica', 'Junín', 'La Libertad', 'Lambayeque', 'Lima', 'Loreto', 'Madre de Dios', 'Moquegua',
   'Pasco', 'Piura', 'Puno', 'San Martín', 'Tacna', 'Tumbes', 'Ucayali'];
 const cache = new Map();
-let indice = null; // { at, agencias: [{ nombre, direccion, tipo, dep }], cambios: { at, nuevas, cerradas } }
+let indice = null; // { at, agencias: [{ nombre, direccion, tipo, dep }], cambios: { at, nuevas, cerradas }, incluida }
+let ultimoIntento = null; // { at, ok, error } de la última actualización en segundo plano
 const indiceFile = () => path.join(app.getPath('userData'), 'shalom-agencias.json');
+// Lista que viene dentro de la app (todas las agencias del Perú el día que se publicó la versión): así la búsqueda
+// es instantánea desde el primer día, aunque la PC todavía no haya descargado la lista del día.
+const INCLUIDA = path.join(__dirname, 'data', 'shalom-agencias.json');
 function cargarIndice() {
   if (indice) return;
-  try {
-    const d = JSON.parse(fs.readFileSync(indiceFile(), 'utf8'));
-    if (d && Array.isArray(d.agencias) && d.agencias.length) indice = d;
-  } catch { /* aún no se guardó */ }
+  let propia = null;
+  let incluida = null;
+  try { propia = JSON.parse(fs.readFileSync(indiceFile(), 'utf8')); } catch { /* aún no se guardó */ }
+  try { incluida = JSON.parse(fs.readFileSync(INCLUIDA, 'utf8')); } catch { /* no debería faltar */ }
+  const valida = (d) => d && Array.isArray(d.agencias) && d.agencias.length >= 100;
+  if (valida(propia) && (!valida(incluida) || propia.at >= incluida.at)) indice = propia;
+  else if (valida(incluida)) indice = { ...incluida, incluida: true, cambios: (valida(propia) && propia.cambios) || null };
 }
 function guardarIndice() {
   try { fs.writeFileSync(indiceFile(), JSON.stringify(indice)); } catch { /* sin espacio o sin permiso */ }
 }
-let busy = Promise.resolve();
+let actualizando = null;
 
 const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9ñ ]/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -137,7 +147,7 @@ function pageScript(consultas) {
   })()`;
 }
 
-async function consultar(consultas) {
+async function consultar(consultas, maxMs = 0) {
   const win = new BrowserWindow({
     show: false,
     width: 1366,
@@ -145,9 +155,11 @@ async function consultar(consultas) {
     webPreferences: { partition: 'persist:shalom-agencias', sandbox: true, contextIsolation: true, backgroundThrottling: false },
   });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  const t0 = Date.now();
   try {
-    await conLimite(win.loadURL(URL_AGENCIAS), 40000);
-    return await conLimite(win.webContents.executeJavaScript(pageScript(consultas), true), 25000 * consultas.length + 10000);
+    await conLimite(win.loadURL(URL_AGENCIAS), maxMs || 40000);
+    const resto = maxMs ? Math.max(1000, maxMs - (Date.now() - t0)) : 25000 * consultas.length + 10000;
+    return await conLimite(win.webContents.executeJavaScript(pageScript(consultas), true), resto);
   } catch {
     return { estado: 'sin_respuesta' };
   } finally {
@@ -191,26 +203,56 @@ function buscarEnIndice(lugar) {
 }
 
 // { ok: true, lugar, agencias: [{ nombre, direccion, tipo, fuente }] } o { ok: false, error }.
-function buscar(lugarIn) {
+// Primero la lista guardada en la PC (al instante). Solo si ahí no hay nada se pregunta a la página de Shalom,
+// con 8 segundos como máximo.
+const VIVO_MS = 8000;
+async function buscar(lugarIn) {
   const lugar = String(lugarIn || '').replace(/\s+/g, ' ').trim().slice(0, 60);
-  if (lugar.length < 3) return Promise.resolve({ ok: false, error: 'corto' });
+  if (lugar.length < 3) return { ok: false, error: 'corto' };
   const key = norm(lugar);
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < CACHE_MS) return Promise.resolve(hit.result);
-  const run = busy.then(async () => {
-    const distrito = distritoLima(lugar);
-    const consultas = consultasPara(lugar);
-    const r = consultas.length ? await consultar(consultas) : { estado: 'ok', resultado: {} };
-    const enVivo = r.estado === 'ok' ? consultas.flatMap((q) => r.resultado[q] || []).map((a) => ({ ...a, fuente: 'shalom' })) : [];
-    const deLista = buscarEnIndice(lugar).map((a) => ({ ...a, fuente: distrito ? 'direccion' : 'lista' }));
-    if (r.estado !== 'ok' && !deLista.length) return { ok: false, error: r.estado === 'sin_buscador' ? 'pagina_cambio' : 'sin_respuesta' };
-    const agencias = unicas([...enVivo, ...deLista]).slice(0, 80);
-    const result = { ok: true, lugar: distrito && norm(distrito) !== norm(lugar) ? `${lugar} (${distrito})` : lugar, agencias };
-    if (r.estado === 'ok') cache.set(key, { at: Date.now(), result });
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.result;
+  const distrito = distritoLima(lugar);
+  const nombre = distrito && norm(distrito) !== norm(lugar) ? `${lugar} (${distrito})` : lugar;
+  const deLista = buscarEnIndice(lugar).map((a) => ({ ...a, fuente: distrito ? 'direccion' : 'lista' }));
+  if (deLista.length) {
+    const result = { ok: true, lugar: nombre, agencias: unicas(deLista).slice(0, 80) };
+    cache.set(key, { at: Date.now(), result });
     return result;
-  });
-  busy = run.catch(() => {});
-  return run;
+  }
+  const consultas = consultasPara(lugar);
+  if (!consultas.length) return { ok: true, lugar: nombre, agencias: [] };
+  const r = await consultar(consultas, VIVO_MS);
+  if (r.estado !== 'ok') return { ok: true, lugar: nombre, agencias: [], sinRespuesta: true };
+  const enVivo = consultas.flatMap((q) => r.resultado[q] || []).map((a) => ({ ...a, fuente: 'shalom' }));
+  const result = { ok: true, lugar: nombre, agencias: unicas(enVivo).slice(0, 80) };
+  cache.set(key, { at: Date.now(), result });
+  return result;
+}
+
+// Después de mostrar la lista guardada: pregunta a Shalom (máx. 8 s, en segundo plano) por si hay agencias de ese
+// lugar cuya dirección no lo menciona (p. ej. "Sapallanga" al buscar Huancayo). Devuelve solo las que faltaban.
+let turnoCompletar = 0;
+let enCurso = Promise.resolve();
+async function completar(lugarIn) {
+  const lugar = String(lugarIn || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  const n = norm(lugar);
+  if (lugar.length < 3 || distritoLima(lugar) || DEPARTAMENTOS.some((d) => norm(d) === n)) return [];
+  const hit = cache.get(n);
+  if (!hit || hit.completo) return [];
+  // Mientras se escribe llegan varios pedidos: uno a la vez y solo el último.
+  const mio = ++turnoCompletar;
+  await enCurso;
+  if (mio !== turnoCompletar || hit.completo) return [];
+  hit.completo = true;
+  const p = consultar(consultasPara(lugar), VIVO_MS);
+  enCurso = p.catch(() => {});
+  const r = await p;
+  if (r.estado !== 'ok') { hit.completo = false; return []; }
+  const ya = new Set(hit.result.agencias.map(claveAgencia));
+  const extra = unicas(Object.values(r.resultado).flat()).filter((a) => !ya.has(claveAgencia(a))).map((a) => ({ ...a, fuente: 'shalom' }));
+  hit.result = { ...hit.result, agencias: [...hit.result.agencias, ...extra].slice(0, 80) };
+  return extra;
 }
 
 // Mensaje para el cliente con las agencias elegidas (para que elija dónde recoger).
@@ -256,16 +298,23 @@ function lugarDeTexto(texto) {
 const claveAgencia = (a) => norm(`${a.nombre}|${a.direccion}`);
 function actualizarIndice({ forzar = false } = {}) {
   cargarIndice();
-  if (!forzar && indice && Date.now() - indice.at < INDICE_MS) return Promise.resolve(null);
-  const run = busy.then(async () => {
+  if (!forzar && indice && !indice.incluida && Date.now() - indice.at < INDICE_MS) return Promise.resolve(null);
+  if (actualizando) return actualizando;
+  actualizando = (async () => {
     const r = await consultar(DEPARTAMENTOS);
-    if (r.estado !== 'ok') return null;
+    if (r.estado !== 'ok') {
+      ultimoIntento = { at: Date.now(), ok: false, error: r.estado === 'sin_buscador' ? 'La página de Shalom no cargó su buscador' : 'La página de Shalom no respondió a tiempo' };
+      return null;
+    }
     const agencias = [];
     for (const dep of DEPARTAMENTOS) for (const a of r.resultado[dep] || []) agencias.push({ ...a, dep });
     const nueva = unicas(agencias);
     const anterior = indice ? indice.agencias : [];
     // Lista incompleta (página lenta o sin internet): no se reemplaza, para no "cerrar" agencias que siguen abiertas.
-    if (nueva.length < 300 || (anterior.length && nueva.length < anterior.length * 0.85)) return null;
+    if (nueva.length < 300 || (anterior.length && nueva.length < anterior.length * 0.85)) {
+      ultimoIntento = { at: Date.now(), ok: false, error: `La página de Shalom mostró solo ${nueva.length} agencias` };
+      return null;
+    }
     const antes = new Set(anterior.map(claveAgencia));
     const ahora = new Set(nueva.map(claveAgencia));
     const cambios = anterior.length ? {
@@ -276,10 +325,10 @@ function actualizarIndice({ forzar = false } = {}) {
     indice = { at: Date.now(), agencias: nueva, cambios: cambios && (cambios.nuevas.length || cambios.cerradas.length) ? cambios : (indice && indice.cambios) || null };
     guardarIndice();
     cache.clear();
+    ultimoIntento = { at: Date.now(), ok: true };
     return cambios;
-  });
-  busy = run.catch(() => {});
-  return run;
+  })().finally(() => { actualizando = null; });
+  return actualizando;
 }
 
 // Resumen de la lista para la ventana: cuántas agencias, de cuándo y los últimos cambios.
@@ -290,14 +339,16 @@ function estado() {
   return {
     total: indice.agencias.length,
     at: indice.at,
+    incluida: Boolean(indice.incluida),
+    actualizando: Boolean(actualizando),
+    fallo: ultimoIntento && !ultimoIntento.ok ? ultimoIntento : null,
     cambios: c ? { at: c.at, nuevas: c.nuevas.slice(0, 20), cerradas: c.cerradas.slice(0, 20), nNuevas: c.nuevas.length, nCerradas: c.cerradas.length } : null,
   };
 }
 
-// ¿Esta búsqueda tardará más? (todavía no hay lista completa en la PC)
-function tardara() {
-  cargarIndice();
-  return !indice;
+// ¿Esta búsqueda tardará? (el lugar no está en la lista guardada: se pregunta a Shalom, máx. 8 s)
+function tardara(lugar) {
+  return !buscarEnIndice(String(lugar || '')).length;
 }
 
-module.exports = { buscar, mensaje, lugarDeTexto, consultasPara, distritoLima, porDireccion, tardara, actualizarIndice, estado, buscarEnIndice };
+module.exports = { buscar, completar, mensaje, lugarDeTexto, consultasPara, distritoLima, porDireccion, tardara, actualizarIndice, estado, buscarEnIndice };

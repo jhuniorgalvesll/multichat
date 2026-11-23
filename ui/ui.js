@@ -3011,7 +3011,11 @@ function pintarEstadoAgencias(e, verCambios = false) {
     box.append('Lista completa de agencias: todavía no se descargó (se hace sola en segundo plano). ');
   } else {
     const dia = new Date(e.at).toDateString() === new Date().toDateString() ? 'hoy' : new Date(e.at).toLocaleDateString('es-PE');
-    box.append(`Lista oficial: ${e.total} agencias · actualizada ${dia} ${hhmm(e.at)}`);
+    box.append(e.incluida
+      ? `Lista oficial: ${e.total} agencias · del ${new Date(e.at).toLocaleDateString('es-PE')} (incluida en la app)`
+      : `Lista oficial: ${e.total} agencias · actualizada ${dia} ${hhmm(e.at)}`);
+    if (e.actualizando) box.append(' · actualizando en segundo plano…');
+    else if (e.fallo) box.append(` · última actualización no se pudo (${e.fallo.error}, ${hhmm(e.fallo.at)}); se usa la lista anterior`);
     if (e.cambios) {
       const c = e.cambios;
       const t = [c.nNuevas && `${c.nNuevas} nueva${c.nNuevas === 1 ? '' : 's'}`, c.nCerradas && `${c.nCerradas} cerrada${c.nCerradas === 1 ? '' : 's'}`].filter(Boolean).join(', ');
@@ -3064,36 +3068,58 @@ function actualizarBotonAg() {
   $('ag-paste').hidden = !n;
   $('ag-paste').textContent = `💬 Pegar ${n} agencia${n === 1 ? '' : 's'} en el chat`;
 }
-async function buscarAgencias() {
+let agTurno = 0;
+// auto = true: búsqueda mientras se escribe (solo en la lista guardada, al instante; no pregunta a Shalom).
+async function buscarAgencias(auto = false) {
   const lugar = $('ag-lugar').value.trim();
   if (lugar.length < 3) { $('ag-state').textContent = 'Escribe al menos 3 letras.'; return; }
-  $('ag-go').disabled = true;
+  const turno = ++agTurno;
   const largo = await api.agenciasTardara(lugar);
+  if (turno !== agTurno) return;
+  if (largo && auto) {
+    $('ag-state').textContent = `"${lugar}": sigue escribiendo o pulsa Buscar para preguntar a la página de Shalom (máx. 8 s).`;
+    $('ag-list').replaceChildren();
+    $('ag-paste').hidden = true;
+    return;
+  }
+  $('ag-go').disabled = true;
   const inicio = Date.now();
   const mostrar = () => {
     const s = Math.round((Date.now() - inicio) / 1000);
-    $('ag-state').textContent = `🔎 Buscando agencias en ${lugar}… ${s} s${largo ? ' · la primera vez en Lima revisa todas las agencias de Lima y Callao (hasta 1 minuto); luego es rápido' : ''}`;
+    $('ag-state').textContent = `🔎 Preguntando a la página de Shalom por ${lugar}… ${s} s (máx. 8 s)`;
   };
-  mostrar();
-  const reloj = setInterval(mostrar, 1000);
-  $('ag-list').replaceChildren();
-  $('ag-paste').hidden = true;
-  agResult = await api.buscarAgencias(lugar);
+  if (largo) mostrar();
+  const reloj = largo ? setInterval(mostrar, 1000) : 0;
+  if (largo) { $('ag-list').replaceChildren(); $('ag-paste').hidden = true; }
+  const r = await api.buscarAgencias(lugar);
   clearInterval(reloj);
   $('ag-go').disabled = false;
+  if (turno !== agTurno) return;
+  agResult = r;
+  pintarAgencias(lugar);
+  // Lo de la lista sale al instante; en segundo plano se pregunta a Shalom por agencias que falten (máx. 8 s).
+  if (r && r.ok && r.agencias.some((x) => x.fuente === 'lista')) {
+    const extra = await api.agenciasCompletar(lugar).catch(() => []);
+    if (turno !== agTurno || !agOpen || !extra || !extra.length) return;
+    const marcadasAntes = new Set(marcadas());
+    agResult.agencias.push(...extra);
+    pintarAgencias(lugar, marcadasAntes);
+  }
+}
+function pintarAgencias(lugar, marcadasAntes = null) {
   if (!agResult || !agResult.ok) {
     $('ag-state').textContent = 'No se pudo consultar la página de Shalom. Revisa tu internet e inténtalo de nuevo.';
     return;
   }
   if (!agResult.agencias.length) {
-    $('ag-state').textContent = `Shalom no muestra agencias para "${lugar}". Prueba con la provincia o el departamento.`;
+    $('ag-state').textContent = `No encontré agencias de Shalom para "${lugar}"${agResult.sinRespuesta ? ' (la página de Shalom no respondió en 8 s)' : ''}. Prueba con la provincia o el departamento.`;
     return;
   }
   // Con la dirección del cliente: primero la agencia cuya dirección se parece más (misma avenida, manzana…).
   const palabras = (s) => sinTildes(s).replace(/[^a-z0-9ñ ]/g, ' ').split(/\s+/).filter((w) => w.length >= 2 && !['ref', 'referencia', 'de', 'la', 'el', 'los', 'las', 'del', 'con', 'entre', 'frente', 'nro', 'cdra', 'cuadra', 'cuadras', 'altura', 'al'].includes(w));
   const cliente = new Set(palabras(agDireccion));
   let cercana = -1;
-  if (cliente.size) {
+  if (cliente.size && !marcadasAntes) {
     const puntaje = agResult.agencias.map((a) => palabras(a.direccion).filter((w) => cliente.has(w)).length);
     const max = Math.max(...puntaje);
     if (max >= 2) {
@@ -3107,7 +3133,7 @@ async function buscarAgencias() {
   $('ag-list').replaceChildren(...agResult.agencias.map((a, i) => {
     const row = document.createElement('label');
     row.className = 'ag-row';
-    const check = Object.assign(document.createElement('input'), { type: 'checkbox', checked: i < 5 });
+    const check = Object.assign(document.createElement('input'), { type: 'checkbox', checked: marcadasAntes ? marcadasAntes.has(a) : i < 5 });
     check.dataset.i = String(i);
     check.addEventListener('change', () => {
       if (marcadas().length > 10) check.checked = false;
@@ -3116,7 +3142,7 @@ async function buscarAgencias() {
     const text = document.createElement('div');
     text.append(Object.assign(document.createElement('b'), { textContent: a.nombre }), Object.assign(document.createElement('small'), { textContent: a.direccion }));
     if (a.tipo) text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: a.tipo }));
-    if (a.fuente === 'lista') text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: 'De la lista completa' }));
+    if (a.fuente === 'shalom' && marcadasAntes) text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: '➕ Encontrada en la página de Shalom' }));
     if (a.fuente === 'direccion') text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: 'Por su dirección' }));
     if (i === 0 && cercana === 0) text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo ag-cerca', textContent: '📍 Cerca de la dirección del cliente' }));
     row.append(check, text);
@@ -3124,7 +3150,13 @@ async function buscarAgencias() {
   }));
   actualizarBotonAg();
 }
-$('ag-form').addEventListener('submit', (e) => { e.preventDefault(); buscarAgencias(); });
+$('ag-form').addEventListener('submit', (e) => { e.preventDefault(); clearTimeout(agTecleo); buscarAgencias(); });
+// Resultados automáticos mientras se escribe (desde la lista guardada, al instante).
+let agTecleo = 0;
+$('ag-lugar').addEventListener('input', () => {
+  clearTimeout(agTecleo);
+  agTecleo = setTimeout(() => { if ($('ag-lugar').value.trim().length >= 3) buscarAgencias(true); }, 350);
+});
 $('ag-paste').addEventListener('click', async () => {
   const r = await api.pegarAgencias(agResult.lugar, marcadas());
   if (r && r.ok && !r.copied) closeAgencias();

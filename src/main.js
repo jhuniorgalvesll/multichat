@@ -3117,6 +3117,7 @@ function registerIpc() {
   // Envío por Shalom: consulta el rastreo público y la IA propone 3 respuestas solo con ese resultado.
   ipcMain.handle('ship:detect', (_e, text) => shalomtrack.detectar(text));
   ipcMain.handle('agencias:buscar', (_e, lugar) => (locked ? { ok: false } : shalomagencias.buscar(lugar)));
+  ipcMain.handle('agencias:completar', (_e, lugar) => (locked ? [] : shalomagencias.completar(lugar)));
   ipcMain.handle('agencias:tardara', (_e, lugar) => shalomagencias.tardara(lugar));
   ipcMain.handle('agencias:estado', () => shalomagencias.estado());
   ipcMain.handle('agencias:actualizar', async () => { await revisarAgenciasShalom(true); return shalomagencias.estado(); });

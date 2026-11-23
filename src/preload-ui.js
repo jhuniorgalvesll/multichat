@@ -98,6 +98,7 @@ contextBridge.exposeInMainWorld('multichat', {
   onDniName: (fn) => ipcRenderer.on('ui:dni-name', (_e, data) => fn(data)),
   buscarAgencias: (lugar) => ipcRenderer.invoke('agencias:buscar', lugar),
   agenciasTardara: (lugar) => ipcRenderer.invoke('agencias:tardara', lugar),
+  agenciasCompletar: (lugar) => ipcRenderer.invoke('agencias:completar', lugar),
   agenciasEstado: () => ipcRenderer.invoke('agencias:estado'),
   agenciasActualizar: () => ipcRenderer.invoke('agencias:actualizar'),
   onAgenciasEstado: (fn) => ipcRenderer.on('ui:agencias-estado', (_e, d) => fn(d)),

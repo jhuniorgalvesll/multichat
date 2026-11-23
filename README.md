@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.25.0
+
+- **Agencias Shalom al instante**: la app trae la lista oficial completa (501 agencias), así que los resultados salen mientras escribes, en menos de 1 segundo, aunque la PC todavía no haya descargado la lista del día. En segundo plano se pregunta a la página de Shalom (máximo 8 segundos) y se suman las agencias que falten (p. ej. Sapallanga al buscar Huancayo). Si un lugar no está en la lista, *Buscar* pregunta a Shalom con 8 segundos como máximo. La actualización diaria ya no bloquea las búsquedas, y si falla se muestra el motivo y se sigue usando la lista anterior.
+
 ## Novedades v1.24.0
 
 - **Lista completa de agencias Shalom, al día**: MultiChat recorre la página oficial departamento por departamento (25 departamentos, unas 500 agencias en 1 minuto) y guarda la lista en la PC. Se actualiza sola una vez al día en segundo plano y avisa "🏢 Agencias Shalom: 2 nuevas, 1 cerrada" con el detalle; las cerradas dejan de salir en las búsquedas y las nuevas aparecen. Si la actualización sale incompleta (sin internet, página lenta), se conserva la lista anterior. En la ventana de agencias se ve "Lista oficial: 501 agencias · actualizada hoy", los últimos cambios y *🔄 Actualizar ahora*. Las búsquedas juntan la búsqueda en vivo de Shalom con la lista completa.
