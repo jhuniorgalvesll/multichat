@@ -1659,3 +1659,25 @@ body.compact .info-bar { font-size: 11px; gap: 8px; }
 .ag-info .link-btn { font-size: 12px; padding: 0 2px; }
 .ag-cambios { margin-top: 6px; max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
 .ag-cambios[hidden] { display: none; }
+
+/* ---- Mapa de tus ventas ---- */
+.mapa-card { width: 860px; max-width: calc(100vw - 32px); max-height: calc(100vh - var(--bar-h, 56px) - 32px); overflow: hidden; }
+.mapa-periodos { display: flex; flex-wrap: wrap; gap: 6px; }
+.mapa-periodos button { padding: 5px 12px; border-radius: 999px; font-size: 12.5px; }
+.mapa-periodos button.on { background: linear-gradient(135deg, var(--acc1), var(--acc2, var(--acc1))); color: #fff; border-color: transparent; }
+.mapa-cuerpo { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(240px, 1fr); gap: 16px; min-height: 0; flex: 1 1 auto; overflow: hidden; }
+.mapa-svg { min-height: 0; display: flex; align-items: center; justify-content: center; }
+.mapa-svg svg { width: 100%; max-height: calc(100vh - 300px); }
+.mapa-svg path { stroke: var(--card, #fff); stroke-width: 0.8; cursor: pointer; transition: opacity 0.15s; }
+.mapa-svg path:hover, .mapa-svg path.sel { stroke: #1f1633; stroke-width: 1.6; }
+.mapa-lado { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; text-align: left; }
+.mapa-total { font-size: 13px; color: var(--muted); }
+.mapa-total b { font-size: 22px; color: var(--text, #1f1633); display: block; }
+.mapa-ranking { display: flex; flex-direction: column; gap: 6px; }
+.mapa-fila { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 6px 8px; border-radius: 10px; cursor: pointer; }
+.mapa-fila:hover, .mapa-fila.sel { background: var(--soft, #f3f0fa); }
+.mapa-fila .barra { grid-column: 1 / -1; height: 6px; border-radius: 4px; background: var(--soft, #f3f0fa); overflow: hidden; }
+.mapa-fila .barra i { display: block; height: 100%; background: linear-gradient(90deg, #a78bfa, #6d28d9); }
+.mapa-fila small { grid-column: 1 / -1; color: var(--muted); font-size: 11.5px; }
+.mapa-vacio { color: var(--muted); font-size: 13px; padding: 12px 0; }
+@media (max-width: 720px) { .mapa-cuerpo { grid-template-columns: 1fr; } }

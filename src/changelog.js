@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.27.0',
+    items: ['🗺️ Mapa de tus ventas: un mapa del Perú que se pinta según a qué departamentos envías más, con el ranking y las provincias o distritos (Huancayo, Cañete, San Juan de Miraflores…). Se arma solo con tus tickets impresos; puedes ver este mes, el mes pasado, 3 meses, 12 meses o todo. Solo guarda cantidades, en tu PC. Está en ⚙ → MultiChat Pro → Mapa de tus ventas.'],
+  },
+  {
     version: '1.26.1',
     items: ['🏢 Mensaje de agencias más limpio: cada agencia sale como en la ficha oficial de Shalom (nombre, ubicación, dirección, tamaño con pesos, horario y teléfono), cada dato en su línea y con espacios, para que en el celular no se vea apretado. Las agencias salen ordenadas por provincia y distrito.'],
   },

@@ -3195,3 +3195,101 @@ $('ag-close').addEventListener('click', closeAgencias);
 })();
 $('ag-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAgencias(); });
 api.onAgencias((d) => openAgencias(d && d.lugar, d && d.direccion, Boolean(d && d.cambios)));
+
+// -- Mapa de tus ventas (departamentos según los tickets impresos) --
+let mapaOpen = false;
+let mapaPeriodo = 'mes';
+let mapaSel = '';
+const mapaNorm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function mapaColor(f) {
+  // De lila claro (pocos envíos) a morado intenso (muchos).
+  const a = [237, 233, 254];
+  const b = [109, 40, 217];
+  return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * f)).join(',')})`;
+}
+async function pintarMapa() {
+  const d = await api.mapaDatos(mapaPeriodo);
+  if (!d) return;
+  document.querySelectorAll('#mapa-periodos button').forEach((b) => b.classList.toggle('on', b.dataset.p === mapaPeriodo));
+  const r = d.resumen;
+  const porDep = new Map(r.deps.map((x) => [mapaNorm(x.dep), x]));
+  const max = Math.max(1, ...r.deps.filter((x) => x.dep !== 'Sin reconocer').map((x) => x.n));
+  // Mapa
+  const box = $('mapa-svg');
+  box.replaceChildren();
+  if (d.forma) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${d.forma.w} ${d.forma.h}`);
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', 'Mapa del Perú por departamentos');
+    for (const [dep, dpath] of Object.entries(d.forma.paths)) {
+      const x = porDep.get(mapaNorm(dep));
+      const p = document.createElementNS(ns, 'path');
+      p.setAttribute('d', dpath);
+      p.setAttribute('fill', x ? mapaColor(0.18 + 0.82 * (x.n / max)) : '#e5e7eb');
+      if (mapaNorm(dep) === mapaNorm(mapaSel)) p.classList.add('sel');
+      const t = document.createElementNS(ns, 'title');
+      t.textContent = `${dep}: ${x ? x.n : 0} envío${x && x.n === 1 ? '' : 's'}`;
+      p.append(t);
+      p.addEventListener('click', () => { mapaSel = mapaNorm(mapaSel) === mapaNorm(dep) ? '' : dep; pintarMapa(); });
+      svg.append(p);
+    }
+    box.append(svg);
+  }
+  // Total y ranking
+  const nombres = { mes: 'este mes', anterior: 'el mes pasado', '3m': 'los últimos 3 meses', ano: 'los últimos 12 meses', todo: 'todo el tiempo' };
+  const reconocidos = r.deps.filter((x) => x.dep !== 'Sin reconocer');
+  $('mapa-total').replaceChildren(
+    Object.assign(document.createElement('b'), { textContent: `${r.total} envío${r.total === 1 ? '' : 's'}` }),
+    `en ${nombres[mapaPeriodo]} · ${reconocidos.length} departamento${reconocidos.length === 1 ? '' : 's'}`,
+  );
+  const lista = $('mapa-ranking');
+  if (!r.deps.length) {
+    lista.replaceChildren(Object.assign(document.createElement('div'), { className: 'mapa-vacio', textContent: 'Todavía no hay envíos en este periodo. Cada ticket que imprimas suma a su departamento.' }));
+    return;
+  }
+  lista.replaceChildren(...r.deps.map((x, i) => {
+    const fila = document.createElement('div');
+    fila.className = `mapa-fila${mapaNorm(x.dep) === mapaNorm(mapaSel) ? ' sel' : ''}`;
+    const pct = r.total ? Math.round((x.n / r.total) * 100) : 0;
+    fila.append(
+      Object.assign(document.createElement('b'), { textContent: `${x.dep === 'Sin reconocer' ? '❔' : `${i + 1}.`} ${x.dep}` }),
+      Object.assign(document.createElement('span'), { textContent: `${x.n} · ${pct}%` }),
+    );
+    const barra = document.createElement('div');
+    barra.className = 'barra';
+    const relleno = document.createElement('i');
+    relleno.style.width = `${Math.max(3, (x.n / Math.max(1, r.deps[0].n)) * 100)}%`;
+    barra.append(relleno);
+    fila.append(barra);
+    if (x.provincias.length && (mapaNorm(x.dep) === mapaNorm(mapaSel) || i < 3)) {
+      fila.append(Object.assign(document.createElement('small'), { textContent: x.provincias.map((p) => `${p.nombre} (${p.n})`).join(' · ') }));
+    }
+    if (x.dep === 'Sin reconocer') fila.append(Object.assign(document.createElement('small'), { textContent: 'Tickets sin destino claro (escribe la agencia o la ciudad en "Destino").' }));
+    fila.addEventListener('click', () => { mapaSel = mapaNorm(mapaSel) === mapaNorm(x.dep) ? '' : x.dep; pintarMapa(); });
+    return fila;
+  }));
+  const sel = lista.querySelector('.mapa-fila.sel');
+  if (sel) sel.scrollIntoView({ block: 'nearest' });
+}
+function openMapa() {
+  if (state.locked || passwordMode) return;
+  closeCoffee();
+  if (drawerOpen) closeDrawer();
+  $('mapa-modal').hidden = false;
+  if (!mapaOpen) api.setOverlay(true);
+  mapaOpen = true;
+  pintarMapa();
+}
+function closeMapa() {
+  if (!mapaOpen) return;
+  mapaOpen = false;
+  $('mapa-modal').hidden = true;
+  api.setOverlay(false);
+}
+document.querySelectorAll('#mapa-periodos button').forEach((b) => b.addEventListener('click', () => { mapaPeriodo = b.dataset.p; pintarMapa(); }));
+$('mapa-close').addEventListener('click', closeMapa);
+$('mapa-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMapa(); });
+$('mapa-modal').addEventListener('click', (e) => { if (e.target === $('mapa-modal')) closeMapa(); });
+api.onMapaVentas(openMapa);

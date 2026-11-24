@@ -24,6 +24,7 @@ const sunatruc = require('./sunatruc');
 const sync = require('./sync');
 const fx = require('./fx');
 const shalomagencias = require('./shalomagencias');
+const ventasmapa = require('./ventasmapa');
 const voice = require('./voice');
 const screensaver = require('./screensaver');
 const bubble = require('./bubble');
@@ -1590,7 +1591,10 @@ async function printTicket(input, { pdf = false, printer = '', reprint = false, 
     let chat = '';
     const view = views.get(activeId);
     if (view && !locked) chat = await openChatTitle(view.webContents);
-    if (!editId || !paylog.updatePrint(String(editId), ticket, { pdf })) paylog.addPrint(ticket, { pdf, chat });
+    if (!editId || !paylog.updatePrint(String(editId), ticket, { pdf })) {
+      paylog.addPrint(ticket, { pdf, chat });
+      try { ventasmapa.registrar(ticket); } catch { /* el mapa es opcional */ }
+    }
     pushPayments();
     for (const e of shipwatch.doneFor(ticket)) if (e.formId) finishedForms.add(e.formId);
     pushState();
@@ -2595,6 +2599,7 @@ function settingsPanel() {
           action('syncFolder', '🔄 Mismos ajustes en varias PCs', s.syncFolder ? `Carpeta: ${s.syncFolder}${s.syncLastAt ? ` · último cambio ${new Date(s.syncLastAt).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}` : 'Elige una carpeta de OneDrive o Google Drive'),
           ...(s.syncFolder ? [action('syncOff', 'Dejar de compartir ajustes en esta PC')] : []),
           action('agencias', '🏢 Buscar agencias Shalom por lugar'),
+          action('mapaVentas', '🗺️ Mapa de tus ventas', 'A qué departamentos envías más (de tus tickets)'),
           action('rucSunat', '🔎 Consultar RUC (SUNAT) o DNI (gratis)'),
           action('coffee', '☕ Invítale un cafecito al creador'),
           action('quit', `Salir de ${APP_NAME}`),
@@ -2659,6 +2664,7 @@ function settingsDo(id, value) {
     onboarding: () => send('ui:onboarding'),
     rucSunat: () => send('ui:ruc', { status: 'pedir' }),
     agencias: () => send('ui:agencias', {}),
+    mapaVentas: () => send('ui:mapa-ventas', {}),
     syncFolder: () => chooseSyncFolder(),
     syncOff: () => {
       settings.syncFolder = '';
@@ -3166,6 +3172,12 @@ function registerIpc() {
   ipcMain.handle('agencias:buscar', (_e, lugar) => (locked ? { ok: false } : shalomagencias.buscar(lugar)));
   ipcMain.handle('agencias:completar', (_e, lugar) => (locked ? [] : shalomagencias.completar(lugar)));
   ipcMain.handle('agencias:tardara', (_e, lugar) => shalomagencias.tardara(lugar));
+  ipcMain.handle('mapa:datos', (_e, periodo) => {
+    if (locked) return null;
+    let forma = null;
+    try { forma = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'ui', 'peru-mapa.json'), 'utf8')); } catch { /* sin mapa */ }
+    return { forma, resumen: ventasmapa.resumen(['mes', 'anterior', '3m', 'ano', 'todo'].includes(periodo) ? periodo : 'mes') };
+  });
   ipcMain.handle('agencias:estado', () => shalomagencias.estado());
   ipcMain.handle('agencias:actualizar', async () => { await revisarAgenciasShalom(true); return shalomagencias.estado(); });
   // Agencias elegidas → mensaje en el chat abierto (el vendedor presiona Enter).
@@ -3630,6 +3642,7 @@ function init() {
   setInterval(reloadHeavyTabs, 10 * 60_000);
   // Lista completa de agencias Shalom: se renueva una vez al día en segundo plano y avisa nuevas o cerradas.
   setTimeout(revisarAgenciasShalom, 90_000);
+  setTimeout(() => { try { ventasmapa.iniciar(paylog.read().prints); } catch { /* opcional */ } }, 5000);
   setInterval(revisarAgenciasShalom, 6 * 60 * 60_000);
   setInterval(checkPhoneLink, 2 * 60_000);
   setTimeout(maybeRatePrompt, 20_000); // después de la bienvenida del día

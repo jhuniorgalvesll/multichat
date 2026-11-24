@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.27.0
+
+- **Mapa de tus ventas**: mapa del Perú por departamentos, pintado según cuántos envíos haces a cada uno, con ranking, porcentajes y las provincias o distritos principales. Cada ticket impreso suma a su departamento: el destino se reconoce con la lista oficial de agencias Shalom (ficha "Departamento / Provincia / Distrito", nombre de agencia, provincia, distrito o distrito de Lima). Periodos: este mes, mes pasado, 3 meses, 12 meses y todo. Solo se guardan cantidades por mes (sin nombres, DNI ni direcciones), en la PC, por 24 meses. Mapa de dominio público (Natural Earth).
+
 ## Novedades v1.26.1
 
 - **Mensaje de agencias limpio**: cada agencia se pega con el mismo orden que su ficha oficial (nombre, ubicación, dirección, tamaño y pesos, horario, teléfono), un dato por línea, con espacios entre bloques y una línea separadora entre agencias. Los resultados salen ordenados por provincia y distrito.

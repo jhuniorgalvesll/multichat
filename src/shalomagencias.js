@@ -469,4 +469,38 @@ function tardara(lugar) {
   return !buscarEnIndice(String(lugar || '')).length;
 }
 
-module.exports = { pageScript, ubicacionCorta, peso, hora, buscar, completar, mensaje, lugarDeTexto, consultasPara, distritoLima, porDireccion, tardara, actualizarIndice, estado, buscarEnIndice };
+// Departamento y provincia de un destino escrito a mano en el ticket ("Junin / Huancayo / El Tambo",
+// "Agencia Pio Pata", "Huancayo", "San Juan de Miraflores"…), usando la lista oficial de agencias.
+let lugares = null; // [{ clave, dep, prov }] de provincias y distritos, los nombres más largos primero
+function departamentoDe(texto) {
+  const t = ` ${norm(texto)} `;
+  if (!t.trim()) return null;
+  const oficial = (d) => DEPARTAMENTOS.find((x) => norm(x) === norm(d)) || null;
+  // 1) Ficha oficial "Departamento / Provincia / Distrito".
+  const partes = String(texto || '').split('/').map((x) => x.trim()).filter(Boolean);
+  if (partes.length >= 2 && oficial(partes[0])) return { dep: oficial(partes[0]), prov: norm(partes[1]) === 'lima' && partes[2] ? partes[2] : partes[1] };
+  cargarIndice();
+  if (indice && !lugares) {
+    const m = new Map();
+    for (const a of indice.agencias) {
+      const [d, prov, dist] = String(a.ubicacion || '').split('/').map((x) => x.trim());
+      const dep = oficial(d || a.dep) || a.dep;
+      // En Lima Metropolitana interesa el distrito (San Juan de Miraflores, Surco…), no "Lima".
+      const zona = norm(prov) === 'lima' && dist ? dist : prov;
+      if (prov && !m.has(norm(prov))) m.set(norm(prov), { dep, prov });
+      if (dist && !m.has(norm(dist))) m.set(norm(dist), { dep, prov: zona || dist });
+      if (!m.has(norm(a.nombre))) m.set(norm(a.nombre), { dep, prov: zona || '' });
+    }
+    lugares = [...m].map(([clave, v]) => ({ clave, ...v })).filter((x) => x.clave.length >= 3).sort((a, b) => b.clave.length - a.clave.length);
+  }
+  // 2) Nombre de una agencia, provincia o distrito (el más largo que aparezca como palabras completas).
+  const hit = (lugares || []).find((x) => t.includes(` ${x.clave} `));
+  if (hit) return { dep: hit.dep, prov: hit.prov };
+  // 3) Distrito de Lima o Callao, o el nombre de un departamento.
+  const lima = distritoLima(texto) || DISTRITOS_LIMA.find((d) => t.includes(` ${norm(d)} `));
+  if (lima) return { dep: ['Callao', 'Bellavista', 'Carmen de la Legua', 'La Perla', 'La Punta', 'Ventanilla', 'Mi Perú'].includes(lima) ? 'Callao' : 'Lima', prov: lima };
+  const dep = DEPARTAMENTOS.find((d) => t.includes(` ${norm(d)} `));
+  return dep ? { dep, prov: '' } : null;
+}
+
+module.exports = { departamentoDe, pageScript, ubicacionCorta, peso, hora, buscar, completar, mensaje, lugarDeTexto, consultasPara, distritoLima, porDireccion, tardara, actualizarIndice, estado, buscarEnIndice };

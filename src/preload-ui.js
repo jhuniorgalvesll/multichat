@@ -100,6 +100,8 @@ contextBridge.exposeInMainWorld('multichat', {
   agenciasTardara: (lugar) => ipcRenderer.invoke('agencias:tardara', lugar),
   agenciasCompletar: (lugar) => ipcRenderer.invoke('agencias:completar', lugar),
   agenciasEstado: () => ipcRenderer.invoke('agencias:estado'),
+  mapaDatos: (periodo) => ipcRenderer.invoke('mapa:datos', periodo),
+  onMapaVentas: (fn) => ipcRenderer.on('ui:mapa-ventas', () => fn()),
   agenciasActualizar: () => ipcRenderer.invoke('agencias:actualizar'),
   onAgenciasEstado: (fn) => ipcRenderer.on('ui:agencias-estado', (_e, d) => fn(d)),
   pegarAgencias: (lugar, agencias) => ipcRenderer.invoke('agencias:pegar', lugar, agencias),

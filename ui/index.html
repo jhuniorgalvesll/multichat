@@ -650,6 +650,29 @@
   </section>
 
   <!-- Agencias Shalom por lugar (página oficial de Shalom) -->
+  <section class="backdrop" id="mapa-modal" hidden>
+    <div class="card modal mapa-card" role="dialog" aria-labelledby="mapa-title">
+      <h2 id="mapa-title">🗺️ Mapa de tus ventas</h2>
+      <p class="note">A qué departamentos envías más, según los tickets que imprimes. Solo se guardan cantidades por mes, en esta PC.</p>
+      <div class="mapa-periodos" id="mapa-periodos">
+        <button type="button" data-p="mes">Este mes</button>
+        <button type="button" data-p="anterior">Mes pasado</button>
+        <button type="button" data-p="3m">3 meses</button>
+        <button type="button" data-p="ano">12 meses</button>
+        <button type="button" data-p="todo">Todo</button>
+      </div>
+      <div class="mapa-cuerpo">
+        <div class="mapa-svg" id="mapa-svg"></div>
+        <div class="mapa-lado">
+          <div class="mapa-total" id="mapa-total"></div>
+          <div class="mapa-ranking" id="mapa-ranking"></div>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" id="mapa-close">Cerrar</button>
+      </div>
+    </div>
+  </section>
   <section class="backdrop" id="ag-modal" hidden>
     <form class="card modal ag-card" id="ag-form" autocomplete="off">
       <h2>🏢 Agencias Shalom</h2>
