@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.26.1
+
+- **Mensaje de agencias limpio**: cada agencia se pega con el mismo orden que su ficha oficial (nombre, ubicación, dirección, tamaño y pesos, horario, teléfono), un dato por línea, con espacios entre bloques y una línea separadora entre agencias. Los resultados salen ordenados por provincia y distrito.
+
 ## Novedades v1.26.0
 
 - **Ficha completa de cada agencia Shalom**: ubicación oficial (departamento / provincia / distrito), dirección, pesos que la agencia **envía** y **recibe** (p. ej. Mala, mediana: envía hasta 200 kg / 3 m³ · recibe hasta 200 kg / 3 m³), horario y teléfono, leídos de la ficha de la página oficial. Se muestran en la ventana de agencias y van en el mensaje que se pega en el chat. La búsqueda usa la ubicación oficial: una provincia trae todos sus distritos (Huancayo → El Tambo, Chilca, Sapallanga…). La actualización diaria lee las 501 fichas en unos 5 minutos en segundo plano.

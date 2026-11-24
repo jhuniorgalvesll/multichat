@@ -3179,6 +3179,7 @@ function registerIpc() {
       envia: String(a.envia || '').slice(0, 60),
       recibe: String(a.recibe || '').slice(0, 60),
       horario: Array.isArray(a.horario) ? a.horario.slice(0, 4).map((h) => String(h).slice(0, 80)) : [],
+      telefono: String(a.telefono || '').slice(0, 30),
     })));
     const view = views.get(activeId);
     if (!view) { await copyText(texto); return { ok: true, copied: true }; }

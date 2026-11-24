@@ -306,7 +306,9 @@ async function buscar(lugarIn) {
   const nombre = distrito && norm(distrito) !== norm(lugar) ? `${lugar} (${distrito})` : lugar;
   const deLista = buscarEnIndice(lugar).map((a) => ({ ...a, fuente: distrito ? 'direccion' : 'lista' }));
   if (deLista.length) {
-    const result = { ok: true, lugar: nombre, agencias: unicas(deLista).slice(0, 80) };
+    // Ordenadas por provincia y distrito (como en la ficha oficial), para que la lista no salga desordenada.
+    const orden = (x) => norm(String(x.ubicacion || `${x.dep} / ${x.nombre}`));
+    const result = { ok: true, lugar: nombre, agencias: unicas(deLista).sort((x, y) => orden(x).localeCompare(orden(y))).slice(0, 80) };
     cache.set(key, { at: Date.now(), result });
     return result;
   }
@@ -354,23 +356,30 @@ const hora = (t) => {
   return `${d.charAt(0).toUpperCase()}${d.slice(1)}: ${horas.replace(/\bA\b/g, 'a').replace(/\bAM\b/g, 'a. m.').replace(/\bPM\b/g, 'p. m.')}`.trim();
 };
 
-// Mensaje para el cliente con las agencias elegidas (para que elija dónde recoger): nombre, ubicación,
-// dirección, pesos que la agencia envía y recibe, y horario, tal como figuran en la página de Shalom.
+// Mensaje para el cliente con las agencias elegidas, con el mismo orden y datos que la ficha de la página oficial
+// de Shalom (nombre, ubicación, dirección, tamaño con los pesos, horario y teléfono), cada dato en su línea y con
+// espacios entre bloques para que en el celular se lea limpio, sin "a km" ni "Cómo llegar".
 function mensaje(lugar, agencias) {
   const nums = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
   const titulo = String(lugar || '').replace(/\s*\(.*\)$/, '').toLowerCase().replace(/(^|\s)(\S)/g, (_m, e, l) => e + l.toUpperCase()).replace(/ (De|Del|La|Las|Los|El) /g, (m) => m.toLowerCase());
-  const lineas = [`📦 *Agencias Shalom en ${titulo}*`, ''];
-  agencias.forEach((a, i) => {
-    lineas.push(`${nums[i] || `${i + 1}.`} *${a.nombre}*${a.tipo ? ` (${a.tipo})` : ''}`);
-    const ubic = ubicacionCorta(a);
-    if (ubic) lineas.push(`🗺️ ${ubic}`);
-    lineas.push(`📍 ${String(a.direccion || '').replace(/\s+([.,])/g, '$1').replace(/\s+/g, ' ').trim()}`);
-    if (a.envia || a.recibe) lineas.push(`⚖️ ${[a.envia && `Envía ${peso(a.envia)}`, a.recibe && `Recibe ${peso(a.recibe)}`].filter(Boolean).join(' · ')}`);
-    if (Array.isArray(a.horario) && a.horario.length) lineas.push(`🕗 ${a.horario.map(hora).join(' · ')}`);
-    lineas.push('');
+  const limpia = (t) => String(t || '').replace(/\s+([.,])/g, '$1').replace(/\s+/g, ' ').trim();
+  const bloques = agencias.map((a, i) => {
+    const b = [`${agencias.length > 1 ? `${nums[i] || `${i + 1}.`} ` : ''}*${limpia(a.nombre).toUpperCase()}*`];
+    if (a.ubicacion) b.push('', limpia(a.ubicacion));
+    b.push('', limpia(a.direccion));
+    const pesos = [a.envia && `Envía: ${peso(a.envia)}`, a.recibe && `Recibe: ${peso(a.recibe)}`].filter(Boolean);
+    if (a.tipo || pesos.length) b.push('', ...[a.tipo && `🏢 Agencia ${limpia(a.tipo).toLowerCase()}`, ...pesos.map((x) => `⚖️ ${x}`)].filter(Boolean));
+    if (Array.isArray(a.horario) && a.horario.length) {
+      b.push('');
+      for (const h of a.horario) {
+        const [dias, horas = ''] = String(h).split(/:\s(.+)/);
+        b.push(`🕗 *${limpia(dias)}*`, limpia(horas));
+      }
+    }
+    if (a.telefono) b.push('', `📞 ${limpia(a.telefono)}`);
+    return b.join('\n');
   });
-  lineas.push('¿En cuál agencia prefieres recoger tu pedido? 😊');
-  return lineas.join('\n');
+  return [`📦 *AGENCIAS SHALOM EN ${titulo.toUpperCase()}*`, '', bloques.join('\n\n━━━━━━━━━━━━━━\n\n'), '', '━━━━━━━━━━━━━━', '', '¿En cuál agencia prefieres recoger tu pedido? 😊'].join('\n');
 }
 
 // Lugar y dirección dentro del mensaje del cliente ("Av. San Juan Mz A, Santiago de Surco 15058."):
