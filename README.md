@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.26.0
+
+- **Ficha completa de cada agencia Shalom**: ubicación oficial (departamento / provincia / distrito), dirección, pesos que la agencia **envía** y **recibe** (p. ej. Mala, mediana: envía hasta 200 kg / 3 m³ · recibe hasta 200 kg / 3 m³), horario y teléfono, leídos de la ficha de la página oficial. Se muestran en la ventana de agencias y van en el mensaje que se pega en el chat. La búsqueda usa la ubicación oficial: una provincia trae todos sus distritos (Huancayo → El Tambo, Chilca, Sapallanga…). La actualización diaria lee las 501 fichas en unos 5 minutos en segundo plano.
+
 ## Novedades v1.25.2
 
 - **Ventana de agencias Shalom**: los botones *Cerrar* y *Pegar en el chat* quedan siempre a la vista en pantallas bajas (la lista se achica y tiene su propio scroll). La ventana se mueve arrastrando el título (doble clic la centra). La actualización diaria de la lista ahora dibuja la página fuera de pantalla, porque en Windows la ventana oculta mostraba 0 agencias.

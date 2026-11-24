@@ -41,7 +41,9 @@ function cargarIndice() {
   try { propia = JSON.parse(fs.readFileSync(indiceFile(), 'utf8')); } catch { /* aún no se guardó */ }
   try { incluida = JSON.parse(fs.readFileSync(INCLUIDA, 'utf8')); } catch { /* no debería faltar */ }
   const valida = (d) => d && Array.isArray(d.agencias) && d.agencias.length >= 100;
-  if (valida(propia) && (!valida(incluida) || propia.at >= incluida.at)) indice = propia;
+  // Una lista guardada sin fichas (versiones anteriores) no reemplaza a la incluida, que trae pesos y horarios.
+  const conFichas = (d) => d.agencias.some((a) => a.ubicacion);
+  if (valida(propia) && (!valida(incluida) || (propia.at >= incluida.at && (conFichas(propia) || !conFichas(incluida))))) indice = propia;
   else if (valida(incluida)) indice = { ...incluida, incluida: true, cambios: (valida(propia) && propia.cambios) || null };
 }
 function guardarIndice() {
@@ -103,7 +105,7 @@ function consultasPara(lugar) {
 const conLimite = (promesa, ms) => Promise.race([promesa, new Promise((_, rej) => setTimeout(() => rej(new Error('tiempo')), ms))]);
 
 // Corre en la página: escribe cada consulta en el buscador y devuelve las agencias de cada una.
-function pageScript(consultas) {
+function pageScript(consultas, detalle = false) {
   return `(async () => {
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     let caja = null;
@@ -123,6 +125,68 @@ function pageScript(consultas) {
       .map((el) => String(el.innerText || '').split('\\n').map((s) => s.replace(/\\s+/g, ' ').trim()).filter(Boolean))
       .filter((l) => l.length >= 2)
       .map((l) => ({ nombre: l[0], direccion: l[1], tipo: l[2] || '' }));
+    // Ficha de cada agencia (clic en la agencia, como una persona): ubicación, pesos que envía y recibe
+    // (el cuadro que sale al pasar el mouse por el tamaño), horario y teléfono. Luego se cierra la ficha.
+    const items = () => [...document.querySelectorAll('div.divide-y > *')];
+    const limpio = (s) => String(s || '').replace(/\\s+/g, ' ').replace(/\\s+([.,])/g, '$1').trim();
+    const ficha = () => {
+      const s = [...document.querySelectorAll('span.text-red-shalom.text-xs')].find((x) => x.offsetParent);
+      if (!s) return null;
+      let e = s;
+      for (let k = 0; k < 10 && e; k++) { e = e.parentElement; if (e && /DOMINGO|LUNES|LLEGAR/i.test(e.innerText) && e.querySelector('p')) break; }
+      return e ? { e, s } : null;
+    };
+    // Se busca cada agencia por su nombre (no por su posición: la lista puede reordenarse al cerrar la ficha).
+    const cerrarFicha = () => {
+      const f = ficha();
+      const x = f && [...f.e.querySelectorAll('div.cursor-pointer')].find((d) => d.querySelector('svg') && !d.querySelector('span'));
+      if (x) x.click();
+    };
+    const detalles = async (nombres, q) => {
+      const out = {};
+      for (const nombre of nombres) {
+        let it = null;
+        for (let k = 0; k < 40 && !it; k++) {
+          it = items().find((x) => limpio(String(x.innerText || '').split('\\n')[0]) === nombre);
+          // Si la lista desapareció (quedó abierta una ficha), se cierra; si sigue sin lista, se vuelve a buscar.
+          if (!it && !items().length) {
+            if (k % 10 === 3) cerrarFicha();
+            if (k % 10 === 8) { escribir(''); await sleep(200); escribir(q); await sleep(1200); }
+          }
+          if (!it) {
+            const ver = [...document.querySelectorAll('button, a, span, div')].find((el) => el.children.length === 0 && /^ver todo$/i.test((el.textContent || '').trim()));
+            if (ver && k % 5 === 0) ver.click();
+            await sleep(100);
+          }
+        }
+        if (!it) continue;
+        it.click();
+        let f = null;
+        for (let k = 0; k < 30 && !f; k++) { await sleep(100); f = ficha(); }
+        if (!f) continue;
+        const ps = [...f.e.querySelectorAll('p')].map((x) => limpio(x.innerText));
+        f.s.parentElement.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        let tip = '';
+        for (let k = 0; k < 10 && !tip; k++) { await sleep(80); tip = [...f.e.querySelectorAll('.tooltip')].map((t) => t.innerText).join('\\n'); }
+        const horario = [];
+        f.e.querySelectorAll('div.font-bold').forEach((b) => { const v = b.nextElementSibling; if (v) horario.push(limpio(b.innerText) + ': ' + limpio(v.innerText)); });
+        const telefono = [...f.e.querySelectorAll('div')].map((d) => (d.children.length === 0 ? limpio(d.innerText) : '')).find((t) => /^[\\d\\s()+-]{6,}$/.test(t)) || '';
+        // Solo si la ficha abierta es la de esta agencia.
+        if (limpio(ps[0]).toLowerCase() === nombre.toLowerCase()) {
+          out[nombre] = {
+            ubicacion: ps[1] || '',
+            envia: limpio((tip.match(/Env[ií]a:?\\s*(.+)/i) || [])[1]),
+            recibe: limpio((tip.match(/Recibe:?\\s*(.+)/i) || [])[1]),
+            horario,
+            telefono,
+          };
+        }
+        f.s.parentElement.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+        cerrarFicha();
+        for (let k = 0; k < 30 && !items().length; k++) await sleep(100);
+      }
+      return out;
+    };
     const resultado = {};
     for (const q of ${JSON.stringify(consultas)}) {
       escribir('');
@@ -142,12 +206,16 @@ function pageScript(consultas) {
       const ver = [...document.querySelectorAll('button, a, span, div')].find((el) => el.children.length === 0 && /^ver todo$/i.test((el.textContent || '').trim()));
       if (ver) { ver.click(); await sleep(1500); }
       resultado[q] = leer();
+      if (${detalle ? 'true' : 'false'}) {
+        const det = await detalles([...new Set(resultado[q].map((a) => limpio(a.nombre)))], q);
+        resultado[q] = resultado[q].map((a) => (det[limpio(a.nombre)] ? { ...a, ...det[limpio(a.nombre)] } : a));
+      }
     }
     return { estado: 'ok', resultado };
   })()`;
 }
 
-async function consultar(consultas, maxMs = 0) {
+async function consultar(consultas, maxMs = 0, detalle = false) {
   const win = new BrowserWindow({
     show: false,
     width: 1366,
@@ -161,8 +229,8 @@ async function consultar(consultas, maxMs = 0) {
   const t0 = Date.now();
   try {
     await conLimite(win.loadURL(URL_AGENCIAS), maxMs || 40000);
-    const resto = maxMs ? Math.max(1000, maxMs - (Date.now() - t0)) : 25000 * consultas.length + 10000;
-    return await conLimite(win.webContents.executeJavaScript(pageScript(consultas), true), resto);
+    const resto = maxMs ? Math.max(1000, maxMs - (Date.now() - t0)) : 25000 * consultas.length + 10000 + (detalle ? 20 * 60 * 1000 : 0);
+    return await conLimite(win.webContents.executeJavaScript(pageScript(consultas, detalle), true), resto);
   } catch {
     return { estado: 'sin_respuesta' };
   } finally {
@@ -192,17 +260,36 @@ function porDireccion(distrito, agencias) {
   });
 }
 
-// Agencias de la lista completa que corresponden a un lugar: su departamento, su nombre o su dirección.
+// Partes de la ubicación oficial ("Junin / Huancayo / El Tambo / Pio Pata" → departamento, provincia, distrito).
+const partesUbicacion = (a) => String(a.ubicacion || '').split('/').map(norm).filter(Boolean).slice(0, 3);
+// Ubicación para mostrar: sin el nombre de la agencia al final.
+function ubicacionCorta(a) {
+  const p = String(a.ubicacion || '').split('/').map((x) => x.trim()).filter(Boolean);
+  if (p.length >= 4 || (p.length > 1 && norm(p[p.length - 1]) === norm(a.nombre))) p.pop();
+  return p.join(' / ');
+}
+
+// Agencias de la lista completa que corresponden a un lugar: su departamento, su provincia o distrito oficial
+// (de la ficha de Shalom), su nombre o su dirección.
 function buscarEnIndice(lugar) {
   cargarIndice();
   if (!indice) return [];
   const n = norm(lugar);
+  if (!n) return [];
   const distrito = distritoLima(lugar);
-  if (distrito) return porDireccion(distrito, indice.agencias.filter((a) => ['lima', 'callao'].includes(norm(a.dep))));
+  if (distrito) {
+    const limaCallao = indice.agencias.filter((a) => ['lima', 'callao'].includes(norm(a.dep)));
+    const nd = norm(distrito);
+    const porUbicacion = limaCallao.filter((a) => partesUbicacion(a)[2] === nd || (nd === 'cercado de lima' && partesUbicacion(a)[2] === 'lima'));
+    return unicas([...porUbicacion, ...porDireccion(distrito, limaCallao)]);
+  }
   const dep = DEPARTAMENTOS.find((d) => norm(d) === n);
   if (dep) return indice.agencias.filter((a) => norm(a.dep) === n);
+  // Provincia o distrito oficial (p. ej. "Huancayo" trae también Sapallanga, El Tambo y Chilca).
+  const porUbicacion = indice.agencias.filter((a) => partesUbicacion(a).slice(1).includes(n));
   const tiene = (t) => new RegExp(`(^| )${n}( |$)`).test(t);
-  return indice.agencias.filter((a) => tiene(norm(`${a.nombre} ${a.direccion}`)));
+  const porTexto = indice.agencias.filter((a) => tiene(norm(`${a.nombre} ${a.direccion}`)));
+  return unicas([...porUbicacion, ...porTexto]);
 }
 
 // { ok: true, lugar, agencias: [{ nombre, direccion, tipo, fuente }] } o { ok: false, error }.
@@ -258,14 +345,28 @@ async function completar(lugarIn) {
   return extra;
 }
 
-// Mensaje para el cliente con las agencias elegidas (para que elija dónde recoger).
+// "HASTA 200 KG / 3 M3" → "hasta 200 kg / 3 m³"
+const peso = (t) => String(t || '').toLowerCase().replace(/\bm3\b/g, 'm³').replace(/paquete (\w)\b/, (_m, l) => `paquete ${l.toUpperCase()}`).trim();
+// "LUNES A SÁBADOS: 08:00 AM A 08:00 PM" → "Lunes a sábados: 08:00 a. m. a 08:00 p. m."
+const hora = (t) => {
+  const [dias, horas = ''] = String(t || '').split(/:\s(.+)/);
+  const d = dias.toLowerCase();
+  return `${d.charAt(0).toUpperCase()}${d.slice(1)}: ${horas.replace(/\bA\b/g, 'a').replace(/\bAM\b/g, 'a. m.').replace(/\bPM\b/g, 'p. m.')}`.trim();
+};
+
+// Mensaje para el cliente con las agencias elegidas (para que elija dónde recoger): nombre, ubicación,
+// dirección, pesos que la agencia envía y recibe, y horario, tal como figuran en la página de Shalom.
 function mensaje(lugar, agencias) {
   const nums = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
-  const titulo = String(lugar || '').replace(/\s*\(.*\)$/, '');
+  const titulo = String(lugar || '').replace(/\s*\(.*\)$/, '').toLowerCase().replace(/(^|\s)(\S)/g, (_m, e, l) => e + l.toUpperCase()).replace(/ (De|Del|La|Las|Los|El) /g, (m) => m.toLowerCase());
   const lineas = [`📦 *Agencias Shalom en ${titulo}*`, ''];
   agencias.forEach((a, i) => {
-    lineas.push(`${nums[i] || `${i + 1}.`} *${a.nombre}*`);
-    lineas.push(`📍 ${a.direccion}`);
+    lineas.push(`${nums[i] || `${i + 1}.`} *${a.nombre}*${a.tipo ? ` (${a.tipo})` : ''}`);
+    const ubic = ubicacionCorta(a);
+    if (ubic) lineas.push(`🗺️ ${ubic}`);
+    lineas.push(`📍 ${String(a.direccion || '').replace(/\s+([.,])/g, '$1').replace(/\s+/g, ' ').trim()}`);
+    if (a.envia || a.recibe) lineas.push(`⚖️ ${[a.envia && `Envía ${peso(a.envia)}`, a.recibe && `Recibe ${peso(a.recibe)}`].filter(Boolean).join(' · ')}`);
+    if (Array.isArray(a.horario) && a.horario.length) lineas.push(`🕗 ${a.horario.map(hora).join(' · ')}`);
     lineas.push('');
   });
   lineas.push('¿En cuál agencia prefieres recoger tu pedido? 😊');
@@ -304,15 +405,20 @@ function actualizarIndice({ forzar = false } = {}) {
   if (!forzar && indice && !indice.incluida && Date.now() - indice.at < INDICE_MS) return Promise.resolve(null);
   if (actualizando) return actualizando;
   actualizando = (async () => {
-    const r = await consultar(DEPARTAMENTOS);
+    const r = await consultar(DEPARTAMENTOS, 0, true);
     if (r.estado !== 'ok') {
       ultimoIntento = { at: Date.now(), ok: false, error: r.estado === 'sin_buscador' ? 'La página de Shalom no cargó su buscador' : 'La página de Shalom no respondió a tiempo' };
       return null;
     }
     const agencias = [];
     for (const dep of DEPARTAMENTOS) for (const a of r.resultado[dep] || []) agencias.push({ ...a, dep });
-    const nueva = unicas(agencias);
     const anterior = indice ? indice.agencias : [];
+    // Si la ficha de alguna agencia no se pudo leer esta vez, se conserva la de la lista anterior.
+    const previas = new Map(anterior.map((a) => [claveAgencia(a), a]));
+    const nueva = unicas(agencias).map((a) => {
+      const vieja = previas.get(claveAgencia(a));
+      return a.ubicacion || !vieja ? a : { ...vieja, ...a, ubicacion: vieja.ubicacion, envia: vieja.envia, recibe: vieja.recibe, horario: vieja.horario, telefono: vieja.telefono };
+    });
     // Lista incompleta (página lenta o sin internet): no se reemplaza, para no "cerrar" agencias que siguen abiertas.
     if (nueva.length < 300 || (anterior.length && nueva.length < anterior.length * 0.85)) {
       ultimoIntento = { at: Date.now(), ok: false, error: `La página de Shalom mostró solo ${nueva.length} agencias` };
@@ -354,4 +460,4 @@ function tardara(lugar) {
   return !buscarEnIndice(String(lugar || '')).length;
 }
 
-module.exports = { buscar, completar, mensaje, lugarDeTexto, consultasPara, distritoLima, porDireccion, tardara, actualizarIndice, estado, buscarEnIndice };
+module.exports = { pageScript, ubicacionCorta, peso, hora, buscar, completar, mensaje, lugarDeTexto, consultasPara, distritoLima, porDireccion, tardara, actualizarIndice, estado, buscarEnIndice };

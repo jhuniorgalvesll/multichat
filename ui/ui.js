@@ -3031,7 +3031,7 @@ function pintarEstadoAgencias(e, verCambios = false) {
   const act = Object.assign(document.createElement('button'), { type: 'button', className: 'link-btn', textContent: '🔄 Actualizar ahora' });
   act.addEventListener('click', async () => {
     act.disabled = true;
-    act.textContent = 'Actualizando la lista de todo el Perú… (1 a 2 minutos)';
+    act.textContent = 'Actualizando la lista de todo el Perú con pesos y horarios… (unos 5 minutos)';
     pintarEstadoAgencias(await api.agenciasActualizar(), true);
   });
   box.append(' ', act);
@@ -3140,10 +3140,18 @@ function pintarAgencias(lugar, marcadasAntes = null) {
       actualizarBotonAg();
     });
     const text = document.createElement('div');
-    text.append(Object.assign(document.createElement('b'), { textContent: a.nombre }), Object.assign(document.createElement('small'), { textContent: a.direccion }));
+    text.append(Object.assign(document.createElement('b'), { textContent: a.nombre }));
+    // Ubicación oficial sin el nombre de la agencia ("Lima / Cañete / Mala").
+    const ubic = String(a.ubicacion || '').split('/').map((x) => x.trim()).filter(Boolean);
+    if (ubic.length >= 4) ubic.pop();
+    if (ubic.length) text.append(Object.assign(document.createElement('small'), { className: 'ag-ubic', textContent: `🗺️ ${ubic.join(' / ')}` }));
+    text.append(Object.assign(document.createElement('small'), { textContent: `📍 ${a.direccion}` }));
+    const kg = (t) => String(t || '').toLowerCase().replace(/\bm3\b/g, 'm³');
+    if (a.envia || a.recibe) text.append(Object.assign(document.createElement('small'), { className: 'ag-peso', textContent: `⚖️ ${[a.envia && `Envía ${kg(a.envia)}`, a.recibe && `Recibe ${kg(a.recibe)}`].filter(Boolean).join(' · ')}` }));
+    if (Array.isArray(a.horario) && a.horario.length) text.append(Object.assign(document.createElement('small'), { textContent: `🕗 ${a.horario.join(' · ').toLowerCase()}` }));
     if (a.tipo) text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: a.tipo }));
     if (a.fuente === 'shalom' && marcadasAntes) text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: '➕ Encontrada en la página de Shalom' }));
-    if (a.fuente === 'direccion') text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: 'Por su dirección' }));
+    if (a.fuente === 'direccion' && !a.ubicacion) text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo', textContent: 'Por su dirección' }));
     if (i === 0 && cercana === 0) text.append(Object.assign(document.createElement('span'), { className: 'ag-tipo ag-cerca', textContent: '📍 Cerca de la dirección del cliente' }));
     row.append(check, text);
     return row;

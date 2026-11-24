@@ -3171,7 +3171,15 @@ function registerIpc() {
   // Agencias elegidas → mensaje en el chat abierto (el vendedor presiona Enter).
   ipcMain.handle('agencias:pegar', async (_e, lugar, agencias) => {
     if (locked || !Array.isArray(agencias) || !agencias.length) return { ok: false };
-    const texto = shalomagencias.mensaje(String(lugar || ''), agencias.slice(0, 10).map((a) => ({ nombre: String(a.nombre || '').slice(0, 80), direccion: String(a.direccion || '').slice(0, 300) })));
+    const texto = shalomagencias.mensaje(String(lugar || ''), agencias.slice(0, 10).map((a) => ({
+      nombre: String(a.nombre || '').slice(0, 80),
+      direccion: String(a.direccion || '').slice(0, 300),
+      tipo: String(a.tipo || '').slice(0, 30),
+      ubicacion: String(a.ubicacion || '').slice(0, 160),
+      envia: String(a.envia || '').slice(0, 60),
+      recibe: String(a.recibe || '').slice(0, 60),
+      horario: Array.isArray(a.horario) ? a.horario.slice(0, 4).map((h) => String(h).slice(0, 80)) : [],
+    })));
     const view = views.get(activeId);
     if (!view) { await copyText(texto); return { ok: true, copied: true }; }
     view.webContents.focus();

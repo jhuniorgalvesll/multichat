@@ -1651,6 +1651,8 @@ body.compact .info-bar { font-size: 11px; gap: 8px; }
 .ag-row div { display: flex; flex-direction: column; gap: 2px; }
 .ag-row small { color: var(--muted); font-size: 12.5px; line-height: 1.35; }
 .ag-tipo { align-self: flex-start; font-size: 11px; padding: 1px 7px; border-radius: 8px; background: var(--soft, #f3f0fa); color: var(--muted); }
+.ag-row small.ag-ubic { color: var(--text, #1f1633); font-weight: 600; }
+.ag-row small.ag-peso { color: #b91c1c; font-weight: 600; }
 .ag-cerca { background: #dcfce7; color: #15803d; font-weight: 700; }
 
 .ag-info { font-size: 12px; color: var(--muted); text-align: left; margin: -4px 0 8px; }
