@@ -25,6 +25,7 @@ const sync = require('./sync');
 const fx = require('./fx');
 const shalomagencias = require('./shalomagencias');
 const ventasmapa = require('./ventasmapa');
+const guia = require('./guia');
 const voice = require('./voice');
 const screensaver = require('./screensaver');
 const bubble = require('./bubble');
@@ -2532,6 +2533,7 @@ function settingsPanel() {
       {
         id: 'ventas', icon: '📦', title: 'Ventas y envíos', color: '#0ea5e9',
         items: [
+          action('guia', '🎓 Modo vendedor nuevo (guía paso a paso)', s.guiaOn ? 'Activado: la guía se ve al costado del chat' : 'Para quien recién empieza a atender'),
           action('sales', 'Registro de ventas'),
           action('printsPanel', '🖨 Impresiones de hoy (reimprimir)'),
           action('shipDebug', 'Revisar lectura de datos de envío (chat abierto)'),
@@ -2665,6 +2667,7 @@ function settingsDo(id, value) {
     rucSunat: () => send('ui:ruc', { status: 'pedir' }),
     agencias: () => send('ui:agencias', {}),
     mapaVentas: () => send('ui:mapa-ventas', {}),
+    guia: () => send('ui:guia', {}),
     syncFolder: () => chooseSyncFolder(),
     syncOff: () => {
       settings.syncFolder = '';
@@ -3172,6 +3175,51 @@ function registerIpc() {
   ipcMain.handle('agencias:buscar', (_e, lugar) => (locked ? { ok: false } : shalomagencias.buscar(lugar)));
   ipcMain.handle('agencias:completar', (_e, lugar) => (locked ? [] : shalomagencias.completar(lugar)));
   ipcMain.handle('agencias:tardara', (_e, lugar) => shalomagencias.tardara(lugar));
+  // ---- Modo vendedor nuevo (guía) ----
+  const pasosGuia = () => guia.limpiar(store.get().settings.guiaPasos) || guia.PASOS;
+  ipcMain.handle('guia:get', () => (locked ? null : { on: Boolean(store.get().settings.guiaOn), pasos: pasosGuia(), acciones: guia.ACCIONES, base: guia.PASOS }));
+  ipcMain.handle('guia:on', (_e, on) => {
+    store.get().settings.guiaOn = Boolean(on);
+    store.save();
+    return true;
+  });
+  ipcMain.handle('guia:save', (_e, pasos) => {
+    if (locked) return { ok: false };
+    const limpios = pasos === null ? null : guia.limpiar(pasos);
+    store.get().settings.guiaPasos = limpios;
+    store.save();
+    return { ok: true, pasos: limpios || guia.PASOS };
+  });
+  // Chat que se está atendiendo y si ya tiene pago o ticket hoy (para marcar esos pasos solos).
+  ipcMain.handle('guia:chat', async () => {
+    const view = views.get(activeId);
+    if (locked || !view) return { chat: '' };
+    const chat = await openChatTitle(view.webContents);
+    if (!chat) return { chat: '' };
+    const hoy = paylog.read();
+    const mismo = (t) => String(t || '').trim().toLowerCase() === chat.toLowerCase();
+    return {
+      chat,
+      accountId: activeId,
+      pagado: hoy.payments.some((p) => p.chat && mismo(p.chat.title)),
+      impreso: hoy.prints.some((p) => mismo(p.chat)),
+    };
+  });
+  ipcMain.handle('guia:accion', (_e, accion) => {
+    if (locked) return false;
+    const acciones = {
+      respuestas: () => showQuickMenu(),
+      opciones: () => pasteShippingInfo(),
+      agencias: () => win.webContents.send('ui:agencias', {}),
+      formulario: () => Menu.buildFromTemplate(shippingFormItems()).popup({ window: win }),
+      pagos: () => win.webContents.send('ui:payments-panel'),
+      verificar: () => { win.webContents.send('ui:verify', { status: 'reading' }); readClipboardImage().then(verifyImage); },
+      ticket: () => openTicketFromSelection(),
+    };
+    if (!acciones[accion]) return false;
+    acciones[accion]();
+    return true;
+  });
   ipcMain.handle('mapa:datos', (_e, periodo) => {
     if (locked) return null;
     let forma = null;

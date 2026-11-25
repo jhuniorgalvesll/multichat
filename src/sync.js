@@ -30,6 +30,7 @@ function snapshotData() {
     shippingInfo: typeof s.shippingInfo === 'string' ? s.shippingInfo : null,
     aiContext: s.aiContext || '',
     trackingUrls: s.trackingUrls || null,
+    guiaPasos: Array.isArray(s.guiaPasos) ? s.guiaPasos : null,
   };
 }
 
@@ -104,6 +105,7 @@ function pull() {
   if (typeof d.shippingInfo === 'string') s.shippingInfo = d.shippingInfo;
   if (typeof d.aiContext === 'string') s.aiContext = d.aiContext;
   if (d.trackingUrls && typeof d.trackingUrls === 'object') s.trackingUrls = d.trackingUrls;
+  if (Array.isArray(d.guiaPasos)) s.guiaPasos = d.guiaPasos;
   s.syncAppliedAt = Number(snap.updatedAt);
   s.syncLastAt = Date.now();
   ctx.store.save();

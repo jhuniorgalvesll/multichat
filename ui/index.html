@@ -153,6 +153,32 @@
   </section>
 
   <!-- Panel lateral: registrar o editar una venta (el chat sigue visible a la izquierda) -->
+  <aside class="side-panel guia-panel" id="guia-panel" hidden aria-label="Guía de venta">
+    <div class="guia-head">
+      <h2>🎓 Guía de venta</h2>
+      <button type="button" class="icon-btn" id="guia-close" title="Cerrar la guía">✕</button>
+    </div>
+    <p class="guia-chat" id="guia-chat">Abre el chat de un cliente para empezar.</p>
+    <div class="guia-avance"><i id="guia-barra"></i></div>
+    <ol class="guia-pasos" id="guia-pasos"></ol>
+    <div class="guia-pie">
+      <button type="button" class="link-btn" id="guia-reiniciar">↺ Empezar de nuevo con este cliente</button>
+      <button type="button" class="link-btn" id="guia-editar">✏️ Editar pasos</button>
+    </div>
+  </aside>
+  <section class="backdrop" id="guia-edit-modal" hidden>
+    <div class="card modal wide guia-edit-card" role="dialog" aria-labelledby="guia-edit-title">
+      <h2 id="guia-edit-title">✏️ Pasos de la guía de venta</h2>
+      <p class="note">Escribe cómo se atiende en tu negocio. El "mensaje" se pega en el chat con un clic (el vendedor lo revisa y lo envía con Enter).</p>
+      <div class="guia-edit-lista" id="guia-edit-lista"></div>
+      <div class="actions">
+        <button type="button" id="guia-edit-add">＋ Agregar paso</button>
+        <button type="button" id="guia-edit-base">Volver a los pasos originales</button>
+        <button type="button" id="guia-edit-cancel">Cancelar</button>
+        <button type="button" class="primary" id="guia-edit-save">Guardar</button>
+      </div>
+    </div>
+  </section>
   <aside class="side-panel" id="sale-panel" hidden>
     <form id="sale-form" autocomplete="off">
       <div class="panel-head">

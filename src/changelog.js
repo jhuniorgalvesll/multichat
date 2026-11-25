@@ -3,6 +3,10 @@
 // Novedades que se muestran en el panel de MultiChat Pro (clic en el logo). La más nueva primero.
 module.exports = [
   {
+    version: '1.28.0',
+    items: ['🎓 Modo vendedor nuevo: una guía al costado del chat con los pasos para atender una venta (saludar, entender qué necesita, precio, envío, agencia, datos, cobrar, verificar el pago, ticket y despedida). Cada paso trae un consejo y un botón que lo hace (pegar el mensaje, abrir agencias, el ticket…). Cada cliente lleva su avance, y el pago y el ticket se marcan solos. Puedes escribir tus propios pasos. Está en ⚙ → Ventas y envíos.'],
+  },
+  {
     version: '1.27.0',
     items: ['🗺️ Mapa de tus ventas: un mapa del Perú que se pinta según a qué departamentos envías más, con el ranking y las provincias o distritos (Huancayo, Cañete, San Juan de Miraflores…). Se arma solo con tus tickets impresos; puedes ver este mes, el mes pasado, 3 meses, 12 meses o todo. Solo guarda cantidades, en tu PC. Está en ⚙ → MultiChat Pro → Mapa de tus ventas.'],
   },

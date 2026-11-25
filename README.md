@@ -40,6 +40,10 @@ Ninguna automatiza mensajes: no hay envíos automáticos, bots ni mensajes masiv
 | **Siempre encima** de otras ventanas | ⚙ → *Mantener siempre encima* |
 | **Copia de seguridad**: exportar/importar pestañas, respuestas rápidas y ajustes (sin sesiones ni contraseña) | ⚙ → *Copia de seguridad* |
 
+## Novedades v1.28.0
+
+- **Modo vendedor nuevo**: panel al costado del chat con la guía de venta paso a paso (10 pasos de fábrica: saludar, entender qué necesita, precio, opciones de envío, agencia, datos de envío, cobrar, verificar el pago, ticket, confirmar). Cada paso muestra un consejo y un botón que hace la acción en MultiChat; lo que se pega se revisa y se envía con Enter. El avance es por cliente (chat abierto) y se olvida a los 3 días; "Verificar el pago" e "Imprimir el ticket" se marcan solos cuando MultiChat registra el pago o el ticket de ese chat. El dueño edita los pasos (título, consejo, mensaje y botón), que también se comparten entre PCs con "Mismos ajustes en varias PCs". ⚙ → Ventas y envíos → *Modo vendedor nuevo*.
+
 ## Novedades v1.27.0
 
 - **Mapa de tus ventas**: mapa del Perú por departamentos, pintado según cuántos envíos haces a cada uno, con ranking, porcentajes y las provincias o distritos principales. Cada ticket impreso suma a su departamento: el destino se reconoce con la lista oficial de agencias Shalom (ficha "Departamento / Provincia / Distrito", nombre de agencia, provincia, distrito o distrito de Lima). Periodos: este mes, mes pasado, 3 meses, 12 meses y todo. Solo se guardan cantidades por mes (sin nombres, DNI ni direcciones), en la PC, por 24 meses. Mapa de dominio público (Natural Earth).

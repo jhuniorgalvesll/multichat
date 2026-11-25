@@ -694,7 +694,7 @@ function openSalePanel({ sale = null, accountId = null, prefill = {} } = {}) {
   $('sale-title').textContent = sale ? 'Editar venta' : 'Registrar venta';
   $('sale-error').textContent = '';
   $('sale-panel').hidden = false;
-  if (!salePanelOpen) api.setPanel(PANEL_WIDTH);
+  if (!salePanelOpen) pedirPanel('otro', PANEL_WIDTH);
   salePanelOpen = true;
   const firstEmpty = ['sale-customer', 'sale-dni', 'sale-phone', 'sale-product'].find((id) => !$(id).value);
   $(firstEmpty || 'sale-product').focus();
@@ -705,7 +705,7 @@ function closeSalePanel() {
   salePanelOpen = false;
   editingSaleId = null;
   $('sale-panel').hidden = true;
-  api.setPanel(0);
+  pedirPanel('otro', 0);
 }
 
 $('sale-form').addEventListener('submit', (e) => {
@@ -1110,7 +1110,7 @@ function layoutTicketPanel() {
   if (!compact) $('ticket-preview-wrap').classList.remove('expanded');
   if (width !== ticketPanelWidth) {
     ticketPanelWidth = width;
-    api.setPanel(width);
+    pedirPanel('otro', width);
   }
 }
 let ticketCarrier = 'Shalom';
@@ -1276,7 +1276,7 @@ function closeTicketPanel() {
   ticketPanelOpen = false;
   ticketPanelWidth = 0;
   $('ticket-panel').hidden = true;
-  api.setPanel(0);
+  pedirPanel('otro', 0);
 }
 
 async function submitTicket(pdf) {
@@ -3293,3 +3293,193 @@ $('mapa-close').addEventListener('click', closeMapa);
 $('mapa-modal').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMapa(); });
 $('mapa-modal').addEventListener('click', (e) => { if (e.target === $('mapa-modal')) closeMapa(); });
 api.onMapaVentas(openMapa);
+
+// -- Paneles a la derecha: la guía de venta convive con el ticket y el registro de venta --
+// Cada panel pide su ancho; el área de los chats se achica por el más ancho que esté abierto.
+const panelPedidos = { otro: 0, guia: 0 };
+function pedirPanel(quien, ancho) {
+  panelPedidos[quien] = Math.max(0, Number(ancho) || 0);
+  api.setPanel(Math.max(...Object.values(panelPedidos)));
+}
+
+// -- Modo vendedor nuevo: guía paso a paso al costado del chat --
+let guiaDatos = null;          // { on, pasos, acciones, base }
+let guiaChat = { chat: '' };   // chat que se está atendiendo
+let guiaAbierto = -1;          // paso desplegado a mano
+let guiaTimer = 0;
+const GUIA_KEY = 'guia-progreso';
+function guiaProgreso() {
+  try { return JSON.parse(localStorage.getItem(GUIA_KEY) || '{}') || {}; } catch { return {}; }
+}
+function guiaGuardar(p) {
+  // Se olvida lo de hace más de 3 días.
+  const limite = Date.now() - 3 * 86400000;
+  for (const k of Object.keys(p)) if (!p[k] || p[k].at < limite) delete p[k];
+  try { localStorage.setItem(GUIA_KEY, JSON.stringify(p)); } catch { /* sin almacenamiento */ }
+}
+const guiaClave = () => (guiaChat.chat ? `${guiaChat.accountId}|${guiaChat.chat.toLowerCase()}` : '');
+function guiaHechos() {
+  const k = guiaClave();
+  const p = guiaProgreso();
+  const hechos = new Set(k && p[k] ? p[k].hechos : []);
+  // Pasos que MultiChat ya sabe que se hicieron: pago recibido de ese chat y ticket impreso.
+  guiaDatos.pasos.forEach((paso, i) => {
+    if (guiaChat.pagado && paso.accion === 'pagos') hechos.add(i);
+    if (guiaChat.impreso && paso.accion === 'ticket') hechos.add(i);
+  });
+  return hechos;
+}
+function guiaMarcar(i, hecho) {
+  const k = guiaClave();
+  if (!k) return;
+  const p = guiaProgreso();
+  const set = new Set(p[k] ? p[k].hechos : []);
+  if (hecho) set.add(i); else set.delete(i);
+  p[k] = { hechos: [...set], at: Date.now() };
+  guiaGuardar(p);
+  guiaAbierto = -1;
+  pintarGuia();
+}
+const GUIA_BOTON = {
+  texto: '💬 Pegar mensaje', respuestas: '⚡ Respuestas rápidas', opciones: '🚚 Pegar opciones de envío',
+  agencias: '🏢 Buscar agencias', formulario: '📝 Pegar formulario', pagos: '💳 Ver pagos de hoy',
+  verificar: '🛡️ Verificar captura copiada', ticket: '🖨️ Abrir ticket',
+};
+function pintarGuia() {
+  if (!guiaDatos) return;
+  const pasos = guiaDatos.pasos;
+  const hechos = guiaHechos();
+  const actual = pasos.findIndex((_p, i) => !hechos.has(i));
+  $('guia-chat').replaceChildren();
+  if (guiaChat.chat) $('guia-chat').append('Atendiendo a ', Object.assign(document.createElement('b'), { textContent: guiaChat.chat }), ` · paso ${actual < 0 ? pasos.length : actual + 1} de ${pasos.length}`);
+  else $('guia-chat').append('Abre el chat de un cliente para empezar. Cada cliente lleva su propio avance.');
+  $('guia-barra').style.width = `${Math.round((hechos.size / Math.max(1, pasos.length)) * 100)}%`;
+  $('guia-pasos').replaceChildren(...pasos.map((paso, i) => {
+    const li = document.createElement('li');
+    const hecho = hechos.has(i);
+    li.className = `guia-paso${hecho ? ' hecho' : ''}${i === actual && guiaChat.chat ? ' actual' : ''}${i === guiaAbierto ? ' abierto' : ''}`;
+    const fila = document.createElement('div');
+    fila.className = 'fila';
+    const check = Object.assign(document.createElement('button'), { type: 'button', className: 'check', textContent: hecho ? '✓' : '', title: hecho ? 'Marcar como pendiente' : 'Marcar como hecho' });
+    check.addEventListener('click', (e) => { e.stopPropagation(); guiaMarcar(i, !hecho); });
+    fila.append(check, Object.assign(document.createElement('span'), { className: 'titulo', textContent: paso.titulo }));
+    fila.addEventListener('click', () => { guiaAbierto = guiaAbierto === i ? -1 : i; pintarGuia(); });
+    const det = document.createElement('div');
+    det.className = 'det';
+    if (paso.consejo) det.append(Object.assign(document.createElement('div'), { className: 'consejo', textContent: `💡 ${paso.consejo}` }));
+    if (paso.texto) det.append(Object.assign(document.createElement('div'), { className: 'mensaje', textContent: paso.texto }));
+    if ((paso.accion === 'pagos' && guiaChat.pagado) || (paso.accion === 'ticket' && guiaChat.impreso)) {
+      det.append(Object.assign(document.createElement('div'), { className: 'guia-auto', textContent: paso.accion === 'pagos' ? '✓ MultiChat ya recibió un pago de este chat hoy.' : '✓ Ya se imprimió un ticket de este chat hoy.' }));
+    }
+    const botones = document.createElement('div');
+    botones.className = 'botones';
+    const etiqueta = GUIA_BOTON[paso.accion];
+    if (etiqueta && (paso.accion !== 'texto' || paso.texto)) {
+      const b = Object.assign(document.createElement('button'), { type: 'button', className: 'primary', textContent: etiqueta });
+      b.addEventListener('click', async () => {
+        if (paso.accion === 'texto') await api.pasteReply(paso.texto);
+        else await api.guiaAccion(paso.accion);
+        // Pegar un mensaje cuenta como hecho (el vendedor igual lo revisa y envía con Enter).
+        if (['texto', 'opciones', 'formulario'].includes(paso.accion)) guiaMarcar(i, true);
+      });
+      botones.append(b);
+    }
+    if (!hecho) {
+      const listo = Object.assign(document.createElement('button'), { type: 'button', textContent: '✓ Listo, siguiente' });
+      listo.addEventListener('click', () => guiaMarcar(i, true));
+      botones.append(listo);
+    }
+    det.append(botones);
+    li.append(fila, det);
+    return li;
+  }));
+  const actualEl = $('guia-pasos').querySelector('.guia-paso.actual');
+  if (actualEl) actualEl.scrollIntoView({ block: 'nearest' });
+}
+async function revisarChatGuia() {
+  if ($('guia-panel').hidden || document.hidden) return;
+  const c = await api.guiaChat().catch(() => null);
+  if (!c) return;
+  const cambio = c.chat !== guiaChat.chat || c.accountId !== guiaChat.accountId || c.pagado !== guiaChat.pagado || c.impreso !== guiaChat.impreso;
+  guiaChat = c;
+  if (cambio) { guiaAbierto = -1; pintarGuia(); }
+}
+async function abrirGuia() {
+  guiaDatos = await api.guiaGet();
+  if (!guiaDatos) return;
+  if (drawerOpen) closeDrawer();
+  await api.guiaOn(true);
+  $('guia-panel').hidden = false;
+  pedirPanel('guia', 300);
+  pintarGuia();
+  revisarChatGuia();
+  clearInterval(guiaTimer);
+  guiaTimer = setInterval(revisarChatGuia, 3000); // liviano: solo lee el nombre del chat abierto
+}
+function cerrarGuia() {
+  $('guia-panel').hidden = true;
+  clearInterval(guiaTimer);
+  pedirPanel('guia', 0);
+  api.guiaOn(false);
+}
+$('guia-close').addEventListener('click', cerrarGuia);
+$('guia-reiniciar').addEventListener('click', () => {
+  const k = guiaClave();
+  if (!k) return;
+  const p = guiaProgreso();
+  delete p[k];
+  guiaGuardar(p);
+  pintarGuia();
+});
+api.onGuia(() => ($('guia-panel').hidden ? abrirGuia() : cerrarGuia()));
+api.guiaGet().then((d) => { if (d && d.on) abrirGuia(); });
+
+// Editor de pasos (el dueño escribe cómo se atiende en su negocio).
+let guiaEdit = [];
+function pintarEditorGuia() {
+  const lista = $('guia-edit-lista');
+  lista.replaceChildren(...guiaEdit.map((p, i) => {
+    const box = document.createElement('div');
+    box.className = 'guia-edit-paso';
+    const campo = (etiqueta, el, ancho = false) => {
+      const l = document.createElement('label');
+      if (ancho) l.className = 'ancho';
+      l.append(etiqueta, el);
+      return l;
+    };
+    const titulo = Object.assign(document.createElement('input'), { value: p.titulo, maxLength: 60, placeholder: 'Ej.: 👋 Saludar' });
+    titulo.addEventListener('input', () => { p.titulo = titulo.value; });
+    const accion = document.createElement('select');
+    for (const [k, v] of Object.entries(guiaDatos.acciones)) accion.append(new Option(v || 'Sin botón (solo consejo)', k, false, k === p.accion));
+    accion.addEventListener('change', () => { p.accion = accion.value; });
+    const consejo = Object.assign(document.createElement('textarea'), { value: p.consejo, maxLength: 400, placeholder: 'Qué debe hacer o tener en cuenta el vendedor' });
+    consejo.addEventListener('input', () => { p.consejo = consejo.value; });
+    const texto = Object.assign(document.createElement('textarea'), { value: p.texto, maxLength: 2000, placeholder: 'Mensaje para pegar en el chat (para el botón "Pegar mensaje")' });
+    texto.addEventListener('input', () => { p.texto = texto.value; });
+    const quitar = Object.assign(document.createElement('button'), { type: 'button', className: 'link-btn quitar', textContent: '🗑 Quitar este paso' });
+    quitar.addEventListener('click', () => { guiaEdit.splice(i, 1); pintarEditorGuia(); });
+    box.append(campo(`Paso ${i + 1}`, titulo), campo('Botón', accion), campo('Consejo', consejo, true), campo('Mensaje', texto, true), quitar);
+    return box;
+  }));
+}
+$('guia-editar').addEventListener('click', () => {
+  guiaEdit = guiaDatos.pasos.map((p) => ({ ...p }));
+  pintarEditorGuia();
+  $('guia-edit-modal').hidden = false;
+  api.setOverlay(true);
+});
+const cerrarEditorGuia = () => { $('guia-edit-modal').hidden = true; api.setOverlay(false); };
+$('guia-edit-cancel').addEventListener('click', cerrarEditorGuia);
+$('guia-edit-add').addEventListener('click', () => {
+  if (guiaEdit.length >= 15) return;
+  guiaEdit.push({ titulo: '', consejo: '', texto: '', accion: 'texto' });
+  pintarEditorGuia();
+  $('guia-edit-lista').lastElementChild.scrollIntoView({ block: 'nearest' });
+});
+$('guia-edit-base').addEventListener('click', () => { guiaEdit = guiaDatos.base.map((p) => ({ ...p })); pintarEditorGuia(); });
+$('guia-edit-save').addEventListener('click', async () => {
+  const r = await api.guiaSave(guiaEdit);
+  if (r && r.ok) guiaDatos.pasos = r.pasos;
+  cerrarEditorGuia();
+  pintarGuia();
+});
